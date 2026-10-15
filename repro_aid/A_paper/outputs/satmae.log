@@ -1,0 +1,40 @@
+[satmae] loaded; missing=['pos_embed', 'head.weight', 'head.bias'], unexpected=104 (decoder etc.)
+features cached (7999, 1024) in 44s
+epoch 5 loss 0.5430 val_acc 86.45  (91s)
+epoch 10 loss 0.2741 val_acc 89.00  (135s)
+epoch 15 loss 0.2968 val_acc 89.85  (181s)
+epoch 20 loss 0.2999 val_acc 90.55  (225s)
+epoch 25 loss 0.0574 val_acc 90.50  (270s)
+epoch 30 loss 0.0725 val_acc 90.60  (286s)
+epoch 35 loss 0.0548 val_acc 90.55  (293s)
+epoch 40 loss 0.0700 val_acc 90.40  (299s)
+epoch 45 loss 0.0391 val_acc 90.40  (305s)
+epoch 50 loss 0.0471 val_acc 90.75  (312s)
+epoch 55 loss 0.0137 val_acc 90.30  (329s)
+epoch 60 loss 0.0196 val_acc 91.30  (345s)
+epoch 65 loss 0.0176 val_acc 90.85  (367s)
+epoch 70 loss 0.0089 val_acc 90.85  (395s)
+epoch 75 loss 0.0169 val_acc 90.25  (422s)
+epoch 80 loss 0.0047 val_acc 90.65  (454s)
+epoch 85 loss 0.0062 val_acc 90.65  (483s)
+epoch 90 loss 0.0053 val_acc 90.80  (515s)
+epoch 95 loss 0.0079 val_acc 90.55  (544s)
+epoch 100 loss 0.0013 val_acc 90.40  (578s)
+evaluating clean + corrupted ...
+metric                      ours   paper   sev1..5
+clean                      90.40   72.05
+gaussian_noise_new         65.81   71.25    78.5  73.4  65.6  59.2  52.4
+salt_and_pepper_noise      66.42   70.45    84.0  78.1  68.0  58.9  43.1
+gaussian_blur              46.81   71.33    76.8  61.1  40.4  30.8  24.9
+motion_blur                16.51   63.85    30.9  19.2  12.6  10.3   9.5
+brightness_contrast        61.04   44.82    90.4  88.5  75.6  43.3   7.5
+clouds                     84.53   59.58    90.2  89.4  87.2  82.2  73.7
+haze_update_new            61.48   28.31    86.7  79.0  66.2  47.3  28.3
+data_gaps                  65.05   46.49    83.5  75.6  66.2  55.6  44.4
+compression_artifacts      60.62   67.26    72.7  68.5  63.6  56.0  42.4
+rotate_new                 83.94   69.15    85.1  82.6  81.8  82.9  87.3
+scale_image                77.43   59.74    88.0  86.0  80.2  71.2  61.8
+translate_image_new        86.42   66.12    88.6  88.5  87.6  84.2  83.2
+avg (12 noises)            64.67   59.86
+R_TP (%)                   28.46   16.92
+done in 982s

@@ -1,0 +1,141 @@
+[scalemae] loaded; missing=['pos_embed', 'head.weight', 'head.bias'], unexpected=98 (decoder etc.)
+/opt/conda/lib/python3.11/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/native/TensorShape.cpp:4221.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+epoch 1 loss 2.1084 (58s)
+epoch 2 loss 1.4368 (106s)
+epoch 3 loss 1.3218 (151s)
+epoch 4 loss 1.3197 (197s)
+epoch 5 loss 0.7021 (244s)
+epoch 5 val_acc 76.25
+epoch 6 loss 0.7303 (293s)
+epoch 7 loss 1.1096 (305s)
+epoch 8 loss 0.5887 (317s)
+epoch 9 loss 1.1494 (341s)
+epoch 10 loss 0.7835 (371s)
+epoch 10 val_acc 82.90
+epoch 11 loss 0.9252 (413s)
+epoch 12 loss 0.8416 (447s)
+epoch 13 loss 0.6518 (479s)
+epoch 14 loss 0.6363 (514s)
+epoch 15 loss 0.5224 (548s)
+epoch 15 val_acc 85.00
+epoch 16 loss 0.8018 (590s)
+epoch 17 loss 0.6568 (635s)
+epoch 18 loss 0.8520 (681s)
+epoch 19 loss 0.4203 (727s)
+epoch 20 loss 0.6687 (773s)
+epoch 20 val_acc 87.05
+epoch 21 loss 0.6483 (829s)
+epoch 22 loss 0.5361 (875s)
+epoch 23 loss 0.5406 (921s)
+epoch 24 loss 0.7711 (967s)
+epoch 25 loss 0.3774 (1005s)
+epoch 25 val_acc 87.40
+epoch 26 loss 0.2576 (1044s)
+epoch 27 loss 0.3077 (1075s)
+epoch 28 loss 0.3382 (1107s)
+epoch 29 loss 0.4508 (1138s)
+epoch 30 loss 0.4298 (1171s)
+epoch 30 val_acc 88.05
+epoch 31 loss 0.4435 (1208s)
+epoch 32 loss 0.4152 (1241s)
+epoch 33 loss 0.2334 (1272s)
+epoch 34 loss 0.2786 (1305s)
+epoch 35 loss 0.4498 (1337s)
+epoch 35 val_acc 88.25
+epoch 36 loss 0.6872 (1375s)
+epoch 37 loss 0.2674 (1407s)
+epoch 38 loss 0.3347 (1437s)
+epoch 39 loss 0.3988 (1471s)
+epoch 40 loss 0.9239 (1502s)
+epoch 40 val_acc 88.45
+epoch 41 loss 0.5658 (1543s)
+epoch 42 loss 0.5776 (1573s)
+epoch 43 loss 0.3449 (1608s)
+epoch 44 loss 0.6735 (1638s)
+epoch 45 loss 0.4099 (1672s)
+epoch 45 val_acc 89.20
+epoch 46 loss 0.4860 (1705s)
+epoch 47 loss 0.2448 (1735s)
+epoch 48 loss 0.3904 (1765s)
+epoch 49 loss 0.1582 (1795s)
+epoch 50 loss 0.5584 (1826s)
+epoch 50 val_acc 89.15
+epoch 51 loss 0.2187 (1861s)
+epoch 52 loss 0.2727 (1875s)
+epoch 53 loss 0.2869 (1885s)
+epoch 54 loss 0.3015 (1895s)
+epoch 55 loss 0.3382 (1906s)
+epoch 55 val_acc 89.60
+epoch 56 loss 0.1745 (1919s)
+epoch 57 loss 0.4147 (1929s)
+epoch 58 loss 0.2836 (1940s)
+epoch 59 loss 0.5537 (1950s)
+epoch 60 loss 0.2555 (1961s)
+epoch 60 val_acc 90.10
+epoch 61 loss 0.4092 (1974s)
+epoch 62 loss 0.6703 (1984s)
+epoch 63 loss 0.2479 (1995s)
+epoch 64 loss 0.2667 (2005s)
+epoch 65 loss 0.2361 (2015s)
+epoch 65 val_acc 90.30
+epoch 66 loss 0.1605 (2028s)
+epoch 67 loss 0.1782 (2039s)
+epoch 68 loss 0.2944 (2049s)
+epoch 69 loss 0.3851 (2060s)
+epoch 70 loss 0.4808 (2070s)
+epoch 70 val_acc 90.70
+epoch 71 loss 0.4491 (2083s)
+epoch 72 loss 0.1483 (2094s)
+epoch 73 loss 0.1895 (2104s)
+epoch 74 loss 0.3133 (2114s)
+epoch 75 loss 0.2217 (2125s)
+epoch 75 val_acc 90.95
+epoch 76 loss 0.2122 (2138s)
+epoch 77 loss 0.5220 (2148s)
+epoch 78 loss 0.0985 (2159s)
+epoch 79 loss 0.1360 (2169s)
+epoch 80 loss 0.5487 (2179s)
+epoch 80 val_acc 91.20
+epoch 81 loss 0.2310 (2192s)
+epoch 82 loss 0.2631 (2203s)
+epoch 83 loss 0.1328 (2213s)
+epoch 84 loss 0.2711 (2223s)
+epoch 85 loss 0.0979 (2234s)
+epoch 85 val_acc 90.40
+epoch 86 loss 0.2819 (2247s)
+epoch 87 loss 0.2000 (2258s)
+epoch 88 loss 0.2914 (2269s)
+epoch 89 loss 0.2118 (2279s)
+epoch 90 loss 0.3905 (2290s)
+epoch 90 val_acc 90.35
+epoch 91 loss 0.3309 (2303s)
+epoch 92 loss 0.1541 (2313s)
+epoch 93 loss 0.2075 (2323s)
+epoch 94 loss 0.2404 (2334s)
+epoch 95 loss 0.5379 (2344s)
+epoch 95 val_acc 90.55
+epoch 96 loss 0.0884 (2357s)
+epoch 97 loss 0.2498 (2367s)
+epoch 98 loss 0.1878 (2378s)
+epoch 99 loss 0.3518 (2388s)
+epoch 100 loss 0.5414 (2399s)
+epoch 100 val_acc 91.25
+evaluating clean + corrupted ...
+metric                      ours   paper   sev1..5
+clean                      91.25   75.75
+gaussian_noise_new         68.17   46.31    78.2  72.3  67.1  64.0  59.1
+salt_and_pepper_noise      66.23   47.27    82.7  77.7  68.4  60.4  42.0
+gaussian_blur              46.71   31.65    73.9  59.0  40.9  32.5  27.3
+motion_blur                22.55   17.49    34.4  24.6  20.6  17.5  15.7
+brightness_contrast        64.90   51.80    91.2  89.0  79.5  52.0  12.8
+clouds                     86.90   72.65    91.0  90.5  89.0  86.0  78.0
+haze_update_new            68.25   55.24    88.5  84.0  74.0  58.6  36.1
+data_gaps                  66.21   43.69    84.0  76.0  68.0  56.2  46.8
+compression_artifacts      66.38   39.60    79.1  76.2  70.5  60.5  45.5
+rotate_new                 85.32   66.15    84.2  84.3  84.6  85.0  88.4
+scale_image                80.70   61.58    87.4  84.4  81.5  77.8  72.3
+translate_image_new        88.39   69.84    89.8  89.3  87.7  87.6  87.5
+avg (12 noises)            67.56   50.27
+R_TP (%)                   25.96   33.64
+done in 2535s
