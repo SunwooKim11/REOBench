@@ -4,13 +4,31 @@ This folder backs the numbers in [issue #4](https://github.com/lx709/REOBench/is
 `Classification/SatMAE_finetune.py` and `scaleMAE_finetune.py`, and changes only what cannot run as released. Every
 change is listed below.
 
+## What is what
+
+Both scripts run the **same protocol** as the released code. They differ only in how they are run:
+
+| Folder | What it is | Used for |
+|---|---|---|
+| `A_paper/` | A direct port of the released scripts: one model per run, end to end, fp32 | the SatMAE run with the checkpoint named in the code (18.2) |
+| `C_ablation/` | The same protocol with cached eval features, so that many seeds and settings are cheap to run | the 3-seed numbers in the issue |
+
+The two runs in `C_ablation/` differ in **one setting only**, which is when the LR scheduler steps:
+
+| Config name | `CosineAnnealingWarmRestarts(T_0=5)` steps… | Matches |
+|---|---|---|
+| `A0ep` (**main**) | once per **epoch**, so each cycle is 5 epochs | the paper, Appendix F.1 |
+| `A0` | once per **iteration**, so each cycle is 5 iterations | the released code (`scheduler.step()` inside the batch loop) |
+
+The two give nearly the same results (< 0.6 pt), so the scheduler does not explain the gap.
+
 ## Numbers in the issue → how to reproduce them
 
 | Number in the issue | Script / config | Result file |
 |---|---|---|
 | SatMAE 90.7 ± 0.2 / 65.0 ± 0.0 | `C_ablation/run.py --model satmae --name A0ep --optim adam_wr_epoch --seed {0,1,2}` | `C_ablation/outputs/satmae/A0ep_s*.json` |
 | Scale-MAE 91.4 ± 0.3 / 68.0 ± 0.1 | `C_ablation/run.py --model scalemae --name A0ep --optim adam_wr_epoch --bb_train --seed {0,1,2}` | `C_ablation/outputs/scalemae/A0ep_s*.json` |
-| Scheduler stepped per iteration (released code), < 0.6 pt difference | same as above with `--name A0` (default `--optim adam_wr`) | `C_ablation/outputs/*/A0_s*.json` |
+| Scheduler stepped per iteration, as in the released code (< 0.6 pt difference) | same as above, but with `--name A0` and without `--optim` (default `adam_wr`) | `C_ablation/outputs/*/A0_s*.json` |
 | SatMAE with the checkpoint named in the code (`pretrain-vit-large-e199.pth`): 18.2 clean | `A_paper/run.py --model satmae --ckpt satmae_sentinel --tag _sentinel` | `A_paper/outputs/satmae_sentinel_results.txt`, `.log` |
 | Checkpoint-loading claims (Sentinel checkpoint, missing `patch_embed`, Scale-MAE loads cleanly) | `issue_check.py`, which runs the released loading code verbatim on CPU | printed |
 
@@ -20,12 +38,12 @@ Run `python C_ablation/summarize.py` to print the mean ± std table from the JSO
 ### satmae
 config   n     clean       avg
 paper    -     72.05     59.86
-A0       3  90.5±0.2  65.0±0.2
-A0ep     3  90.7±0.2  65.0±0.0
+A0       3  90.5±0.2  65.0±0.2   <- scheduler per iteration (released code)
+A0ep     3  90.7±0.2  65.0±0.0   <- scheduler per epoch (paper), main
 ### scalemae
 paper    -     75.75     50.27
-A0       3  91.1±0.2  67.4±0.2
-A0ep     3  91.4±0.3  68.0±0.1
+A0       3  91.1±0.2  67.4±0.2   <- scheduler per iteration (released code)
+A0ep     3  91.4±0.3  68.0±0.1   <- scheduler per epoch (paper), main
 ```
 
 ## Setup
