@@ -1,0 +1,46 @@
+.venv
+
+# ---- generated files ----
+__pycache__/
+*.pyc
+*.pth
+*.pt
+*.pkl
+*.log
+logs/
+repro/C_ablation/cache/
+repro/H_seg_baseline/work_dirs/
+repro/H_seg_baseline/results/**/log.txt
+repro/G_seg_verify/work_dirs/
+
+# ---- vendored third-party copies: keep only our scripts and the files we patched ([REOBench] / [REOBench repro]) ----
+# Official CoTTA repo, run as is (patch documented in repro/review/diffs/cotta_official_run.diff)
+repro/F_cotta_official/**
+!repro/F_cotta_official/**/
+!repro/F_cotta_official/imagenet/run_official.sh
+!repro/F_cotta_official/imagenet/cotta.py
+!repro/F_cotta_official/imagenet/cfgs/std_*.yaml
+
+# SVDP copy of CoTTA's ACDC code (patches listed in repro/G_seg_verify/README_REOBench.md; diffs in repro/review/diffs/seg__*)
+repro/G_seg_verify/**
+!repro/G_seg_verify/**/
+!repro/G_seg_verify/*.sh
+!repro/G_seg_verify/README_REOBench.md
+!repro/G_seg_verify/mmseg/__init__.py
+!repro/G_seg_verify/mmseg/apis/__init__.py
+!repro/G_seg_verify/mmseg/apis/test.py
+!repro/G_seg_verify/mmseg/models/segmentors/encoder_decoder.py
+!repro/G_seg_verify/tools/tent.py
+!repro/G_seg_verify/tools/tent_entropy.py
+!repro/G_seg_verify/tools/cotta.py
+!repro/G_seg_verify/local_configs/_base_/datasets/acdc_1024x1024_repeat.py
+
+# Copy of REOBench/Segmentation (the original is tracked at Segmentation/); keep patched files + our configs
+repro/H_seg_baseline/seg/**
+!repro/H_seg_baseline/seg/**/
+!repro/H_seg_baseline/seg/configs/repro/*.py
+!repro/H_seg_baseline/seg/mmseg/__init__.py
+!repro/H_seg_baseline/seg/mmseg/models/builder.py
+!repro/H_seg_baseline/seg/mmseg/models/backbones/scale_MAE_vit_large.py
+!repro/H_seg_baseline/seg/mmseg/models/backbones/SatMAE_vit_large.py
+!repro/H_seg_baseline/seg/mmseg/datasets/pipelines/loading.py
