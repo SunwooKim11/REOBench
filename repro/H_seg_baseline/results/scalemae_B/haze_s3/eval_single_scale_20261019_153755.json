@@ -1,0 +1,20 @@
+{
+    "config": "configs/repro/scalemae_B_12ep.py",
+    "metric": {
+        "aAcc": 0.7583,
+        "mIoU": 0.5625,
+        "mAcc": 0.6906,
+        "IoU.impervious_surface": 0.18520000457763672,
+        "IoU.building": 0.6980000305175781,
+        "IoU.low_vegetation": 0.7947000122070312,
+        "IoU.tree": 0.5493999862670899,
+        "IoU.car": 0.585,
+        "IoU.clutter": NaN,
+        "Acc.impervious_surface": 0.3641999816894531,
+        "Acc.building": 0.8583999633789062,
+        "Acc.low_vegetation": 0.8862999725341797,
+        "Acc.tree": 0.6633000183105469,
+        "Acc.car": 0.6806999969482422,
+        "Acc.clutter": NaN
+    }
+}

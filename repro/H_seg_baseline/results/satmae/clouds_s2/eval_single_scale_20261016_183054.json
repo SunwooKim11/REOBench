@@ -1,0 +1,20 @@
+{
+    "config": "configs/repro/satmae_A_12ep.py",
+    "metric": {
+        "aAcc": 0.7232,
+        "mIoU": 0.5083,
+        "mAcc": 0.6541,
+        "IoU.impervious_surface": 0.23100000381469726,
+        "IoU.building": 0.6597000122070312,
+        "IoU.low_vegetation": 0.6927999877929687,
+        "IoU.tree": 0.5536000061035157,
+        "IoU.car": 0.4045999908447266,
+        "IoU.clutter": NaN,
+        "Acc.impervious_surface": 0.3320999908447266,
+        "Acc.building": 0.7809999847412109,
+        "Acc.low_vegetation": 0.8705000305175781,
+        "Acc.tree": 0.805199966430664,
+        "Acc.car": 0.4815999984741211,
+        "Acc.clutter": NaN
+    }
+}
