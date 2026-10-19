@@ -44,3 +44,6 @@ repro/H_seg_baseline/seg/**
 !repro/H_seg_baseline/seg/mmseg/models/backbones/scale_MAE_vit_large.py
 !repro/H_seg_baseline/seg/mmseg/models/backbones/SatMAE_vit_large.py
 !repro/H_seg_baseline/seg/mmseg/datasets/pipelines/loading.py
+
+# ---- papers (copyrighted PDFs, local reading only) ----
+papers/
