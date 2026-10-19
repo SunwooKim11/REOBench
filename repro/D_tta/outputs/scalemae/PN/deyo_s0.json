@@ -1,0 +1,241 @@
+{
+  "config": {
+    "model": "scalemae",
+    "head_cfg": "PN",
+    "head_seed": 0,
+    "method": "deyo",
+    "bs": 64,
+    "seed": 0,
+    "noises": [
+      "gaussian_noise_new",
+      "salt_and_pepper_noise",
+      "gaussian_blur",
+      "motion_blur",
+      "brightness_contrast",
+      "clouds",
+      "haze_update_new",
+      "data_gaps",
+      "compression_artifacts",
+      "rotate_new",
+      "scale_image",
+      "translate_image_new"
+    ],
+    "sevs": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "no_clean": false,
+    "tag": "",
+    "workers": 12
+  },
+  "lr": 0.001,
+  "clean": 93.1,
+  "gaussian_noise_new": {
+    "severity": [
+      81.65,
+      79.65,
+      75.6,
+      64.85,
+      60.45
+    ],
+    "deyo_selected": [
+      0.123,
+      0.145,
+      0.158,
+      0.1655,
+      0.1705
+    ],
+    "mean": 72.44
+  },
+  "salt_and_pepper_noise": {
+    "severity": [
+      89.2,
+      82.6,
+      64.8,
+      47.3,
+      21.4
+    ],
+    "deyo_selected": [
+      0.101,
+      0.138,
+      0.1245,
+      0.128,
+      0.0575
+    ],
+    "mean": 61.06
+  },
+  "gaussian_blur": {
+    "severity": [
+      86.65,
+      76.9,
+      58.55,
+      33.55,
+      10.25
+    ],
+    "deyo_selected": [
+      0.1005,
+      0.125,
+      0.1505,
+      0.1095,
+      0.0215
+    ],
+    "mean": 53.18000000000001
+  },
+  "motion_blur": {
+    "severity": [
+      44.3,
+      12.35,
+      9.5,
+      7.65,
+      9.5
+    ],
+    "deyo_selected": [
+      0.131,
+      0.045,
+      0.024,
+      0.017,
+      0.0205
+    ],
+    "mean": 16.660000000000004
+  },
+  "brightness_contrast": {
+    "severity": [
+      94.0,
+      91.55,
+      87.95,
+      59.15,
+      41.8
+    ],
+    "deyo_selected": [
+      0.0655,
+      0.0825,
+      0.0935,
+      0.154,
+      0.1055
+    ],
+    "mean": 74.89
+  },
+  "clouds": {
+    "severity": [
+      79.15,
+      92.2,
+      92.75,
+      75.2,
+      79.5
+    ],
+    "deyo_selected": [
+      0.065,
+      0.075,
+      0.072,
+      0.064,
+      0.1135
+    ],
+    "mean": 83.76
+  },
+  "haze_update_new": {
+    "severity": [
+      92.9,
+      91.3,
+      83.6,
+      84.3,
+      64.1
+    ],
+    "deyo_selected": [
+      0.077,
+      0.082,
+      0.121,
+      0.12,
+      0.1415
+    ],
+    "mean": 83.23999999999998
+  },
+  "data_gaps": {
+    "severity": [
+      86.6,
+      65.6,
+      75.2,
+      53.7,
+      46.1
+    ],
+    "deyo_selected": [
+      0.1,
+      0.1355,
+      0.1215,
+      0.1355,
+      0.1215
+    ],
+    "mean": 65.44
+  },
+  "compression_artifacts": {
+    "severity": [
+      78.35,
+      78.65,
+      20.6,
+      27.25,
+      18.2
+    ],
+    "deyo_selected": [
+      0.103,
+      0.1,
+      0.103,
+      0.0515,
+      0.105
+    ],
+    "mean": 44.61
+  },
+  "rotate_new": {
+    "severity": [
+      69.6,
+      87.65,
+      88.3,
+      88.4,
+      89.1
+    ],
+    "deyo_selected": [
+      0.0695,
+      0.087,
+      0.0865,
+      0.083,
+      0.083
+    ],
+    "mean": 84.61000000000001
+  },
+  "scale_image": {
+    "severity": [
+      92.7,
+      90.2,
+      88.55,
+      85.3,
+      61.1
+    ],
+    "deyo_selected": [
+      0.0905,
+      0.0885,
+      0.0945,
+      0.0965,
+      0.0825
+    ],
+    "mean": 83.57000000000001
+  },
+  "translate_image_new": {
+    "severity": [
+      90.6,
+      90.45,
+      85.7,
+      92.15,
+      53.95
+    ],
+    "deyo_selected": [
+      0.0815,
+      0.0705,
+      0.0845,
+      0.072,
+      0.0415
+    ],
+    "mean": 82.57
+  },
+  "avg": 67.16916666666667
+}

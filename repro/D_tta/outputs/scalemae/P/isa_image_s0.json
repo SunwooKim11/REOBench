@@ -1,0 +1,132 @@
+{
+  "config": {
+    "model": "scalemae",
+    "head_cfg": "P",
+    "method": "isa_image",
+    "seed": 0,
+    "bs": 64,
+    "recovered_from_log": "logs/scalemae_P_isa_image.log"
+  },
+  "clean": 81.7,
+  "gaussian_noise_new": {
+    "severity": [
+      67.6,
+      62.75,
+      57.2,
+      53.15,
+      48.7
+    ],
+    "mean": 57.88000000000001
+  },
+  "salt_and_pepper_noise": {
+    "severity": [
+      72.2,
+      65.15,
+      56.5,
+      48.0,
+      35.5
+    ],
+    "mean": 55.470000000000006
+  },
+  "gaussian_blur": {
+    "severity": [
+      64.25,
+      48.5,
+      33.65,
+      26.1,
+      20.4
+    ],
+    "mean": 38.58
+  },
+  "motion_blur": {
+    "severity": [
+      28.2,
+      19.6,
+      16.65,
+      14.9,
+      13.25
+    ],
+    "mean": 18.52
+  },
+  "brightness_contrast": {
+    "severity": [
+      81.7,
+      81.7,
+      81.2,
+      81.35,
+      78.65
+    ],
+    "mean": 80.92
+  },
+  "clouds": {
+    "severity": [
+      81.95,
+      82.25,
+      80.75,
+      76.5,
+      70.0
+    ],
+    "mean": 78.28999999999999
+  },
+  "haze_update_new": {
+    "severity": [
+      80.85,
+      81.05,
+      81.05,
+      81.35,
+      81.4
+    ],
+    "mean": 81.13999999999999
+  },
+  "data_gaps": {
+    "severity": [
+      75.3,
+      66.55,
+      57.85,
+      48.8,
+      40.45
+    ],
+    "mean": 57.79
+  },
+  "compression_artifacts": {
+    "severity": [
+      57.65,
+      52.65,
+      45.6,
+      36.95,
+      25.9
+    ],
+    "mean": 43.75000000000001
+  },
+  "rotate_new": {
+    "severity": [
+      72.75,
+      72.65,
+      71.55,
+      71.9,
+      77.75
+    ],
+    "mean": 73.32000000000001
+  },
+  "scale_image": {
+    "severity": [
+      78.3,
+      75.25,
+      73.15,
+      67.5,
+      61.2
+    ],
+    "mean": 71.08000000000001
+  },
+  "translate_image_new": {
+    "severity": [
+      80.2,
+      79.55,
+      78.55,
+      77.85,
+      77.0
+    ],
+    "mean": 78.63
+  },
+  "avg": 61.28083333333334
+}

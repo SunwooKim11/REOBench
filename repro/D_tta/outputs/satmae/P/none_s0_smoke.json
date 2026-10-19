@@ -1,0 +1,41 @@
+{
+  "config": {
+    "model": "satmae",
+    "head_cfg": "P",
+    "head_seed": 0,
+    "method": "none",
+    "bs": 64,
+    "seed": 0,
+    "noises": [
+      "gaussian_blur",
+      "haze_update_new"
+    ],
+    "sevs": [
+      3,
+      5
+    ],
+    "no_clean": false,
+    "tag": "_smoke",
+    "workers": 12
+  },
+  "lr": 0.001,
+  "clean": 90.55,
+  "gaussian_blur": {
+    "severity": [
+      null,
+      null,
+      40.8,
+      null,
+      25.0
+    ]
+  },
+  "haze_update_new": {
+    "severity": [
+      null,
+      null,
+      66.7,
+      null,
+      28.85
+    ]
+  }
+}

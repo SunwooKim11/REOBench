@@ -1,0 +1,132 @@
+{
+  "config": {
+    "model": "satmae",
+    "head_cfg": "P",
+    "method": "lscd",
+    "seed": 0,
+    "bs": 64,
+    "recovered_from_log": "logs/satmae_P_lscd.log"
+  },
+  "clean": 85.5,
+  "gaussian_noise_new": {
+    "severity": [
+      79.85,
+      58.2,
+      60.2,
+      58.65,
+      46.65
+    ],
+    "mean": 60.709999999999994
+  },
+  "salt_and_pepper_noise": {
+    "severity": [
+      75.0,
+      64.7,
+      40.5,
+      45.75,
+      36.05
+    ],
+    "mean": 52.4
+  },
+  "gaussian_blur": {
+    "severity": [
+      56.95,
+      21.1,
+      25.8,
+      38.35,
+      29.95
+    ],
+    "mean": 34.43
+  },
+  "motion_blur": {
+    "severity": [
+      21.1,
+      6.4,
+      25.25,
+      25.7,
+      11.55
+    ],
+    "mean": 18.0
+  },
+  "brightness_contrast": {
+    "severity": [
+      87.1,
+      59.25,
+      65.7,
+      36.35,
+      5.3
+    ],
+    "mean": 50.74
+  },
+  "clouds": {
+    "severity": [
+      56.5,
+      70.05,
+      69.8,
+      66.85,
+      75.4
+    ],
+    "mean": 67.72
+  },
+  "haze_update_new": {
+    "severity": [
+      59.95,
+      47.0,
+      29.45,
+      9.3,
+      19.45
+    ],
+    "mean": 33.03
+  },
+  "data_gaps": {
+    "severity": [
+      71.3,
+      46.65,
+      56.8,
+      33.05,
+      40.05
+    ],
+    "mean": 49.57000000000001
+  },
+  "compression_artifacts": {
+    "severity": [
+      64.5,
+      43.0,
+      57.9,
+      66.05,
+      49.35
+    ],
+    "mean": 56.160000000000004
+  },
+  "rotate_new": {
+    "severity": [
+      59.1,
+      68.55,
+      56.9,
+      64.05,
+      69.2
+    ],
+    "mean": 63.56
+  },
+  "scale_image": {
+    "severity": [
+      73.8,
+      67.0,
+      46.15,
+      50.35,
+      50.0
+    ],
+    "mean": 57.46
+  },
+  "translate_image_new": {
+    "severity": [
+      77.05,
+      60.25,
+      82.2,
+      67.05,
+      63.15
+    ],
+    "mean": 69.94
+  },
+  "avg": 51.14333333333334
+}

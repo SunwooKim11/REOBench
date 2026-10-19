@@ -1,0 +1,55 @@
+{
+  "config": {
+    "model": "satmae",
+    "head_cfg": "PN",
+    "head_seed": 0,
+    "method": "cotta",
+    "bs": 64,
+    "lr": 1e-05,
+    "seed": 0,
+    "noises": [
+      "haze_update_new",
+      "gaussian_noise_new",
+      "motion_blur"
+    ],
+    "sevs": [
+      3,
+      5
+    ],
+    "no_clean": false,
+    "cotta_ap": 0.1,
+    "sar_reset": null,
+    "cotta_params": "all",
+    "tag": "_diag_lr1e-05_ap0.1",
+    "workers": 12
+  },
+  "lr": 1e-05,
+  "clean": 92.75,
+  "haze_update_new": {
+    "severity": [
+      null,
+      null,
+      84.8,
+      null,
+      60.1
+    ]
+  },
+  "gaussian_noise_new": {
+    "severity": [
+      null,
+      null,
+      66.9,
+      null,
+      55.7
+    ]
+  },
+  "motion_blur": {
+    "severity": [
+      null,
+      null,
+      25.75,
+      null,
+      15.25
+    ]
+  }
+}
