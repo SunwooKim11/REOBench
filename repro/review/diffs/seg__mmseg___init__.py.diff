@@ -1,0 +1,11 @@
+--- /tmp/claude-500/-home1-irteam/d5f21feb-d0a5-4025-9a6f-4c753cf2eaa4/scratchpad/ext/SVDP/mmseg/__init__.py	2026-10-13 23:42:56.142587396 +0900
++++ ../G_seg_verify/mmseg/__init__.py	2026-10-15 15:47:52.000000000 +0900
+@@ -3,7 +3,7 @@
+ from .version import __version__, version_info
+ 
+ MMCV_MIN = '1.1.4'
+-MMCV_MAX = '1.7.1'
++MMCV_MAX = '1.7.2'  # [REOBench] H200 needs torch>=2.0 -> mmcv-full 1.7.2
+ 
+ 
+ def digit_version(version_str):

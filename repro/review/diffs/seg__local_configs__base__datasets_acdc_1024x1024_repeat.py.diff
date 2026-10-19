@@ -1,0 +1,10 @@
+--- /tmp/claude-500/-home1-irteam/d5f21feb-d0a5-4025-9a6f-4c753cf2eaa4/scratchpad/ext/SVDP/local_configs/_base_/datasets/acdc_1024x1024_repeat.py	2026-10-13 23:42:56.135587530 +0900
++++ ../G_seg_verify/local_configs/_base_/datasets/acdc_1024x1024_repeat.py	2026-10-15 15:47:52.000000000 +0900
+@@ -1,6 +1,6 @@
+ # dataset settings
+ dataset_type = 'ACDCDataset'
+-data_root = '/dataset'
++data_root = '/data/tta/cityscape-ACDC'  # [REOBench]
+ img_norm_cfg = dict(
+     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+ crop_size = (1024, 1024)

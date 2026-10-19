@@ -1,0 +1,21 @@
+--- /tmp/claude-500/-home1-irteam/d5f21feb-d0a5-4025-9a6f-4c753cf2eaa4/scratchpad/ext/SVDP/mmseg/models/segmentors/encoder_decoder.py	2026-10-13 23:42:56.150587243 +0900
++++ ../G_seg_verify/mmseg/models/segmentors/encoder_decoder.py	2026-10-15 15:56:02.000000000 +0900
+@@ -306,6 +306,18 @@
+ 
+         return output_lst
+     def simple_test(self, img, img_meta, rescale=True):
++        """Simple test with single image.
++        [REOBench] restored the standard mmseg return (seg_pred only); SVDP returned (seg_pred, prob), which breaks
++        single_gpu_test / single_gpu_tent. The SVDP version is kept below as simple_test_with_prob."""
++        seg_logit = self.inference(img, img_meta, rescale)
++        seg_pred = seg_logit.argmax(dim=1)
++        if torch.onnx.is_in_onnx_export():
++            seg_pred = seg_pred.unsqueeze(0)
++            return seg_pred
++        seg_pred = seg_pred.cpu().numpy()
++        return list(seg_pred)
++
++    def simple_test_with_prob(self, img, img_meta, rescale=True):
+         """Simple test with single image."""
+         seg_logit = self.inference(img, img_meta, rescale)
+         prob, pred = seg_logit.max(dim = 1)

@@ -1,0 +1,11 @@
+--- /tmp/claude-500/-home1-irteam/d5f21feb-d0a5-4025-9a6f-4c753cf2eaa4/scratchpad/ext/SVDP/tools/cotta.py	2026-10-13 23:42:56.153587185 +0900
++++ ../G_seg_verify/tools/cotta.py	2026-10-15 15:56:03.000000000 +0900
+@@ -226,7 +226,7 @@
+     anchor = deepcopy(model.state_dict())
+     anchor_model = deepcopy(model)
+     ema_model = create_ema_model(model)
+-    for i in range(10):
++    for i in range(int(os.environ.get("ROUNDS", 10))):  # [REOBench] ROUNDS env for quick checks; papers use 10
+         print("revisiting", i)
+         data_loaders = [build_dataloader(
+             dataset,

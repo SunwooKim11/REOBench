@@ -1,0 +1,41 @@
+--- upstream/tent__DeYO-repo.py	2026-10-15 19:22:23.000000000 +0900
++++ ../D_tta/methods/tent.py	2026-10-13 15:45:43.000000000 +0900
+@@ -62,35 +62,9 @@
+ 
+ 
+ def collect_params(model):
+-    """Collect the affine scale + shift parameters from batch norms.
+-    Walk the model's modules and collect all batch normalization parameters.
+-    Return the parameters and their names.
+-    Note: other choices of parameterization are possible!
+-    """
+-    params = []
+-    names = []
+-    for nm, m in model.named_modules():
+-
+-        if 'layer4' in nm:
+-            continue
+-        if 'blocks.9' in nm:
+-            continue
+-        if 'blocks.10' in nm:
+-            continue
+-        if 'blocks.11' in nm:
+-            continue
+-        if 'norm.' in nm:
+-            continue
+-        if nm in ['norm']:
+-            continue
+-            
+-        if isinstance(m, (nn.BatchNorm2d, nn.GroupNorm, nn.LayerNorm)):
+-            for np, p in m.named_parameters():
+-                if np in ['weight', 'bias']:  # weight is scale, bias is shift
+-                    params.append(p)
+-                    names.append(f"{nm}.{np}")
+-    return params, names
+-
++    # [REOBench] original skipped hard-coded ViT-B blocks 9-11; generalized to any depth
++    from .params import collect_norm_params
++    return collect_norm_params(model)
+ 
+ def copy_model_and_optimizer(model, optimizer):
+     """Copy the model and optimizer states for resetting after adaptation."""

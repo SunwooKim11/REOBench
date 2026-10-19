@@ -1,0 +1,13 @@
+--- /tmp/claude-500/-home1-irteam/d5f21feb-d0a5-4025-9a6f-4c753cf2eaa4/scratchpad/ext/cotta/imagenet/cotta.py	2026-10-13 23:42:49.151721405 +0900
++++ ../F_cotta_official/imagenet/cotta.py	2026-10-15 14:20:57.000000000 +0900
+@@ -34,8 +34,8 @@
+             translate=(1/16, 1/16),
+             scale=(0.95, 1.05) if soft else (0.9, 1.1),
+             shear=None,
+-            resample=PIL.Image.BILINEAR,
+-            fillcolor=None
++            interpolation=transforms.InterpolationMode.BILINEAR,  # [REOBench] torchvision>=0.13 API; was resample=PIL.Image.BILINEAR,
++            fill=0                                                # fillcolor=None (same behaviour)
+         ),
+         transforms.GaussianBlur(kernel_size=5, sigma=[0.001, 0.25] if soft else [0.001, 0.5]),
+         transforms.CenterCrop(size=n_pixels),

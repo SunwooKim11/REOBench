@@ -1,0 +1,67 @@
+--- upstream/cotta__CoTTA-repo.py	2026-10-15 19:22:23.000000000 +0900
++++ ../D_tta/methods/cotta.py	2026-10-14 00:23:16.000000000 +0900
+@@ -6,13 +6,16 @@
+ 
+ import PIL
+ import torchvision.transforms as transforms
+-import my_transforms as my_transforms
++from . import my_transforms  # [REOBench] package-relative import
+ from time import time
+ import logging
+ 
+ 
++IMG_SIZE = 256  # [REOBench] AID input is 256x256 (original: 224); ImageNet-C verification sets 224
++
++
+ def get_tta_transforms(gaussian_std: float=0.005, soft=False, clip_inputs=False):
+-    img_shape = (224, 224, 3)
++    img_shape = (IMG_SIZE, IMG_SIZE, 3)  # [REOBench] was hard-coded (224, 224, 3)
+     n_pixels = img_shape[0]
+ 
+     clip_min, clip_max = 0.0, 1.0
+@@ -34,8 +37,8 @@
+             translate=(1/16, 1/16),
+             scale=(0.95, 1.05) if soft else (0.9, 1.1),
+             shear=None,
+-            resample=PIL.Image.BILINEAR,
+-            fillcolor=None
++            interpolation=transforms.InterpolationMode.BILINEAR,  # [REOBench] new torchvision API for
++            fill=0,                                               # resample=BILINEAR, fillcolor=None
+         ),
+         transforms.GaussianBlur(kernel_size=5, sigma=[0.001, 0.25] if soft else [0.001, 0.5]),
+         transforms.CenterCrop(size=n_pixels),
+@@ -57,7 +60,7 @@
+ 
+     Once tented, a model adapts itself by updating on every forward.
+     """
+-    def __init__(self, model, optimizer, steps=1, episodic=False):
++    def __init__(self, model, optimizer, steps=1, episodic=False, ap=0.1):  # [REOBench] ap exposed (ImageNet code: 0.1)
+         super().__init__()
+         self.model = model
+         self.optimizer = optimizer
+@@ -68,6 +71,7 @@
+         self.model_state, self.optimizer_state, self.model_ema, self.model_anchor = \
+             copy_model_and_optimizer(self.model, self.optimizer)
+         self.transform = get_tta_transforms()    
++        self.ap = ap
+ 
+     def forward(self, x):
+         if self.episodic:
+@@ -99,7 +103,8 @@
+         # Augmentation-averaged Prediction
+         N = 32
+         outputs_emas = []
+-        to_aug = anchor_prob.mean(0)<0.1
++        to_aug = anchor_prob.mean(0)<self.ap  # [REOBench] was hard-coded 0.1 (ImageNet)
++        self.n_aug_batches = getattr(self, 'n_aug_batches', 0) + int(to_aug)
+         if to_aug: 
+             for i in range(N):
+                 outputs_  = self.model_ema(self.transform(x)).detach()
+@@ -149,7 +154,6 @@
+                 if np in ['weight', 'bias'] and p.requires_grad:
+                     params.append(p)
+                     names.append(f"{nm}.{np}")
+-                    print(nm, np)
+     return params, names
+ 
+ 

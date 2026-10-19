@@ -1,0 +1,89 @@
+--- /tmp/claude-500/-home1-irteam/d5f21feb-d0a5-4025-9a6f-4c753cf2eaa4/scratchpad/ext/SVDP/mmseg/apis/test.py	2026-10-13 23:42:56.142587396 +0900
++++ ../G_seg_verify/mmseg/apis/test.py	2026-10-15 19:03:27.000000000 +0900
+@@ -223,7 +223,7 @@
+     dataset = data_loader.dataset
+     prog_bar = mmcv.ProgressBar(len(dataset))
+     param_list = []
+-    out_dir = "./cotta/"+str(datetime.datetime.now())
++    # out_dir = "./cotta/"+str(datetime.datetime.now())  # [REOBench] SVDP forced image dumps; use the argument
+     for name, param in model.named_parameters():
+         if param.requires_grad:
+             param_list.append(param)
+@@ -281,7 +281,7 @@
+         torch.mean(weight*loss["decode.loss_seg"]).backward()
+         optimizer.step()
+         optimizer.zero_grad()
+-        ema_model = update_ema_variables_cotta(ema_model = ema_model, model = model, alpha_teacher=args.ema_rate)
++        ema_model = update_ema_variables_cotta(ema_model = ema_model, model = model, alpha_teacher=0.999)  # [REOBench] was args.ema_rate (undefined here); CoTTA uses 0.999
+         for nm, m  in model.named_modules():
+             for npp, p in m.named_parameters():
+                 if npp in ['weight', 'bias'] and p.requires_grad:
+@@ -410,7 +410,7 @@
+     results = []
+     dataset = data_loader.dataset
+     prog_bar = mmcv.ProgressBar(len(dataset))
+-    out_dir = "./baseline/"+str(datetime.datetime.now())
++    # out_dir = "./baseline/"+str(datetime.datetime.now())  # [REOBench] SVDP forced image dumps; use the argument
+     for i, data in enumerate(data_loader):
+         with torch.no_grad():
+             result = model(return_loss=False, **data)
+@@ -606,4 +606,57 @@
+     if not os.path.exists(savedir+'dense'):
+         os.mkdir(savedir+'dense')
+     x_visualize = cv2.applyColorMap(x_visualize, cv2.COLORMAP_WINTER)  # 伪彩色处理
+-    cv2.imwrite(savedir+'dense/'+name+'.jpg',x_visualize) #保存可视化图像
+\ No newline at end of file
++    cv2.imwrite(savedir+'dense/'+name+'.jpg',x_visualize) #保存可视化图像
++
++def single_gpu_tent_entropy(model,
++                            data_loader,
++                            show=False,
++                            out_dir=None,
++                            efficient_test=False):
++    """[REOBench] Tent as in the original paper / DequanWang/tent: minimize the Shannon entropy of the predictions
++    (here per pixel, averaged over the image). Everything else is identical to single_gpu_tent above (the CoTTA
++    codebase "TENT", which instead uses cross-entropy on its own argmax prediction): same parameters ("norm"/"bn"),
++    Adam 6e-5/8, batch 1, prediction made before the update, model in eval() mode."""
++    model.eval()
++    import os
++    bn_batch = os.environ.get("TENT_BN", "fixed") == "batch"
++    if bn_batch:  # original Tent configure_model: BN normalizes with the test batch statistics (here: one image)
++        for m in model.modules():
++            if isinstance(m, torch.nn.modules.batchnorm._BatchNorm):
++                m.train()
++                m.track_running_stats = False
++                m.running_mean = None
++                m.running_var = None
++    print(f"[tent_entropy] BN statistics: {'test batch' if bn_batch else 'fixed (running stats, as in the CoTTA code)'}")
++    results = []
++    dataset = data_loader.dataset
++    prog_bar = mmcv.ProgressBar(len(dataset))
++    param_list = []
++    for name, param in model.named_parameters():
++        if param.requires_grad:
++            if param.requires_grad and ("norm" in name or "bn" in name):
++                param_list.append(param)
++            else:
++                param.requires_grad=False
++    optimizer = torch.optim.Adam(param_list, lr=0.00006/8, betas=(0.9, 0.999))
++    seg = model.module
++    for i, data in enumerate(data_loader):
++        with torch.no_grad():
++            result = model(return_loss=False, **data)
++        if efficient_test:
++            result = [np2tmp(_) for _ in result]
++        results.extend(result)
++
++        img = data['img'][0].cuda()
++        img_metas = data['img_metas'][0].data[0]
++        logits = seg.decode_head(seg.extract_feat(img, img_metas))       # 1/4 resolution
++        logits = resize(logits, size=img.shape[2:], mode='bilinear', align_corners=seg.align_corners)
++        loss = -(logits.softmax(1) * logits.log_softmax(1)).sum(1).mean()  # = softmax_entropy, mean over pixels
++        loss.backward()
++        optimizer.step()
++        optimizer.zero_grad()
++
++        batch_size = data['img'][0].size(0)
++        for _ in range(batch_size):
++            prog_bar.update()
++    return results
