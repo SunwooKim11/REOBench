@@ -4,7 +4,17 @@
 ours    53.46  40.62  47.14  47.96  51.87  34.30  31.44  51.73  28.98  41.75
 paper   59.51  50.18  37.39  48.23  57.89  41.83  44.95  57.52  36.07  46.76   (paper avg over 12 corruptions: 49.59)
 
+### satmae_B (mIoU %, mean over severities)
+        clean     BC  Cloud   JPEG  GBlur GNoise   Haze  MBlur    S&P   avg8
+ours    61.90  49.06  57.87  43.72  58.35  48.76  44.17  58.03  44.86  50.60
+paper   59.51  50.18  37.39  48.23  57.89  41.83  44.95  57.52  36.07  46.76   (paper avg over 12 corruptions: 49.59)
+
 ### scalemae (mIoU %, mean over severities)
         clean     BC  Cloud   JPEG  GBlur GNoise   Haze  MBlur    S&P   avg8
 ours    65.88  55.30  62.31  44.81  62.81  50.71  52.27  62.51  42.02  54.09
+paper   68.92  64.37  65.43  49.96  64.86  54.89  63.89  64.49  52.12  60.00   (paper avg over 12 corruptions: 60.02)
+
+### scalemae_B (mIoU %, mean over severities)
+        clean     BC  Cloud   JPEG  GBlur GNoise   Haze  MBlur    S&P   avg8
+ours    64.97  55.48  61.84  43.37  61.58  39.44  52.05  61.43  35.58  51.35
 paper   68.92  64.37  65.43  49.96  64.86  54.89  63.89  64.49  52.12  60.00   (paper avg over 12 corruptions: 60.02)

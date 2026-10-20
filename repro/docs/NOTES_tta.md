@@ -196,6 +196,15 @@
 - **B (수정판, 2026-10-19 실행)** `configs/repro/{scalemae,satmae}_B_12ep.py`: A + ViT-L feature 블록 [7,11,15,23], layer decay 24층.
   SatMAE는 추가로 RGB 체크포인트(`fmow_pretrain.pth`) + 0~255 단위 정규화(fMoW mean/std × 255).
   백본에 `out_indices`, `ckpt` 인자 추가(기본값 = A). 실행 `run_B.sh` (모델당 학습 ~1.25 h + 평가 ~2.7 h).
+- **A vs B 결과 (mIoU, clean / 8개 왜곡 평균; 논문 같은 8개 평균)**:
+
+  | | A | B | 논문 |
+  |---|---|---|---|
+  | SatMAE | 53.46 / 41.75 | **61.90 / 50.60** | 59.51 / 46.76 |
+  | ScaleMAE | 65.88 / 54.09 | 64.97 / 51.35 | 68.92 / 60.00 |
+
+  SatMAE는 B에서 +8.4 / +8.9 → 논문보다 높아짐(세 수정의 합; 요인별 분리는 안 함, RGB 체크포인트가 주효과로 추정).
+  ScaleMAE는 블록만 바꿨는데 −0.9 / −2.7, 특히 noise(GNoise 50.7→39.4, S&P 42.0→35.6) 악화 → 상위 블록 feature가 noise에 덜 강건하거나 12 epoch로는 부족.
 - 공부 자료: `H_seg_baseline/STUDY_GUIDE.md` (코드 읽는 순서, UperNet 설명), `trace_shapes.py` (이미지 1장 텐서 모양 추적).
 
 ## 6. 할 일
