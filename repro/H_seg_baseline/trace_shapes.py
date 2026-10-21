@@ -24,7 +24,14 @@ p.add_argument("--config", default="configs/repro/scalemae_A_12ep.py")
 p.add_argument("--ckpt", default=None, help="trained segmentor; default = backbone-only init (random heads)")
 p.add_argument("--image", default="/data/rs/reobench/Potsdam_extracted/test/clean/2_13_0_0_512_512.png")
 p.add_argument("--cuda", action="store_true")
+p.add_argument("--log", default=None, help="also write the printout here (default: trace_<config>.log next to this script)")
 args = p.parse_args()
+import builtins, os  # noqa: E402
+_log = open(args.log or os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     f"trace_{os.path.basename(args.config)[:-3]}.log"), "w")
+_print = builtins.print
+def print(*a, **k):  # noqa: A001  (stdout + log file)
+    _print(*a, **k); _print(*a, **k, file=_log); _log.flush()
 dev = torch.device("cuda" if args.cuda else "cpu")
 show = lambda name, t: print(f"{name:48s} {tuple(t.shape)}")
 
@@ -55,10 +62,10 @@ with torch.no_grad():
     feats = []
     for i, blk in enumerate(bb.blocks):
         tok = blk(tok)
-        if i in [3, 5, 7, 11]:
+        if i in bb.out_indices_cfg:
             feats.append(tok)
             show(f"  block {i:2d} output (kept)", tok)
-    print(f"  ... blocks 12-{len(bb.blocks) - 1} are computed but not used")
+    if max(bb.out_indices_cfg) < len(bb.blocks) - 1: print(f"  ... blocks {max(bb.out_indices_cfg) + 1}-{len(bb.blocks) - 1} are computed but not used")
     maps = [f.permute(0, 2, 1).reshape(1, -1, Hp, Wp) for f in feats]
     show("tokens -> 2D map (B, C, H/16, W/16)", maps[0])
     pyr = [op(m) for op, m in zip([bb.fpn1, bb.fpn2, bb.fpn3, bb.fpn4], maps)]

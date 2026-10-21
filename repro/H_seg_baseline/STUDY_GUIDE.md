@@ -77,8 +77,27 @@ UperNet = **PPM** (Pyramid Pooling Module, PSPNet) + **FPN** (Feature Pyramid Ne
 
 ## 5. 추천 학습 경로
 1. `trace_shapes.py` 실행 → 출력과 2절 표를 대조 (모양이 왜 그렇게 되는지).
-2. `scale_MAE_vit_large.py forward_features`를 분류 `D_tta`/`common.py`의 `features()`와 나란히 읽기.
+2. `scale_MAE_vit_large.py forward_features`를 분류 쪽 `repro/common.py`의 `features()`(L86; `D_tta/tta.py`가 이걸 import)와 나란히 읽기.
 3. `uper_head.py forward`를 3절과 대조. `trace_shapes.py` 4번 블록이 같은 계산을 풀어 쓴 것.
 4. `encoder_decoder.py forward_train` → `decode_head.py losses` 순으로 학습 1 step 따라가기.
 5. 마지막으로 `G_seg_verify/mmseg/apis/test.py`의 `single_gpu_tent`와 `single_gpu_tent_entropy`를 비교 → TTA가 이 구조 어디에 끼어드는지.
 - 논문 대신 코드로 먼저 보고 싶으면: UperNet 원 논문(Xiao et al., ECCV 2018) 3절의 그림과 `uper_head.py`를 같이 보는 것이 가장 빠릅니다.
+
+## 6. SatMAE와 ScaleMAE 분할 백본은 무엇이 다른가 (2026-10-20 추가)
+
+`mmseg/models/backbones/SatMAE_vit_large.py`와 `scale_MAE_vit_large.py`를 diff하면 **클래스 본체는 사실상 같습니다**.
+- 둘 다 timm `VisionTransformer`(ViT-L/16, 24블록, 1024차원)를 상속하고, `forward_features`, `fpn1~4`, `PatchEmbed`가 같습니다.
+- 위치 임베딩: 둘 다 **고정 2D sin-cos**(`__init__`에서 생성)를 씁니다. `scale_MAE_vit_large.py`에 `get_2d_sincos_pos_embed_with_resolution`(GSD 반영 함수)이 정의돼 있지만, **forward에서는 호출하지 않습니다**. 분류 쪽 `input_res=1`과 같은 결론으로, 분할에서도 Scale-MAE의 GSD 기능은 쓰이지 않습니다.
+- 실제 차이는 세 가지뿐입니다.
+  1. **가중치**: SatMAE는 fMoW 사전학습 (A: Sentinel `e199` / B: RGB `fmow_pretrain.pth`), ScaleMAE는 `scalemae-vitlarge-800.pth`.
+  2. **키 제거 규칙** (`init_weights`): SatMAE는 모양이 다르면 `patch_embed`까지 지웁니다(그래서 Sentinel 체크포인트에서 조용히 랜덤이 됨). ScaleMAE는 head와 pos_embed만 지웁니다.
+  3. **정규화** (config의 `img_norm_cfg`): SatMAE는 fMoW 통계(A는 0~1 단위 오류, B는 ×255로 수정), ScaleMAE는 ImageNet 통계(0~255).
+
+우리가 고친 곳(모두 `[REOBench repro]` 표시): 체크포인트 경로를 config로 받기(`ckpt`), feature 블록을 config로 받기(`out_indices`, A = [3, 5, 7, 11], B = [7, 11, 15, 23]), 512가 아닌 입력에서 위치 임베딩 보간(CoTTA 다중 스케일용).
+
+B 설정으로 따라가 보려면:
+```bash
+PYTHONPATH=. TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python ../trace_shapes.py \
+  --config configs/repro/satmae_B_12ep.py --ckpt ../work_dirs/satmae_B_12ep/latest.pth
+```
+(`trace_shapes.py`는 config의 `out_indices`를 따라갑니다.)

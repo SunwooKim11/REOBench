@@ -325,7 +325,12 @@ class scale_SatMAEVisionTransformer(timm.models.vision_transformer.VisionTransfo
         #        cls_tokens = self.cls_token.expand(B, -1, -1)
         #        x = torch.cat((cls_tokens, x), dim=1)
         if self.pos_embed is not None:
-            x = x + self.pos_embed[:, 1:, :]
+            pe = self.pos_embed[:, 1:, :]
+            if pe.shape[1] != Hp * Wp:  # [REOBench repro] other input sizes (CoTTA multi-scale views): resize the grid
+                g = int(pe.shape[1] ** 0.5)
+                pe = torch.nn.functional.interpolate(pe.reshape(1, g, g, -1).permute(0, 3, 1, 2), size=(Hp, Wp),
+                                                     mode='bicubic', align_corners=False).permute(0, 2, 3, 1).flatten(1, 2)
+            x = x + pe
         x = self.pos_drop(x)
 
         features = []

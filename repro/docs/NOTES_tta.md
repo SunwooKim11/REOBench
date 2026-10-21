@@ -23,7 +23,7 @@
 ### 1.1 소스 모델과 프로토콜 (AID, `D_tta/tta.py`)
 - 백본: SatMAE(fMoW-RGB `fmow_pretrain.pth`), Scale-MAE(`scalemae-vitlarge-800.pth`), ViT-L/16, 256px, 고정. drop_path=0.
 - head: C_ablation에서 학습한 Linear head. **P** = 논문 프로토콜(ToTensor만, A0ep), **PN** = P + 입력 정규화(SatMAE fMoW / Scale-MAE ImageNet 통계).
-- 스트림: (왜곡 12종 × 강도 5) + clean = 61개, 각 2,000장, shuffle, batch 64. **스트림마다 source로 리셋**(mild 시나리오).
+- 평가 단위: (왜곡 12종 × 강도 5) + clean = 61개 묶음, 각 2,000장, shuffle, batch 64. **묶음마다 source로 리셋**(mild = (왜곡, 강도)별 독립 평가, continual 아님). 코드·로그의 'stream'은 이 묶음을 뜻함.
 - 정확도: 업데이트 직전 예측(online). `out = adapt(x)`의 반환값이 업데이트 전에 계산한 출력이라(`outputs = model(x)` → step → `return outputs`), 바깥에서 채점해도 업데이트 전 예측임. lr = 0.001/64 × bs (ViT, DeYO/SAR 규칙), CoTTA 0.01.
 - 임계값은 × ln C (ln C = 최대 엔트로피, 즉 '최대 불확실도의 k배'; DeYO repo는 C=2 데이터셋에도 동일 적용) (C = 30): SAR E0 = 0.4 ln C, DeYO τEnt = 0.5 ln C / Ent0 = 0.4 ln C / τPLPD = 0.3, EATA E0 = 0.4 ln C.
 - 업데이트 파라미터(Tent/SAR/DeYO): LayerNorm affine, **상위 25% 블록과 마지막 norm 제외** (ViT-L: blocks 18~23). EATA는 원본대로 모든 norm.
@@ -206,6 +206,18 @@
   SatMAE는 B에서 +8.4 / +8.9 → 논문보다 높아짐(세 수정의 합; 요인별 분리는 안 함, RGB 체크포인트가 주효과로 추정).
   ScaleMAE는 블록만 바꿨는데 −0.9 / −2.7, 특히 noise(GNoise 50.7→39.4, S&P 42.0→35.6) 악화 → 상위 블록 feature가 noise에 덜 강건하거나 12 epoch로는 부족.
 - 공부 자료: `H_seg_baseline/STUDY_GUIDE.md` (코드 읽는 순서, UperNet 설명), `trace_shapes.py` (이미지 1장 텐서 모양 추적).
+
+### 5.4 Potsdam 분할 TTA 구현 (`H_seg_baseline/seg_tta.py`, 2026-10-20)
+- 모델: 분할 B(SatMAE B, ScaleMAE B). 프로토콜 **mild = (왜곡, 강도)별 독립 평가**(continual 아님): (왜곡, 강도)마다 2,016장, shuffle, batch 8, 매번 리셋,
+  업데이트 전 예측으로 mIoU(5클래스, 5·255 무시). 의료 분할 TTA 기본 평가(VPTTA, GraTa: 사이트별 적응 후 리셋)와 같은 구조,
+  차이는 batch 크기(의료는 주로 1). continual(리셋 없이 도메인 연속; CoTTA·ACDC, SPEGC의 long-term 실험)은 범위 밖.
+- `none`이 mmseg 공식 평가와 일치(clean 64.97, haze s5 32.23) → 데이터·평가 경로 확인.
+- 방법: none / bnadapt(head BN을 test 배치 통계로, 학습 없음) / isa(입력 통계 정렬) / tent(픽셀 엔트로피, LN+BN affine,
+  Adam 6e-5/8, `--bn fixed|batch`) / sar(픽셀 필터 0.4 ln 5, SAM + Adam, 복구 0.2) / cotta(14 view teacher, anchor 임계값 =
+  train 5% 분위수 − 0.05 = 0.41, 전체 파라미터, 복원 0.01; 비용 때문에 clean + 강도 3·5만).
+- 백본 수정: 입력 크기가 512가 아니면 위치 임베딩을 bicubic 보간(CoTTA 다중 스케일용). 512에서는 동작 동일.
+- 스모크(ScaleMAE B, haze s5): none 32.2, bnadapt 46.6, isa 61.8(200장), tent 29.9, sar 30.6, cotta 34.8(48장).
+- 실행: `run_seg_tta.sh` (2개 병렬).
 
 ## 6. 할 일
 - [ ] 결정 1~4 (§0)
