@@ -18,8 +18,9 @@
 ## 1. 먼저 돌려 보기 (10분)
 
 ```bash
-cd ~/REOBench/repro/H_seg_baseline/seg
-PYTHONPATH=. TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python ../trace_shapes.py --ckpt ../work_dirs/scalemae_A_12ep/latest.pth
+cd ~/REOBench/repro
+TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python scripts/seg/trace_shapes.py --config configs/repro/scalemae_A_12ep.py \
+    --ckpt experiments/2026-10-16_seg_baseline/work_dirs/scalemae_A_12ep/latest.pth
 ```
 - 진짜 Potsdam 이미지 1장을 학습된 모델에 넣고, 단계마다 텐서 모양을 출력합니다.
 - 마지막 줄 `check vs model.encode_decode` = 0이면 이 스크립트가 실제 모델과 똑같이 계산한다는 뜻입니다.
@@ -42,7 +43,7 @@ aux FCNHead logits (from fpn3, train only)       (1, 5, 32, 32)
 upsampled to label size                          (1, 5, 512, 512)
 ```
 
-## 2. 코드 읽는 순서 (`seg/` 기준, 위에서 아래로 따라가기)
+## 2. 코드 읽는 순서 (`third_party/reobench_seg/` 기준, 위에서 아래로 따라가기)
 
 | 순서 | 파일 : 위치 | 무엇을 보나 |
 |---|---|---|
@@ -97,7 +98,7 @@ UperNet = **PPM** (Pyramid Pooling Module, PSPNet) + **FPN** (Feature Pyramid Ne
 
 B 설정으로 따라가 보려면:
 ```bash
-PYTHONPATH=. TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python ../trace_shapes.py \
-  --config configs/repro/satmae_B_12ep.py --ckpt ../work_dirs/satmae_B_12ep/latest.pth
+TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python scripts/seg/trace_shapes.py \
+  --config configs/repro/satmae_B_12ep.py --ckpt experiments/2026-10-16_seg_baseline/work_dirs/satmae_B_12ep/latest.pth
 ```
 (`trace_shapes.py`는 config의 `out_indices`를 따라갑니다.)

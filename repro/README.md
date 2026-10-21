@@ -13,7 +13,7 @@ repro/
 ├── scripts/               entry points (run from repro/)
 │   ├── cls/               classification heads: train_released (REOBench protocol), train_official, ablation
 │   ├── tta/               cls_tta.py (AID TTA, mild protocol), summaries
-│   ├── seg/               Potsdam: train / eval / seg_tta / summaries            (moving from H_seg_baseline/)
+│   ├── seg/               Potsdam: train / eval / seg_tta / summaries
 │   ├── verify/            imagenetc.py (+ assets/): ImageNet-C check of src/reobench_tta/tta
 │   ├── analysis/          diag, plpd_analysis, trap_analysis
 │   ├── tools/             recover_from_log
@@ -21,7 +21,7 @@ repro/
 ├── third_party/           vendored code; only the files we patched are tracked (see third_party/README.md)
 │   ├── cotta_official/    qinenergy/cotta (ImageNet-C), run in our environment
 │   ├── cotta_acdc_svdp/   CoTTA's Cityscapes->ACDC code (SVDP copy), segmentation TTA check
-│   └── reobench_seg/      REOBench Segmentation/ (mmseg 0.21) with our fixes   (moving from H_seg_baseline/seg)
+│   └── reobench_seg/      REOBench Segmentation/ (mmseg 0.21) with our fixes
 ├── experiments/           results only, one folder per experiment (see experiments/README.md)
 ├── docs/                  NOTES_tta.md (all results by topic; start here), NOTES_concepts.md, verify/, issue4/
 └── review/                code-review guide, pinned upstream sources, diffs of our changes

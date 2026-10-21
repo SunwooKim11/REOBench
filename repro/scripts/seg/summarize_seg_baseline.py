@@ -1,6 +1,9 @@
 """Potsdam mIoU per condition (mean over severities 1-5) vs REOBench Table 2. Only the 8 released corruptions."""
 import glob, json, os
-HERE = os.path.dirname(os.path.abspath(__file__))
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import paths  # noqa: E402
+HERE = str(paths.SEG_BASELINE)
 COLS = ["brightness_contrast", "clouds", "compression_artifacts", "gaussian_blur", "gaussian_noise", "haze",
         "motion_blur", "salt_and_pepper_noise"]
 SHORT = ["BC", "Cloud", "JPEG", "GBlur", "GNoise", "Haze", "MBlur", "S&P"]

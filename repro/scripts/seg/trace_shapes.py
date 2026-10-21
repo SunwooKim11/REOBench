@@ -7,8 +7,9 @@ Follows the code path a training step and a test step take (see STUDY_GUIDE.md f
         -> upsample to the image size -> argmax per pixel                [test]
 CPU by default so it never competes with a running job (about a minute; use --cuda if the GPU is free).
 
-  cd ~/REOBench/repro/H_seg_baseline/seg
-  PYTHONPATH=. TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python ../trace_shapes.py [--ckpt ../work_dirs/scalemae_A_12ep/latest.pth]
+  cd ~/REOBench/repro
+  TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python scripts/seg/trace_shapes.py --config configs/repro/scalemae_B_12ep.py \
+      --ckpt experiments/2026-10-16_seg_baseline/work_dirs/scalemae_B_12ep/latest.pth
 """
 import argparse
 
@@ -17,18 +18,22 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
-from mmseg.models import build_segmentor
 
 p = argparse.ArgumentParser()
 p.add_argument("--config", default="configs/repro/scalemae_A_12ep.py")
 p.add_argument("--ckpt", default=None, help="trained segmentor; default = backbone-only init (random heads)")
 p.add_argument("--image", default="/data/rs/reobench/Potsdam_extracted/test/clean/2_13_0_0_512_512.png")
 p.add_argument("--cuda", action="store_true")
-p.add_argument("--log", default=None, help="also write the printout here (default: trace_<config>.log next to this script)")
+p.add_argument("--log", default=None, help="also write the printout here (default: docs/seg/trace_<config>.txt)")
 args = p.parse_args()
 import builtins, os  # noqa: E402
-_log = open(args.log or os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     f"trace_{os.path.basename(args.config)[:-3]}.log"), "w")
+import sys  # noqa: E402
+_REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+args.ckpt = os.path.abspath(args.ckpt) if args.ckpt else None          # resolve before changing directory
+_log = open(args.log or os.path.join(_REPO, "docs", "seg", f"trace_{os.path.basename(args.config)[:-3]}.txt"), "w")
+os.chdir(os.path.join(_REPO, "third_party", "reobench_seg"))           # mmseg configs are relative to this folder
+sys.path.insert(0, os.getcwd())
+from mmseg.models import build_segmentor  # noqa: E402
 _print = builtins.print
 def print(*a, **k):  # noqa: A001  (stdout + log file)
     _print(*a, **k); _print(*a, **k, file=_log); _log.flush()

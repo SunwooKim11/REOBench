@@ -9,7 +9,7 @@ See `repro/README.md` for the full layout. Only **two places hold our logic**:
 | `src/reobench_tta/common.py` | AID data, backbones, feature extraction, evaluation | ★ base of every classification experiment |
 | `src/reobench_tta/tta/` | **TTA method implementations** (Tent, SAR, DeYO, EATA, CoTTA, ViDA, LSCD, ISA) | ★★ main review target |
 | `scripts/tta/cls_tta.py` | AID TTA protocol: per-(corruption, severity) reset, lr, method arguments | ★★ main review target |
-| `scripts/seg/seg_tta.py` (now `H_seg_baseline/seg_tta.py`) | Potsdam TTA protocol and the segmentation versions of the methods | ★★ |
+| `scripts/seg/seg_tta.py` | Potsdam TTA protocol and the segmentation versions of the methods | ★★ |
 | `scripts/cls/`, `scripts/verify/`, `scripts/analysis/` | entry points: thin, mostly argument parsing and loops | as needed |
 | `third_party/` | vendored code; only patched files tracked | patches only: `review/diffs/` |
 | `experiments/` | results only | no |

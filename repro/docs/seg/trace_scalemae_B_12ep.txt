@@ -1,0 +1,26 @@
+
+backbone scale_SatMAEVisionTransformer: 24 blocks, dim 1024; decode UPerHead; aux FCNHead
+params: backbone 317M, decode 34M, aux 2.4M
+
+input image (normalized)                         (1, 3, 512, 512)
+patch_embed: 16x16 patches -> tokens             (1, 1024, 1024)
+  block  7 output (kept)                         (1, 1024, 1024)
+  block 11 output (kept)                         (1, 1024, 1024)
+  block 15 output (kept)                         (1, 1024, 1024)
+  block 23 output (kept)                         (1, 1024, 1024)
+tokens -> 2D map (B, C, H/16, W/16)              (1, 1024, 32, 32)
+fpn1 -> scale 1/4                                (1, 1024, 128, 128)
+fpn2 -> scale 1/8                                (1, 1024, 64, 64)
+fpn3 -> scale 1/16                               (1, 1024, 32, 32)
+fpn4 -> scale 1/32                               (1, 1024, 16, 16)
+lateral 0 (1x1 conv)                             (1, 512, 128, 128)
+lateral 1 (1x1 conv)                             (1, 512, 64, 64)
+lateral 2 (1x1 conv)                             (1, 512, 32, 32)
+lateral 3 (PPM)                                  (1, 512, 16, 16)
+concat 4 levels at 1/4 -> fpn_bottleneck         (1, 512, 128, 128)
+cls_seg (dropout + 1x1 conv) = logits            (1, 5, 128, 128)
+aux FCNHead logits (from fpn3, train only)       (1, 5, 32, 32)
+upsampled to label size                          (1, 5, 512, 512)
+train: CE(logits, label), ignore 5               0.584   (decode weight 1.0 + aux weight 0.4)
+test: argmax per pixel -> pixel accuracy         74.3%
+check vs model.encode_decode (max abs diff)      0.00e+00

@@ -1,7 +1,7 @@
 # 분할 코드 Q&A (2026-10-21, 하루 읽어 보고 막힌 12가지)
 
-기준 코드: `repro/H_seg_baseline/seg/` (REOBench Segmentation 사본). 숫자는 512×512 Potsdam 패치, ViT-L/16 기준입니다.
-이미지 1장의 텐서 모양 전체는 `trace_scalemae_B_12ep.log`에 있습니다(`trace_shapes.py`가 자동 저장).
+기준 코드: `repro/third_party/reobench_seg/` (REOBench Segmentation 사본). 숫자는 512×512 Potsdam 패치, ViT-L/16 기준입니다.
+이미지 1장의 텐서 모양 전체는 `docs/seg/trace_scalemae_B_12ep.txt`에 있습니다(`trace_shapes.py`가 자동 저장).
 
 ---
 
@@ -167,9 +167,9 @@ output = self.fpn_bottleneck(torch.cat(fpn_outs, dim=1))               # [Fuse] 
 output = self.cls_seg(output)                                          # dropout + 1×1 conv → 5채널 = 클래스 점수
 ```
 논문 그림의 네 덩어리가 코드에서는 `psp_forward`(PPM), `lateral_convs` + top-down 루프(FPN), `torch.cat` + `fpn_bottleneck`(Fuse), `cls_seg`(Head)입니다.
-- 모양 변화 전체는 `trace_scalemae_B_12ep.log`의 "lateral …" ~ "cls_seg …" 줄이 정확히 이 순서입니다.
+- 모양 변화 전체는 `docs/seg/trace_scalemae_B_12ep.txt`의 "lateral …" ~ "cls_seg …" 줄이 정확히 이 순서입니다.
 
 ## 12. `trace_shapes.py` 출력 저장
 
-이제 실행할 때마다 `repro/H_seg_baseline/trace_<config 이름>.log`에 자동 저장됩니다(`--log`로 경로 지정 가능).
-예: `trace_scalemae_B_12ep.log`.
+이제 실행할 때마다 `repro/docs/seg/trace_<config 이름>.txt`에 자동 저장됩니다(`--log`로 경로 지정 가능).
+

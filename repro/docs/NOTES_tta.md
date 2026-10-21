@@ -180,14 +180,14 @@
 - **공개 데이터 누락**: Potsdam test 이미지 zip에 12개 왜곡 중 9개(clean 포함)만 있음. data_gaps / rotate / scale / translate 이미지는 없음
   (라벨 zip은 있음). → repo의 `Corrupt Image Generation` 코드로 생성해야 할 수도 있음.
 - 데이터 크기: train 3,456장(1.4 GB), test 2,016장 × 조건, test 이미지 zip 28 GB.
-- **공개 코드가 공개 데이터로 그대로는 안 돌아감** (`repro/H_seg_baseline/seg`, 패치는 `[REOBench repro]` 표시):
+- **공개 코드가 공개 데이터로 그대로는 안 돌아감** (`third_party/reobench_seg`, 패치는 `[REOBench repro]` 표시):
   1. `build_backbone`이 항상 `.model`을 반환(CLIP 래퍼용) → MAE 백본은 빌드 실패. `getattr(b, 'model', b)`로 수정.
   2. 백본 `init_weights` 경로 하드코딩 → 환경변수(기본값 = 코드가 지정한 체크포인트), missing key 출력 추가. timm≥0.9 `needs_reset` 인자 허용.
   3. 공개 라벨에 255가 3~4% 있는데 config는 5(clutter)만 ignore → CE가 범위 밖 클래스로 GPU 크래시. 255 → 5(ignore)로 매핑.
      (논문은 non-eroded 라벨이라 했지만 255 경계가 있는 것은 eroded 라벨일 가능성)
   4. 환경: torch 2.0.1 fused SDPA backward가 H200에서 illegal instruction → `TIMM_FUSED_ATTN=0`(원래 timm 0.4와 같은 계산).
 - 실행: `run_train.sh` (A = 공개 config + 논문 12 epoch / batch 8, seed 0), ScaleMAE 약 0.7 s/iter → 약 1시간.
-- **A 결과 (seed 0, 8개 공개 왜곡, 강도 1~5 평균 mIoU; `H_seg_baseline/summary.txt`)**:
+- **A 결과 (seed 0, 8개 공개 왜곡, 강도 1~5 평균 mIoU; `experiments/2026-10-16_seg_baseline/summary.txt`)**:
   ScaleMAE clean 65.88 (논문 68.92), 왜곡 평균 54.09 (논문 같은 8개 평균 60.00). 차이가 왜곡에서 더 큼:
   haze 52.3 vs 63.9, S&P 42.0 vs 52.1, BC 55.3 vs 64.4, 나머지는 −2~−5.
   SatMAE(Sentinel 체크포인트, patch_embed 랜덤 → 전체 fine-tune 중 학습됨) clean 53.46 (논문 59.51), 왜곡 평균 41.75 (논문 46.76).
@@ -205,9 +205,9 @@
 
   SatMAE는 B에서 +8.4 / +8.9 → 논문보다 높아짐(세 수정의 합; 요인별 분리는 안 함, RGB 체크포인트가 주효과로 추정).
   ScaleMAE는 블록만 바꿨는데 −0.9 / −2.7, 특히 noise(GNoise 50.7→39.4, S&P 42.0→35.6) 악화 → 상위 블록 feature가 noise에 덜 강건하거나 12 epoch로는 부족.
-- 공부 자료: `H_seg_baseline/STUDY_GUIDE.md` (코드 읽는 순서, UperNet 설명), `trace_shapes.py` (이미지 1장 텐서 모양 추적).
+- 공부 자료: `docs/seg/STUDY_GUIDE.md` (코드 읽는 순서, UperNet 설명), `trace_shapes.py` (이미지 1장 텐서 모양 추적).
 
-### 5.4 Potsdam 분할 TTA 구현 (`H_seg_baseline/seg_tta.py`, 2026-10-20)
+### 5.4 Potsdam 분할 TTA 구현 (`scripts/seg/seg_tta.py`, 2026-10-20)
 - 모델: 분할 B(SatMAE B, ScaleMAE B). 프로토콜 **mild = (왜곡, 강도)별 독립 평가**(continual 아님): (왜곡, 강도)마다 2,016장, shuffle, batch 8, 매번 리셋,
   업데이트 전 예측으로 mIoU(5클래스, 5·255 무시). 의료 분할 TTA 기본 평가(VPTTA, GraTa: 사이트별 적응 후 리셋)와 같은 구조,
   차이는 batch 크기(의료는 주로 1). continual(리셋 없이 도메인 연속; CoTTA·ACDC, SPEGC의 long-term 실험)은 범위 밖.
@@ -217,7 +217,23 @@
   train 5% 분위수 − 0.05 = 0.41, 전체 파라미터, 복원 0.01; 비용 때문에 clean + 강도 3·5만).
 - 백본 수정: 입력 크기가 512가 아니면 위치 임베딩을 bicubic 보간(CoTTA 다중 스케일용). 512에서는 동작 동일.
 - 스모크(ScaleMAE B, haze s5): none 32.2, bnadapt 46.6, isa 61.8(200장), tent 29.9, sar 30.6, cotta 34.8(48장).
-- 실행: `run_seg_tta.sh` (2개 병렬).
+- 실행: `scripts/archive/seg/run_seg_tta.sh` (2개 병렬). 요약: `scripts/seg/summarize_seg_tta.py` → `experiments/2026-10-20_seg_tta/summary.txt`.
+- **결과 (none 대비 Δ clean / Δ 왜곡 평균 8종×강도 1~5)**:
+
+  | | ScaleMAE B | SatMAE B |
+  |---|---|---|
+  | none (절대값) | 64.97 / 51.34 | 61.90 / 50.60 |
+  | tent + BN test 통계 | −0.70 / **+3.79** | −0.69 / **+2.73** |
+  | bnadapt | −0.77 / +3.08 | −0.79 / +1.87 |
+  | isa | −0.18 / +2.60 | −0.40 / **+3.20** |
+  | tent (BN 고정) | −0.61 / −1.19 | −0.92 / −1.96 |
+  | sar (BN 고정) | −0.49 / −0.71 | −0.83 / −1.14 |
+  | cotta (강도 3·5, 같은 범위 비교) | +0.11 / +1.02 | +0.20 / +0.14 |
+
+  - 이득은 "통계 맞추기"(BN test 통계, 입력 통계)에서 나오고, 엔트로피만 최소화(BN 고정 Tent, SAR)는 −1~−2 (ACDC 검증과 같은 결론).
+  - 왜곡별로 보완적: ISA는 BC·haze(ScaleMAE 55.5→64.6, 52.1→64.6), BN 통계는 noise·JPEG(GNoise 39.4→49.1, S&P 35.6→43.4).
+    → ISA + BN-adapt 조합이 다음 후보.
+  - CoTTA ≈ none: mild에서 teacher가 거의 갱신되지 않음(분류 §3.3b와 같은 현상).
 
 ## 6. 할 일
 - [ ] 결정 1~4 (§0)

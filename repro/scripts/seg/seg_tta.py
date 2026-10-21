@@ -1,6 +1,6 @@
-"""Test-time adaptation for Potsdam segmentation (REOBench mmseg 0.21 models from H_seg_baseline), mild protocol.
+"""Test-time adaptation for Potsdam segmentation (REOBench mmseg 0.21 models trained by scripts/seg/train.sh), mild protocol.
 
-Protocol (mirrors D_tta/tta.py for classification):
+Protocol (mirrors scripts/tta/cls_tta.py for classification):
   - one stream per (corruption, severity) [+ clean]: the 2,016 test patches, shuffled, batch 8 (= training batch)
   - reset to the source model before every stream; online mIoU from the prediction made BEFORE the update
   - mIoU over the 5 evaluated classes (label 5 = clutter and 255 are ignored, as in eval_all.sh)
@@ -13,13 +13,13 @@ Methods (losses are per pixel, averaged over valid pixels):
            entropy EMA < --sar_reset). Pixel-level port of mr-eggplant/SAR (no official segmentation code)
   bnadapt: BN layers normalize with the test-batch statistics, no parameter update (classic "BN adapt" baseline;
            only the decode/aux heads have BN, the ViT backbone has LayerNorm)
-  isa    : input statistics alignment (D_tta/methods/isa.py), batch level, in 0-255 pixel space, source = train split
+  isa    : input statistics alignment (src/reobench_tta/tta/isa.py), batch level, in 0-255 pixel space, source = train split
   cotta  : CoTTA ACDC code (G_seg_verify single_gpu_cotta) ported: EMA teacher 0.999, anchor model, 7 scales x flip
            teacher views, anchor confidence > --cotta_thr uses the single-scale teacher label, all parameters,
            Adam 6e-5/8, stochastic restore 0.01; prediction = the teacher pseudo-label
-Outputs: results_tta/<model>_<set>/<method><tag>.json
+Outputs: experiments/2026-10-20_seg_tta/outputs/<model>_<set>/<method><tag>.json
 
-  cd seg && PYTHONPATH=. TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python ../seg_tta.py --model scalemae --method tent
+  TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python scripts/seg/seg_tta.py --model scalemae --method tent   # from repro/
 """
 import argparse
 import glob
@@ -40,9 +40,11 @@ from mmcv.runner import load_checkpoint
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", "D_tta"))
-from methods.sam import SAM  # noqa: E402  (same SAM as the classification SAR)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import paths  # noqa: E402
+from reobench_tta.tta.sam import SAM  # noqa: E402  (same SAM as the classification SAR)
+os.chdir(paths.REOBENCH_SEG)  # mmseg configs (configs/repro/...) are relative to the vendored mmseg copy
+sys.path.insert(0, str(paths.REOBENCH_SEG))
 from mmseg.models import build_segmentor  # noqa: E402
 
 T = "/data/rs/reobench/Potsdam_extracted/test"
@@ -74,13 +76,13 @@ args = p.parse_args()
 torch.manual_seed(args.seed); np.random.seed(args.seed); random.seed(args.seed)
 dev = torch.device("cuda")
 cfg = mmcv.Config.fromfile(f"configs/repro/{args.model}_{args.set}_12ep.py")
-CKPT = f"{HERE}/work_dirs/{args.model}_{args.set}_12ep/latest.pth"
+CKPT = f"{paths.SEG_BASELINE}/work_dirs/{args.model}_{args.set}_12ep/latest.pth"
 MEAN = torch.tensor(cfg.img_norm_cfg["mean"]).view(1, 3, 1, 1).to(dev)    # 0-255 scale (pipeline Normalize)
 STD = torch.tensor(cfg.img_norm_cfg["std"]).view(1, 3, 1, 1).to(dev)
 tag = args.tag + (f"_bn{args.bn}" if args.method in ("tent", "sar") and args.bn != "fixed" else "")
 if args.method != "none" and args.method != "isa" and args.lr != 0.00006 / 8:
     tag += f"_lr{args.lr:g}"
-OUT = f"{HERE}/results_tta/{args.model}_{args.set}"
+OUT = f"{paths.SEG_TTA}/outputs/{args.model}_{args.set}"
 os.makedirs(OUT, exist_ok=True)
 
 
