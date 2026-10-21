@@ -20,22 +20,22 @@
 
 ## 1. 실험 설정
 
-### 1.1 소스 모델과 프로토콜 (AID, `D_tta/tta.py`)
+### 1.1 소스 모델과 프로토콜 (AID, `scripts/tta/cls_tta.py`)
 - 백본: SatMAE(fMoW-RGB `fmow_pretrain.pth`), Scale-MAE(`scalemae-vitlarge-800.pth`), ViT-L/16, 256px, 고정. drop_path=0.
-- head: C_ablation에서 학습한 Linear head. **P** = 논문 프로토콜(ToTensor만, A0ep), **PN** = P + 입력 정규화(SatMAE fMoW / Scale-MAE ImageNet 통계).
+- head: `scripts/cls/ablation.py`로 학습한 Linear head (`experiments/2026-10-12_cls_ablation/outputs/*/{P,PN}_s0_head.pth`). **P** = 논문 프로토콜(ToTensor만, A0ep), **PN** = P + 입력 정규화(SatMAE fMoW / Scale-MAE ImageNet 통계).
 - 평가 단위: (왜곡 12종 × 강도 5) + clean = 61개 묶음, 각 2,000장, shuffle, batch 64. **묶음마다 source로 리셋**(mild = (왜곡, 강도)별 독립 평가, continual 아님). 코드·로그의 'stream'은 이 묶음을 뜻함.
 - 정확도: 업데이트 직전 예측(online). `out = adapt(x)`의 반환값이 업데이트 전에 계산한 출력이라(`outputs = model(x)` → step → `return outputs`), 바깥에서 채점해도 업데이트 전 예측임. lr = 0.001/64 × bs (ViT, DeYO/SAR 규칙), CoTTA 0.01.
 - 임계값은 × ln C (ln C = 최대 엔트로피, 즉 '최대 불확실도의 k배'; DeYO repo는 C=2 데이터셋에도 동일 적용) (C = 30): SAR E0 = 0.4 ln C, DeYO τEnt = 0.5 ln C / Ent0 = 0.4 ln C / τPLPD = 0.3, EATA E0 = 0.4 ln C.
 - 업데이트 파라미터(Tent/SAR/DeYO): LayerNorm affine, **상위 25% 블록과 마지막 norm 제외** (ViT-L: blocks 18~23). EATA는 원본대로 모든 norm.
 - 정밀도: fp32 + TF32 (DeYO/SAR 환경인 PyTorch 1.10 기본값과 같음).
 
-### 1.2 방법 구현 출처 (`D_tta/methods/`, 차이는 `review/diffs/`)
+### 1.2 방법 구현 출처 (`src/reobench_tta/tta/`, 차이는 `review/diffs/`)
 
 | 방법 | 출처 | 변경 |
 |---|---|---|
 | Tent / SAR / DeYO / EATA / SAM | DeYO repo (Jhyun17/DeYO @3d7d289) | `collect_params`만 일반화(ViT-B 하드코딩 → 상위 25%). EATA·SAM은 0줄 변경 |
 | CoTTA | qinenergy/cotta `imagenet/` | 이미지 크기 변수화, torchvision API, 증강 임계값 `ap` 인자화 |
-| ViDA | Yangsenqiao/vida `imagenet/` | 두 파일 병합, HKA 버그는 기본 재현(`fix_hka`), 명세 `E_verify/VIDA_SPEC.md` |
+| ViDA | Yangsenqiao/vida `imagenet/` | 두 파일 병합, HKA 버그는 기본 재현(`fix_hka`), 명세 `docs/verify/VIDA_SPEC.md` |
 | LSCD | AEAQA/LSCD-TTA (loss만) | 공식 루프는 SyntaxError → Tent식 루프 |
 | ISA | 자체 baseline | 입력 채널 평균·표준편차를 source(AID train) 통계로 재정렬. batch 단위 / 이미지 단위 |
 
@@ -49,7 +49,7 @@
 
 ## 2. 구현 검증
 
-### 2.1 ImageNet-C (`E_verify/`, 결과 `E_verify/summary.txt`, 기준 `E_verify/REFERENCES.md`)
+### 2.1 ImageNet-C (`scripts/verify/imagenetc.py`, 결과 `experiments/2026-10-14_verify_imagenetc/summary.txt`, 기준 `docs/verify/REFERENCES.md`)
 
 | 검증 | 우리 / 기준 | 판정 |
 |---|---|---|
@@ -57,11 +57,11 @@
 | ViDA T1 (ViT-B, continual, 오류율) | source 56.15/55.8, ViDA 43.29/43.4 (repo 로그 43.37) | ✅ |
 | ViT-B label shift (DeYO T5) | SAR 54.6/54.8, DeYO 64.7/62.3, EATA 51.4/49.2, Tent 53.3/47.7 | 🟡 차이는 붕괴형 열(std ±25)에 집중 |
 | CoTTA (R50, continual) | 우리 66.73 / **공식 코드를 우리 환경에서 66.56** / ViDA T1 62.7 | ✅ 이식 정확 |
-- 공식 CoTTA(`F_cotta_official/`): source가 우리 harness와 소수점까지 같음. 순서 0은 59.50(논문 10개 순서 평균 63.0±1.8) → 순서 의존성이 7%p.
+- 공식 CoTTA(`third_party/cotta_official/`): source가 우리 harness와 소수점까지 같음. 순서 0은 59.50(논문 10개 순서 평균 63.0±1.8) → 순서 의존성이 7%p.
 - noise 계열 열만 원본 모델부터 논문보다 쉬움(ViT gauss 16.6 vs 9.4). Zenodo 공식 파일 → JPEG 디코딩 차이로 추정.
 - 세 논문의 ViT-B source가 다름: SAR/DeYO 29.9(augreg + ImageNet 정규화), ViDA 44.2(augreg + 정규화 없음), EATA-C 39.84(미확인 → 보류).
 
-### 2.2 분할 Cityscapes→ACDC (`G_seg_verify/`, 패치 `README_REOBench.md`)
+### 2.2 분할 Cityscapes→ACDC (`third_party/cotta_acdc_svdp/`, 패치 `README_REOBench.md`)
 - 코드: CoTTA ACDC 코드 사본(SVDP repo; 원본 OneDrive는 브라우저 필요). env `segtta`(torch 2.0.1 cu118, mmcv-full 1.7.2; H200은 CUDA ≥ 11.8 필요).
 - SegFormer-B5 Cityscapes, 960×540, bs 1, 4조건 연속.
 
@@ -74,7 +74,7 @@
 | CoTTA 1라운드 fog | 70.93 | 70.9 ✅ |
 - CoTTA 분할 증강 = scale 7개 × flip = 14 forward, anchor 확률 > 0.69 픽셀은 1.0배 단일 예측. 이미지당 10~20초 → fog 400장만 확인.
 
-## 3. RS 분류 TTA 결과 (AID, seed 0, `D_tta/summary_tta.txt`)
+## 3. RS 분류 TTA 결과 (AID, seed 0, `experiments/2026-10-13_cls_tta/summary_tta.txt`)
 
 ### 3.1 전체 결과 (none 대비 Δ clean / Δ corruption 평균)
 > P = 논문 원형(ToTensor만), PN = P + 입력 정규화. 두 버전 모두 실행됨. **본문 결과는 PN 기준**, P는 논문 프로토콜 재현용 보조. (PN head는 seed 0만 → 본문용은 seed 3개 필요)
@@ -90,7 +90,7 @@
 - PN에서 이득: EATA(+1.0/+2.6), ISA batch(+1.7/+1.3), Tent(ScaleMAE +1.1). LSCD는 avg가 올라도 clean −18이라 사용 불가.
 - ISA image(이미지별 정렬)는 clean −10~12 → 이미지 자체의 색 정보를 지워 해로움. batch 단위만 의미 있음.
 
-### 3.2 lr 민감도 (`summary_lr.txt`, Tent/SAR/DeYO × lr 1e-3 / 3e-4 / 1e-4)
+### 3.2 lr 민감도 (`experiments/2026-10-13_cls_tta/summary_lr.txt`, Tent/SAR/DeYO × lr 1e-3 / 3e-4 / 1e-4)
 - SatMAE: DeYO는 lr을 낮추면 개선(P +4.1, PN +2.9 @3e-4). Tent·SAR은 ±1 내외.
 - ScaleMAE PN: Tent만 꾸준히 +0.4~1.1. ScaleMAE P: lr을 낮춰도 대부분 붕괴(Tent 1e-4에서도 clean −75).
 
@@ -122,7 +122,7 @@
   student가 크게 발산할 때만(전체 lr 0.01) 그 3%로도 teacher가 망가짐. → **mild(스트림마다 리셋, 2,000장) 프로토콜에서는 CoTTA가 효과를 낼 구간이 없음.**
   CoTTA는 긴 연속 스트림(continual)용 설계. 공식 코드는 linear head까지 업데이트.
 
-### 3.4 ScaleMAE P 붕괴 진단 (`D_tta/diag.py`, clean 스트림)
+### 3.4 ScaleMAE P 붕괴 진단 (`scripts/analysis/diag.py`, clean 스트림)
 - 첫 step 뒤 파라미터 이동량: SAR 1.14 (PN 0.0006, SatMAE P 0.002의 수백 배), 둘째 batch 정확도 95 → 2%.
 - DeYO: 첫 step drift 0.028, 직후 `blocks.0.norm1.weight` gradient 2.8 → 1,549 폭발. Tent는 step당 0.003~0.009로 안정.
 - 첫 블록 LayerNorm 근처의 가파른 방향으로 SAM 섭동·큰 step이 들어가면 발산. 저엔트로피형 붕괴가 아니라 SAR 복구(0.2)도 못 막음(리셋 25번).

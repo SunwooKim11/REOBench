@@ -1,7 +1,7 @@
 """Verify our TTA implementations (D_tta/methods, the exact code used on REOBench) on ImageNet-C against the papers.
 
 The method code is shared with D_tta/tta.py; only the backbone, data and stream protocol come from each paper's
-official repo. Reference numbers: E_verify/REFERENCES.md. Output: outputs/{setting}/{method}{tag}.json
+official repo. Reference numbers: docs/verify/REFERENCES.md. Output: outputs/{setting}/{method}{tag}.json
 
 Protocols
   --stream reset      : one stream per corruption, model reset before each (DeYO/SAR "mild"; EATA-C "single-domain")
@@ -31,9 +31,10 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms as T
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", "D_tta"))
-from methods import cotta, deyo, eata, sam, sar, tent, vida  # noqa: E402
+HERE = os.path.dirname(os.path.abspath(__file__))  # assets/ next to this script
+sys.path.insert(0, os.path.join(HERE, "..", "..", "src"))  # repro/src
+from reobench_tta import paths  # noqa: E402
+from reobench_tta.tta import cotta, deyo, eata, sam, sar, tent, vida  # noqa: E402
 
 IMNET_C = "/data/tta/ImageNet_Family/ImageNet_C"
 IMNET_VAL = "/data/tta/ImageNet_Family/ImageNet_v1"  # clean val, class folders (EATA Fisher)
@@ -74,7 +75,7 @@ dev = torch.device("cuda")
 C = 1000
 IS_VIT = args.arch.startswith("vit")
 cotta.IMG_SIZE = 224
-OUT = f"{HERE}/outputs/{args.setting}"
+OUT = f"{paths.VERIFY_IMAGENETC}/outputs/{args.setting}"
 os.makedirs(OUT, exist_ok=True)
 
 # ---- learning rates of the official repos ----

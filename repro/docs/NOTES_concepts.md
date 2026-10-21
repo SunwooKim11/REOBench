@@ -25,7 +25,7 @@ for epoch in range(100):            # epoch 루프
 ```
 
 REOBench 원본 코드는 5 iteration마다, 논문 설명대로라면 5 epoch마다 lr이 재시작합니다.
-실험 결과 차이는 0.6점 미만이었습니다(`C_ablation/summary.txt`의 A0 vs A0ep).
+실험 결과 차이는 0.6점 미만이었습니다(`experiments/2026-10-12_cls_ablation/summary.txt`의 A0 vs A0ep).
 
 ## 2. CosineAnnealingWarmRestarts (SGDR, Loshchilov & Hutter, ICLR 2017)
 
@@ -115,9 +115,9 @@ imgs_src_res = res * (448 / 224)               # 인코더 입력은 224로 한 
 | 설정 | backbone 계산 | head 학습 | 근거 |
 |---|---|---|---|
 | REOBench 원본 | fp32 (conv만 TF32, PyTorch 기본값) | fp32 | 별도 설정 없음. RTX 4090 |
-| A (`A_paper/run.py`) | fp32 + **TF32 matmul 켬** | fp32 | 속도 때문에 `allow_tf32=True`로 설정 |
-| B (`B_official/run.py`) | **bf16 autocast** | fp32 (feature를 `.float()`로 변환) | 공식 MAE/Scale-MAE도 AMP(혼합 정밀도) 사용 |
-| C (`C_ablation/run.py`) | **bf16 autocast** | fp32 | 모든 ablation 설정을 같은 정밀도로 맞추려고 bf16으로 통일 |
+| A (`scripts/cls/train_released.py`) | fp32 + **TF32 matmul 켬** | fp32 | 속도 때문에 `allow_tf32=True`로 설정 |
+| B (`scripts/cls/train_official.py`) | **bf16 autocast** | fp32 (feature를 `.float()`로 변환) | 공식 MAE/Scale-MAE도 AMP(혼합 정밀도) 사용 |
+| C (`scripts/cls/ablation.py`) | **bf16 autocast** | fp32 | 모든 ablation 설정을 같은 정밀도로 맞추려고 bf16으로 통일 |
 
 C의 feature 캐시는 bf16으로 계산한 feature를 **fp16으로 저장**하고(`.half()`), 학습할 때 fp32로 되돌립니다. 저장 공간을 절반으로 줄이기 위해서입니다.
 

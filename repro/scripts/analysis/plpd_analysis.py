@@ -24,9 +24,10 @@ from einops import rearrange
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms as T
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, ".."))
-import common  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
+HERE = str(paths.CLS_TTA)  # results: experiments/2026-10-13_cls_tta/outputs/plpd
 
 TEXTURE = ["BareLand", "Desert", "Farmland", "Forest", "Meadow", "Mountain"]
 SHAPE = ["Airport", "BaseballField", "Bridge", "Church", "Playground", "Stadium", "StorageTanks", "Viaduct"]
@@ -55,7 +56,7 @@ def patch_shuffle(x, patch_len):  # same as methods/deyo.py (aug_type='patch'); 
 
 backbone = common.build_backbone(args.model, drop_path=0.0).to(dev).eval()
 head = nn.Linear(1024, common.NUM_CLASSES)
-head.load_state_dict(torch.load(f"{HERE}/../C_ablation/outputs/{args.model}/{args.head_cfg}_s0_head.pth"))
+head.load_state_dict(torch.load(f"{paths.CLS_ABLATION}/outputs/{args.model}/{args.head_cfg}_s0_head.pth"))
 head = head.to(dev).eval()
 tf = T.Compose([T.ToTensor()] + ([T.Normalize(*NORM[args.model])] if args.head_cfg == "PN" else []))
 ds = datasets.ImageFolder(common.TEST_DIR, transform=tf)

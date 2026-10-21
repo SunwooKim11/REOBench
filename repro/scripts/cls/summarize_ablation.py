@@ -1,8 +1,9 @@
 """Tabulate C_ablation results: mean ± std over seeds, per model and config."""
 import glob, json, os, sys, statistics as st
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-import common
-HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
+HERE = str(paths.CLS_ABLATION)
 ORDER = ["A0", "A0ep", "PN", "norm", "bnhead", "optim", "aug", "bbeval", "B"]
 SHORT = {"gaussian_noise_new": "GN", "salt_and_pepper_noise": "SP", "gaussian_blur": "GB", "motion_blur": "MB",
          "brightness_contrast": "BC", "clouds": "Cld", "haze_update_new": "Haze", "data_gaps": "Gap",

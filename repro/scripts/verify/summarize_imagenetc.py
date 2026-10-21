@@ -1,8 +1,11 @@
 """Compare outputs/{setting}/{method}.json with the paper numbers in REFERENCES.md (accuracy, or error for D)."""
 import json
 import os
+import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import paths  # noqa: E402
+HERE = str(paths.VERIFY_IMAGENETC)
 COR = ['gaussian_noise', 'shot_noise', 'impulse_noise', 'defocus_blur', 'glass_blur', 'motion_blur', 'zoom_blur',
        'snow', 'frost', 'fog', 'brightness', 'contrast', 'elastic_transform', 'pixelate', 'jpeg_compression']
 

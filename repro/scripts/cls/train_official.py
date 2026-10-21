@@ -24,8 +24,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms as T
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-import common  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
 from timm.layers import trunc_normal_  # noqa: E402
 
 NORM = {
@@ -42,7 +43,7 @@ p.add_argument("--batch_size", type=int, default=256)
 p.add_argument("--blr", type=float, default=1e-3)
 p.add_argument("--weight_decay", type=float, default=0.05)
 p.add_argument("--seed", type=int, default=0)
-p.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs"))
+p.add_argument("--out", default=str(paths.CLS_OFFICIAL))
 args = p.parse_args()
 
 torch.manual_seed(args.seed)

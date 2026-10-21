@@ -26,8 +26,9 @@ from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-import common  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
 from timm.layers import trunc_normal_  # noqa: E402
 
 p = argparse.ArgumentParser()
@@ -36,7 +37,7 @@ p.add_argument("--epochs", type=int, default=100)
 p.add_argument("--ckpt", default=None, help="e.g. satmae_sentinel (checkpoint named in REOBench code)")
 p.add_argument("--tag", default="")
 p.add_argument("--seed", type=int, default=0)
-p.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs"))
+p.add_argument("--out", default=str(paths.CLS_RELEASED))
 args = p.parse_args()
 
 torch.manual_seed(args.seed)

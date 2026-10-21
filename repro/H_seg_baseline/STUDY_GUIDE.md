@@ -70,17 +70,17 @@ UperNet = **PPM** (Pyramid Pooling Module, PSPNet) + **FPN** (Feature Pyramid Ne
 
 | 분류 TTA | 분할 TTA | 검증된 참고 코드 |
 |---|---|---|
-| `softmax_entropy(logits).mean(0)` | 픽셀 엔트로피 `-(p·log p).sum(1).mean()` | `G_seg_verify/mmseg/apis/test.py` `single_gpu_tent_entropy` |
+| `softmax_entropy(logits).mean(0)` | 픽셀 엔트로피 `-(p·log p).sum(1).mean()` | `third_party/cotta_acdc_svdp/mmseg/apis/test.py` `single_gpu_tent_entropy` |
 | LayerNorm affine 업데이트 | + head BN을 **고정** 또는 **test 통계로** (선택 필요) | 같은 함수, `TENT_BN=batch` |
 | CoTTA 32개 랜덤 증강 | 다중 스케일 7개 × flip = 14 view, 픽셀 확신도 0.69 | `single_gpu_cotta` |
 | 샘플 필터 (SAR/EATA) | 픽셀 단위 필터로 바꿔야 함 | (미구현) |
 
 ## 5. 추천 학습 경로
 1. `trace_shapes.py` 실행 → 출력과 2절 표를 대조 (모양이 왜 그렇게 되는지).
-2. `scale_MAE_vit_large.py forward_features`를 분류 쪽 `repro/common.py`의 `features()`(L86; `D_tta/tta.py`가 이걸 import)와 나란히 읽기.
+2. `scale_MAE_vit_large.py forward_features`를 분류 쪽 `repro/common.py`의 `features()`(L86; `scripts/tta/cls_tta.py`가 이걸 import)와 나란히 읽기.
 3. `uper_head.py forward`를 3절과 대조. `trace_shapes.py` 4번 블록이 같은 계산을 풀어 쓴 것.
 4. `encoder_decoder.py forward_train` → `decode_head.py losses` 순으로 학습 1 step 따라가기.
-5. 마지막으로 `G_seg_verify/mmseg/apis/test.py`의 `single_gpu_tent`와 `single_gpu_tent_entropy`를 비교 → TTA가 이 구조 어디에 끼어드는지.
+5. 마지막으로 `third_party/cotta_acdc_svdp/mmseg/apis/test.py`의 `single_gpu_tent`와 `single_gpu_tent_entropy`를 비교 → TTA가 이 구조 어디에 끼어드는지.
 - 논문 대신 코드로 먼저 보고 싶으면: UperNet 원 논문(Xiao et al., ECCV 2018) 3절의 그림과 `uper_head.py`를 같이 보는 것이 가장 빠릅니다.
 
 ## 6. SatMAE와 ScaleMAE 분할 백본은 무엇이 다른가 (2026-10-20 추가)

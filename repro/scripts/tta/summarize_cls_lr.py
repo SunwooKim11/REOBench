@@ -1,8 +1,9 @@
 """lr sensitivity table: accuracy (%) and Δ vs no adaptation, per model x head config x method x lr."""
 import json, os, sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-import common
-HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
+HERE = str(paths.CLS_TTA)
 LRS = [("0.001", ""), ("3e-4", "_lr0.0003"), ("1e-4", "_lr0.0001")]
 def s5(r): return sum(r[n]["severity"][4] for n in common.NOISES) / len(common.NOISES)
 for m in ["satmae", "scalemae"]:

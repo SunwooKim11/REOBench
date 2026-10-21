@@ -20,10 +20,10 @@ sys.argv = ["tta.py", "--model", a.model, "--head_cfg", a.head_cfg, "--method", 
             "--sevs", *map(str, sevs), "--workers", "8"] + ([] if a.stream == "clean" else ["--no_clean"])
 
 # reuse tta.py setup without running its main loop
-src = open(__file__.replace("diag.py", "tta.py")).read().split("res = {")[0]
+src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tta", "cls_tta.py")).read().split("res = {")[0]
 exec(compile(src, "tta.py", "exec"))
 
-from methods.tent import softmax_entropy  # noqa: E402
+from reobench_tta.tta.tent import softmax_entropy  # noqa: E402
 
 name, sev, items = streams[0]
 dl = DataLoader(Files(items), batch_size=args.bs, shuffle=True, generator=torch.Generator().manual_seed(0),

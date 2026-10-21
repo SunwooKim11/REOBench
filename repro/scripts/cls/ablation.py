@@ -11,8 +11,8 @@ Factors (each can be switched on independently):
 All settings use a bf16-autocast frozen backbone; evaluation always uses an eval-mode backbone,
 so clean/corrupted eval features are cached once per (model, norm) and reused.
 
-  python run.py --prep --model satmae [--norm]      # build feature cache
-  python run.py --model satmae --name A0 --seed 0   # train head + evaluate
+  python scripts/cls/ablation.py --prep --model satmae [--norm]      # build feature cache
+  python scripts/cls/ablation.py --model satmae --name A0 --seed 0   # train head + evaluate
 """
 import argparse
 import json
@@ -27,9 +27,10 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets, transforms as T
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, ".."))
-import common  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
+HERE = str(paths.CLS_ABLATION)  # results: experiments/2026-10-12_cls_ablation/{cache,outputs}
 from timm.layers import trunc_normal_  # noqa: E402
 
 NORM = {

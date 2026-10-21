@@ -21,7 +21,7 @@ pipeline = "디스크의 이미지 파일 → 모델 입력 텐서"로 가는 �
 
 - **train에서 Resize를 하는 이유:** 데이터 증강입니다. 같은 이미지를 크기를 바꿔 가며 보여 주면, 모델이 물체 크기 변화에 강해집니다. 0.5배로 줄이면 건물이 작게, 2배로 키우면 크게 보입니다. 키운 뒤에는 `RandomCrop`으로 512만 잘라 씁니다.
 - **test는 무작위 요소가 없어야 합니다.** 매번 같은 입력에 같은 답이 나와야 평가가 의미 있습니다. 그래서 크기를 그대로 두고 정규화만 합니다.
-- 분류 코드와 같은 원리입니다. 분류 B_official의 `--aug`(RandomResizedCrop + Flip)가 train_pipeline에 해당합니다.
+- 분류 코드와 같은 원리입니다. 분류 `scripts/cls/train_official.py`의 `--aug`(RandomResizedCrop + Flip)가 train_pipeline에 해당합니다.
 
 ## 2. `scale_MAE_vit_large.py`의 encoder/decoder, num_heads, mlp_ratio는?
 
@@ -135,7 +135,7 @@ FPN(Feature Pyramid Network): 해상도가 다른 특징 지도 여러 장을 �
 
 ## 9. "`D_tta/common.py`가 없다"
 
-가이드의 오타였습니다. 정확한 위치는 **`repro/common.py`**입니다(`features()`는 L86). `D_tta/tta.py`가 `import common`으로 이 파일을 불러옵니다. 가이드도 고쳤습니다.
+가이드의 오타였습니다. 정확한 위치는 **`repro/common.py`**입니다(`features()`는 L86). `scripts/tta/cls_tta.py`가 `import common`으로 이 파일을 불러옵니다. 가이드도 고쳤습니다.
 
 ## 10. `auxiliary_head`는 무엇이고 왜 있나
 

@@ -1,8 +1,9 @@
 """Tabulate D_tta results: per model x head config, rows = TTA method (accuracy %, Δ vs no adaptation)."""
 import glob, json, os, sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-import common
-HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
+HERE = str(paths.CLS_TTA)
 SHORT = {"gaussian_noise_new": "GN", "salt_and_pepper_noise": "SP", "gaussian_blur": "GB", "motion_blur": "MB",
          "brightness_contrast": "BC", "clouds": "Cld", "haze_update_new": "Haze", "data_gaps": "Gap",
          "compression_artifacts": "JPEG", "rotate_new": "Rot", "scale_image": "Scale", "translate_image_new": "Trans"}

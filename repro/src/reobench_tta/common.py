@@ -1,6 +1,6 @@
 """Shared pieces for the REOBench AID classification reproduction (settings A and B).
 
-Model definitions are imported unchanged from ../Classification (verified identical
+Model definitions are imported unchanged from REOBench/Classification (verified identical
 to the official SatMAE / Scale-MAE files).
 """
 import json
@@ -13,8 +13,9 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", "Classification"))
+from .paths import REOBENCH
+
+sys.path.insert(0, str(REOBENCH / "Classification"))  # released models_vit.py / scale_models_vit.py
 
 import models_vit  # noqa: E402  (SatMAE ViT)
 import scale_models_vit  # noqa: E402  (Scale-MAE ViT)

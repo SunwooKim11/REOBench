@@ -2,24 +2,23 @@
 
 ## 1. Folder map
 
-Of the seven folders, only **two hold code to review**. The rest are experiment runs or verification.
+See `repro/README.md` for the full layout. Only **two places hold our logic**:
 
-| Folder | Role | Review? |
+| Path | Role | Review? |
 |---|---|---|
-| `common.py` | Data, backbone and feature loading shared by everything | ★ Review: the base of every experiment |
-| `D_tta/methods/` | **The TTA method implementations** (Tent, SAR, DeYO, EATA, CoTTA, ViDA, LSCD, ISA) | ★★ Main review target |
-| `D_tta/tta.py` | AID TTA protocol: streams, reset, lr, which method gets which arguments | ★★ Main review target |
-| `A_paper/`, `B_official/`, `C_ablation/` | Classification baselines (REOBench reproduction, issue #4) | Done. Use `repro_aid/README.md` |
-| `E_verify/` | ImageNet-C harness that runs `D_tta/methods` unchanged | Results only: `summary.txt` |
-| `F_cotta_official/` | Official CoTTA repo, run as is (one line patched) | No (`diffs/cotta_official_run.diff`) |
-| `G_seg_verify/` | Segmentation verification (SVDP copy of the CoTTA code) | Patches only: `diffs/seg__*.diff` |
-| `review/` | This guide, pinned upstream sources, diffs | Use this |
+| `src/reobench_tta/common.py` | AID data, backbones, feature extraction, evaluation | ★ base of every classification experiment |
+| `src/reobench_tta/tta/` | **TTA method implementations** (Tent, SAR, DeYO, EATA, CoTTA, ViDA, LSCD, ISA) | ★★ main review target |
+| `scripts/tta/cls_tta.py` | AID TTA protocol: per-(corruption, severity) reset, lr, method arguments | ★★ main review target |
+| `scripts/seg/seg_tta.py` (now `H_seg_baseline/seg_tta.py`) | Potsdam TTA protocol and the segmentation versions of the methods | ★★ |
+| `scripts/cls/`, `scripts/verify/`, `scripts/analysis/` | entry points: thin, mostly argument parsing and loops | as needed |
+| `third_party/` | vendored code; only patched files tracked | patches only: `review/diffs/` |
+| `experiments/` | results only | no |
 
 ## 2. How to check the code against the official code (no need to read whole files)
 
 - `review/upstream/*__<repo>.py`: the original files, at the commits in `COMMITS.txt`.
 - `review/diffs/<method>.diff`: what we changed. In VS Code, select two files and choose "Compare Selected".
-- Every change in our files is marked `[REOBench]`: `grep -rn "\[REOBench\]" D_tta/methods`.
+- Every change in our files is marked `[REOBench]`: `grep -rn "\[REOBench\]" src/reobench_tta/tta`.
 
 | Method | Our file | Original | Changed lines | What changed |
 |---|---|---|---|---|
@@ -27,7 +26,7 @@ Of the seven folders, only **two hold code to review**. The rest are experiment 
 | SAM (SAR optimizer) | `sam.py` | DeYO repo `methods/sam.py` | **0** | Same as the original |
 | Tent / SAR / DeYO | `tent.py`, `sar.py`, `deyo.py` | DeYO repo | ~30 each | `collect_params` only. The hard-coded ViT-B rule (skip blocks 9-11) becomes "skip the top 25% of blocks" (`params.py`), so ViT-L skips blocks 18-23. The loss and the update are unchanged |
 | CoTTA | `cotta.py`, `my_transforms.py` | CoTTA repo `imagenet/` | 16 / 0 | Image size made a variable (256 for AID), torchvision API for `RandomAffine`, augmentation threshold `ap` made an argument, a counter added |
-| ViDA | `vida.py` | ViDA repo `imagenet/vida.py` + `inject_vida.py` | (two files merged) | The two files are merged into one; the high-rank scale bug is kept by default (`fix_hka`); checkpoint key mapping; memory frees. Details: `E_verify/VIDA_SPEC.md` |
+| ViDA | `vida.py` | ViDA repo `imagenet/vida.py` + `inject_vida.py` | (two files merged) | The two files are merged into one; the high-rank scale bug is kept by default (`fix_hka`); checkpoint key mapping; memory frees. Details: `docs/verify/VIDA_SPEC.md` |
 | LSCD | `lscd.py` | LSCD repo `models/cmp_losses.py` (loss only) | – | The loss is copied as is. The official loop has a SyntaxError and does not run, so the loop follows Tent |
 | ISA | `isa.py` | – (our own baseline) | – | About 10 lines; read the whole file |
 
@@ -48,9 +47,9 @@ paper** differ from each other:
    uses clean AID train images.
 5. **CoTTA**: EMA 0.999, stochastic restore 0.001, 32 augmentations on low-confidence batches.
    - `tta.py` defaults p_th to the 5% quantile of source confidence, while the official ImageNet code uses 0.1 (see `docs/NOTES_tta.md` §3.3).
-6. **ViDA**: the paper and the code differ in six places (`E_verify/VIDA_SPEC.md`, table "Paper vs code").
+6. **ViDA**: the paper and the code differ in six places (`docs/verify/VIDA_SPEC.md`, table "Paper vs code").
 
-## 4. Protocol (`D_tta/tta.py`)
+## 4. Protocol (`scripts/tta/cls_tta.py`)
 
 | Item | Location |
 |---|---|
@@ -62,7 +61,7 @@ paper** differ from each other:
 
 ## 5. How the implementations were checked (results only)
 
-- **ImageNet-C** (`E_verify/summary.txt`):
+- **ImageNet-C** (`experiments/2026-10-14_verify_imagenetc/summary.txt`):
   - Tent, EATA, SAR and DeYO are within 0.35 of DeYO Table 1.
   - ViDA: 43.29 vs 43.4.
   - CoTTA matches the official code run in our environment (66.73 vs 66.56).
@@ -74,9 +73,9 @@ paper** differ from each other:
 ## 6. Segmentation (current state)
 
 **Status: the RS segmentation TTA is not built yet.** All the segmentation code that exists today is the
-Cityscapes→ACDC verification code in `G_seg_verify/`. It is CoTTA's ACDC code (SVDP copy) with mmseg 0.x and SegFormer-B5.
+Cityscapes→ACDC verification code in `third_party/cotta_acdc_svdp/`. It is CoTTA's ACDC code (SVDP copy) with mmseg 0.x and SegFormer-B5.
 
-### 6.1 What to read in `G_seg_verify/` (verification code)
+### 6.1 What to read in `third_party/cotta_acdc_svdp/` (verification code)
 
 | What | Where | Note |
 |---|---|---|
@@ -84,7 +83,7 @@ Cityscapes→ACDC verification code in `G_seg_verify/`. It is CoTTA's ACDC code 
 | PL "TENT" (CoTTA code) | `mmseg/apis/test.py` `single_gpu_tent` (L298) | Prediction → CE on its own argmax; params with "norm"/"bn" in name; Adam 6e-5/8 |
 | Original Tent (ours) | `mmseg/apis/test.py` `single_gpu_tent_entropy` (L611) | Pixel-entropy mean; same params/optimizer; `TENT_BN=batch` puts BN on test statistics (`tools/tent_entropy.py` reverts SyncBN→BN) |
 | CoTTA (CoTTA code) | `mmseg/apis/test.py` `single_gpu_cotta` (L197); teacher/anchor creation `tools/cotta.py` L17, L226-228 | 14-view aug (`tools/cotta.py` L118-124, `encoder_decoder.aug_test` L355); anchor prob > 0.69 → single-scale label; EMA 0.999; restore 0.01 |
-| Our patches vs SVDP copy | `review/diffs/seg__*.diff`, list in `G_seg_verify/README_REOBench.md` | 6 patches, all marked `[REOBench]` |
+| Our patches vs SVDP copy | `review/diffs/seg__*.diff`, list in `third_party/cotta_acdc_svdp/README_REOBench.md` | 6 patches, all marked `[REOBench]` |
 
 ### 6.2 What still has to be built for RS segmentation
 
@@ -96,5 +95,5 @@ Cityscapes→ACDC verification code in `G_seg_verify/`. It is CoTTA's ACDC code 
    MMCV_MAX bump:
    - Tent: pixel entropy (validated in `single_gpu_tent_entropy`), decide BN handling of the UperNet decoder
    - CoTTA: multi-scale+flip teacher (validated logic in `single_gpu_cotta`)
-   - ViDA: CoTTA segmentation loop + ViDA adapters (`D_tta/methods/vida.py` injection)
-   - ISA: input transform, reuse `D_tta/methods/isa.py`
+   - ViDA: CoTTA segmentation loop + ViDA adapters (`src/reobench_tta/tta/vida.py` injection)
+   - ISA: input transform, reuse `src/reobench_tta/tta/isa.py`

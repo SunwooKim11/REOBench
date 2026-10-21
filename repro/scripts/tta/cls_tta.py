@@ -26,11 +26,11 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.join(HERE, ".."))
-import common  # noqa: E402
-from methods import cotta, deyo, eata, isa, lscd, sam, sar, tent  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common  # noqa: E402
+from reobench_tta import paths  # noqa: E402
+from reobench_tta.tta import cotta, deyo, eata, isa, lscd, sam, sar, tent  # noqa: E402
+HERE = str(paths.CLS_TTA)  # results: experiments/2026-10-13_cls_tta/outputs
 from PIL import Image  # noqa: E402
 
 NORM = {
@@ -91,7 +91,7 @@ class Net(nn.Module):
         super().__init__()
         self.backbone = common.build_backbone(args.model, drop_path=0.0)  # no stochastic depth during TTA
         self.head = nn.Linear(1024, C)
-        hp = f"{HERE}/../C_ablation/outputs/{args.model}/{args.head_cfg}_s{args.head_seed}_head.pth"
+        hp = f"{paths.CLS_ABLATION}/outputs/{args.model}/{args.head_cfg}_s{args.head_seed}_head.pth"
         self.head.load_state_dict(torch.load(hp, map_location="cpu"))
         print(f"head: {hp}")
         self.in_norm = args.head_cfg == "PN" and PIXEL_SPACE
@@ -207,7 +207,7 @@ def make_adapter():
     if args.method == "cotta":  # official imagenet/cotta.py: all weights/biases trainable, teacher output returned
         cotta.configure_model(net)
         if args.cotta_params == "ln":  # diagnostic: same LayerNorm affine set as Tent/SAR/DeYO (head and weights frozen)
-            from methods.params import collect_norm_params
+            from reobench_tta.tta.params import collect_norm_params
             keep = {id(p_) for p_ in collect_norm_params(net)[0]}
             for p_ in net.parameters():
                 p_.requires_grad_(id(p_) in keep)
@@ -280,7 +280,7 @@ for k in done:
 if len(done) == len(common.NOISES):
     res["avg"] = sum(res[k]["mean"] for k in done) / len(done)
 # re-resolve at save time: the experiment folder may be renamed while a run is going (temp <-> repro)
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs", args.model, args.head_cfg)
+OUT = os.path.join(str(paths.CLS_TTA), "outputs", args.model, args.head_cfg)
 os.makedirs(OUT, exist_ok=True)
 path = f"{OUT}/{args.method}_s{args.seed}{args.tag}.json"
 with open(path, "w") as f:
