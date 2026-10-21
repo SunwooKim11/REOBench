@@ -43,6 +43,7 @@ from torch.utils.data import DataLoader, Dataset
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
 from reobench_tta import paths  # noqa: E402
 from reobench_tta.tta.sam import SAM  # noqa: E402  (same SAM as the classification SAR)
+from reobench_tta.tta import stat_align  # noqa: E402
 os.chdir(paths.REOBENCH_SEG)  # mmseg configs (configs/repro/...) are relative to the vendored mmseg copy
 sys.path.insert(0, str(paths.REOBENCH_SEG))
 from mmseg.models import build_segmentor  # noqa: E402
@@ -57,7 +58,7 @@ IGNORE = 5
 p = argparse.ArgumentParser()
 p.add_argument("--model", required=True, choices=["scalemae", "satmae"])
 p.add_argument("--set", default="B")
-p.add_argument("--method", required=True, choices=["none", "bnadapt", "tent", "sar", "isa", "cotta"])
+p.add_argument("--method", required=True, choices=["none", "bnadapt", "tent", "sar", "isa", "cotta", "fsa"])
 p.add_argument("--bn", default="fixed", choices=["fixed", "batch"])
 p.add_argument("--bs", type=int, default=8)
 p.add_argument("--lr", type=float, default=0.00006 / 8)
@@ -69,6 +70,9 @@ p.add_argument("--sevs", nargs="*", type=int, default=[1, 2, 3, 4, 5])
 p.add_argument("--no_clean", action="store_true")
 p.add_argument("--max_images", type=int, default=None, help="images per stream (random subset), for slow methods")
 p.add_argument("--seed", type=int, default=0)
+p.add_argument("--fsa_layer", default=None,
+               help="fsa (feature statistics alignment, no learning): module to align, e.g. backbone.blocks.7, "
+                    "decode_head.conv_seg:in (feature fed to the classifier). Adds _<layer> to the output name")
 p.add_argument("--tag", default="")
 p.add_argument("--workers", type=int, default=8)
 args = p.parse_args()
@@ -80,7 +84,10 @@ CKPT = f"{paths.SEG_BASELINE}/work_dirs/{args.model}_{args.set}_12ep/latest.pth"
 MEAN = torch.tensor(cfg.img_norm_cfg["mean"]).view(1, 3, 1, 1).to(dev)    # 0-255 scale (pipeline Normalize)
 STD = torch.tensor(cfg.img_norm_cfg["std"]).view(1, 3, 1, 1).to(dev)
 tag = args.tag + (f"_bn{args.bn}" if args.method in ("tent", "sar") and args.bn != "fixed" else "")
-if args.method != "none" and args.method != "isa" and args.lr != 0.00006 / 8:
+if args.method == "fsa":
+    assert args.fsa_layer, "--fsa_layer is required for fsa"
+    tag += "_" + args.fsa_layer.replace("backbone.", "").replace("decode_head.", "dh.").replace(":", "")
+if args.method not in ("none", "isa", "fsa", "bnadapt") and args.lr != 0.00006 / 8:
     tag += f"_lr{args.lr:g}"
 OUT = f"{paths.SEG_TTA}/outputs/{args.model}_{args.set}"
 os.makedirs(OUT, exist_ok=True)
@@ -151,7 +158,7 @@ def configure_norm(model):
 
 
 # source-side quantities (train split, never test): ISA pixel statistics, CoTTA anchor-confidence threshold
-if args.method in ("isa", "cotta"):
+if args.method in ("isa", "cotta", "fsa"):
     tr = sorted(os.listdir(TRAIN))
     sub = random.Random(0).sample(tr, 500)
     s1 = torch.zeros(3, dtype=torch.float64); s2 = torch.zeros(3, dtype=torch.float64); npx = 0; confs = []
@@ -162,6 +169,13 @@ if args.method in ("isa", "cotta"):
             s1 += x.double().sum((0, 2, 3)).cpu(); s2 += (x.double() ** 2).sum((0, 2, 3)).cpu(); npx += x.numel() // 3
             if args.method == "cotta":
                 confs.append(logits_of(source, x).softmax(1).max(1)[0].flatten()[::97].float().cpu())
+    if args.method == "fsa":  # source statistics of the aligned position on the same 500 train patches
+        def _train_batches():
+            for i in range(0, len(sub), args.bs):
+                yield torch.stack([torch.from_numpy(np.asarray(Image.open(f"{TRAIN}/{n}").convert("RGB"), dtype=np.float32))
+                                   .permute(2, 0, 1) for n in sub[i:i + args.bs]]).to(dev)
+        FSA_STATS = stat_align.source_stats(source, [args.fsa_layer], _train_batches(), lambda m, x: logits_of(m, x))
+        print(f"FSA at {args.fsa_layer}: {FSA_STATS[args.fsa_layer][0].numel()} channels")
     SRC_MEAN = (s1 / npx).float().view(1, 3, 1, 1).to(dev)
     SRC_STD = (s2 / npx - (s1 / npx) ** 2).sqrt().float().view(1, 3, 1, 1).to(dev)
     print(f"train pixel mean {SRC_MEAN.flatten().tolist()} std {SRC_STD.flatten().tolist()}")
@@ -176,6 +190,8 @@ class Adapter:
     def __init__(self):
         self.model = deepcopy(source)
         self.n_reset = 0
+        if args.method == "fsa":
+            self.model.eval(); stat_align.StatAlign(self.model, FSA_STATS)
         if args.method == "bnadapt":
             args.bn = "batch"; configure_norm(self.model); self.model.requires_grad_(False)
         if args.method in ("tent", "sar"):
@@ -204,7 +220,7 @@ class Adapter:
 
     def __call__(self, x):
         m = args.method
-        if m in ("none", "bnadapt"):
+        if m in ("none", "bnadapt", "fsa"):
             with torch.no_grad():
                 return logits_of(self.model, x).argmax(1)
         if m == "isa":

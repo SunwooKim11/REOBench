@@ -29,7 +29,7 @@ from torchvision import transforms as T
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
 from reobench_tta import common  # noqa: E402
 from reobench_tta import paths  # noqa: E402
-from reobench_tta.tta import cotta, deyo, eata, isa, lscd, sam, sar, tent  # noqa: E402
+from reobench_tta.tta import cotta, deyo, eata, isa, lscd, sam, sar, stat_align, tent  # noqa: E402
 HERE = str(paths.CLS_TTA)  # results: experiments/2026-10-13_cls_tta/outputs
 from PIL import Image  # noqa: E402
 
@@ -44,7 +44,7 @@ p.add_argument("--model", choices=["satmae", "scalemae"], required=True)
 p.add_argument("--head_cfg", choices=["P", "PN"], required=True)
 p.add_argument("--head_seed", type=int, default=0)
 p.add_argument("--method", required=True,
-               choices=["none", "tent", "sar", "deyo", "eata", "cotta", "lscd", "isa_batch", "isa_image"])
+               choices=["none", "tent", "sar", "deyo", "eata", "cotta", "lscd", "isa_batch", "isa_image", "fsa"])
 p.add_argument("--bs", type=int, default=64)
 p.add_argument("--lr", type=float, default=None, help="override protocol lr (0.001/64*bs); adds _lr<val> to output")
 p.add_argument("--seed", type=int, default=0, help="stream order seed")
@@ -59,6 +59,10 @@ p.add_argument("--sar_reset", type=float, default=None,
                     "Adds _rst<val> to output")
 p.add_argument("--cotta_params", choices=["all", "ln"], default="all",
                help="CoTTA update set: all weights incl. head (official) or the Tent/SAR LayerNorm set. Adds _ln")
+p.add_argument("--fsa_layer", default=None,
+               help="fsa (feature statistics alignment, no learning): module inside the backbone to align, e.g. "
+                    "blocks.7 (block output, all tokens), norm (final norm output), or head:in (feature fed to the head). "
+                    "Adds _<layer> to the output name")
 p.add_argument("--tag", default="")
 p.add_argument("--workers", type=int, default=12)
 args = p.parse_args()
@@ -75,6 +79,9 @@ if args.cotta_ap is not None:
     args.tag += f"_ap{args.cotta_ap:g}"
 if args.sar_reset is not None:
     args.tag += f"_rst{args.sar_reset:g}"
+if args.method == "fsa":
+    assert args.fsa_layer, "--fsa_layer is required for fsa"
+    args.tag += "_" + args.fsa_layer.replace(":", "")
 if args.cotta_params != "all":
     args.tag += f"_{args.cotta_params}"
 OUT = f"{HERE}/outputs/{args.model}/{args.head_cfg}"
@@ -140,7 +147,7 @@ if args.method in ("tent", "sar", "deyo"):
 
 # source-side quantities needed by EATA (Fisher), CoTTA (augmentation threshold) and ISA (pixel stats).
 # All use 2,000 random clean AID *training* images (never the test split).
-if args.method in ("eata", "cotta", "isa_batch", "isa_image"):
+if args.method in ("eata", "cotta", "isa_batch", "isa_image", "fsa"):
     from torchvision import datasets
     src_items = datasets.ImageFolder(common.TRAIN_DIR).samples
     src_idx = torch.randperm(len(src_items), generator=torch.Generator().manual_seed(0))[:2000].tolist()
@@ -187,11 +194,19 @@ if args.method in ("isa_batch", "isa_image"):
     print(f"ISA train pixel mean {ISA_MEAN.tolist()} std {ISA_STD.tolist()}")
 
 
+if args.method == "fsa":  # source statistics of the aligned position, from the same 2,000 clean train images
+    FSA_NAME = args.fsa_layer if args.fsa_layer == "head:in" else "backbone." + args.fsa_layer
+    net.eval()
+    FSA_STATS = stat_align.source_stats(net, [FSA_NAME], (x.to(dev) for x, _ in src_loader), lambda m, x: m(x))
+    print(f"FSA at {FSA_NAME}: {FSA_STATS[FSA_NAME][0].numel()} channels")
+    stat_align.StatAlign(net, FSA_STATS)  # hook stays on for every stream (no state is carried between batches)
+
+
 def make_adapter():
     cotta_ref.clear()  # free the previous stream's teacher/anchor copies before building a new one
     torch.cuda.empty_cache()
     net.load_state_dict(init_state)  # reset to source model
-    if args.method == "none":
+    if args.method in ("none", "fsa"):
         net.eval()
         return lambda x, i: net(x)
     if args.method in ("isa_batch", "isa_image"):
@@ -255,7 +270,7 @@ for si, (noise, sev, items) in enumerate(streams):
     correct = n = 0
     for i, (x, y) in enumerate(dl):
         x = x.to(dev, non_blocking=True)
-        if args.method == "none":
+        if args.method in ("none", "fsa"):
             with torch.no_grad():
                 out = adapt(x, i)
         else:
