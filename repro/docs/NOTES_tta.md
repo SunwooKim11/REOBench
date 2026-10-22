@@ -305,6 +305,25 @@
   - 디코더 BN 조합은 블록 조합보다 약하고 clean 손해가 가장 큼(−0.8 / −1.1).
   - **occlusion(clouds)은 ISA를 넣으면 −1.4 ~ −2.0** (분할). 구름이 섞인 배치의 통계로 정렬해서 생기는 손해로 보이며, 구름 패치를 통계에서 빼는 변형이 후보.
 
+### 5.7 feature shift 진단 (AID 분류 백본, 2026-10-22, `scripts/analysis/feature_shift.py`)
+- clean test 400장과 같은 이미지의 왜곡본(강도 5, 파일명으로 짝지음)을 백본에 통과시켜, 위치별로 측정:
+  d_mu(채널 평균 이동 / σ_clean), d_sd(|log σ 비|), cos(같은 이미지·토큰의 clean/왜곡 특징 코사인), +al(채널 정렬 후 cos 증가),
+  outlier(clean 특징 채널 RMS의 max/median, 상위 1% 채널의 에너지 비율). 통계는 400장 전체(배치 8이 아님). 결과 `experiments/2026-10-22_feature_shift/summary.txt`.
+- 관찰:
+  - **radiometric = 입력에서 스케일 변화**: d_sd가 embed에서 최대(0.80 / 0.73, SatMAE / ScaleMAE)이고 깊어질수록 0.2대로 감소.
+    정렬 회복(+al)도 embed·초반 블록에서 최대(+0.074 / +0.083) → 입력 정렬(ISA)이 맞는 이유와 일치.
+  - **degradation = 입력에서는 평균 이동 없음, 중간 블록에서 평균 이동으로 바뀜**: embed d_mu 0.00, +al 거의 0(0.002 / 0.004)
+    → ISA가 degradation에 무효인 이유. d_mu는 블록 6~13에서 최대(≈0.4), +al도 중간 이후 커짐(SatMAE +0.018, ScaleMAE +0.035~0.046).
+  - 다만 +al은 후반 블록(15~18)까지 크게 유지되는데 sweep 정확도는 후반 정렬이 나쁨. 가설: 앞에서 정렬하면 뒤 블록들이 바로잡힌
+    특징을 처리하지만, 뒤에서 정렬하면 이미 망가진 표현의 통계만 맞춤. 미검증.
+  - **massive activation**: 블록 0부터 상위 1% 채널(약 10개)이 에너지의 SatMAE 82~95%, ScaleMAE 60~81%를 차지 (max/median 50~145).
+    ViT의 알려진 현상(Darcet et al. *ViTs Need Registers* ICLR 2024; Sun et al. *Massive Activations* 2024).
+    → 원 cos는 이 소수 채널이 좌우함(SatMAE cos가 0.98로 높게 나오는 이유). 채널 표준화 후 cos로 다시 볼 필요.
+  - **SatMAE vs ScaleMAE**: ScaleMAE는 degradation 정렬 회복이 2배 이상(+0.035~0.046 vs +0.012~0.019) → 분할 블록 정렬 이득
+    (+9.3 vs +2.1)과 일치. 그러나 분류에서는 반대(블록 7 degradation SatMAE +12.0 vs ScaleMAE +3.9)라 설명 안 됨.
+    분류 ScaleMAE가 블록 정렬로 radiometric이 떨어지는 이유도 이 진단으로는 안 나옴(정렬 회복은 오히려 큼).
+    → 배치 8 통계의 잡음(이 진단은 400장 통계) 또는 head(CLS 하나)가 소수 채널에 의존하는 정도가 후보.
+
 ## 6. 할 일
 - [x] MIM 정렬 위치 sweep (§5.5), 입력 + 특징 정렬 조합 (§5.6)
 - [ ] 정렬 위치를 검증 세트로 선택 (지금은 test에서 고른 상한)
