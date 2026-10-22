@@ -1,0 +1,162 @@
+{
+  "config": {
+    "model": "scalemae",
+    "head_cfg": "PN",
+    "head_seed": 0,
+    "method": "fsa",
+    "bs": 64,
+    "lr": null,
+    "seed": 0,
+    "noises": [
+      "gaussian_noise_new",
+      "salt_and_pepper_noise",
+      "gaussian_blur",
+      "motion_blur",
+      "brightness_contrast",
+      "clouds",
+      "haze_update_new",
+      "data_gaps",
+      "compression_artifacts",
+      "rotate_new",
+      "scale_image",
+      "translate_image_new"
+    ],
+    "sevs": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "no_clean": false,
+    "cotta_ap": null,
+    "sar_reset": null,
+    "cotta_params": "all",
+    "fsa_layer": "norm",
+    "tag": "_norm",
+    "workers": 12
+  },
+  "lr": 0.001,
+  "clean": 95.3,
+  "gaussian_noise_new": {
+    "severity": [
+      73.75,
+      66.15,
+      57.85,
+      50.05,
+      43.1
+    ],
+    "mean": 58.18000000000001
+  },
+  "salt_and_pepper_noise": {
+    "severity": [
+      83.2,
+      69.65,
+      54.15,
+      44.15,
+      32.15
+    ],
+    "mean": 56.660000000000004
+  },
+  "gaussian_blur": {
+    "severity": [
+      87.9,
+      77.25,
+      56.7,
+      39.9,
+      23.45
+    ],
+    "mean": 57.04
+  },
+  "motion_blur": {
+    "severity": [
+      53.2,
+      39.8,
+      31.4,
+      24.05,
+      20.25
+    ],
+    "mean": 33.74
+  },
+  "brightness_contrast": {
+    "severity": [
+      95.3,
+      94.65,
+      91.15,
+      70.35,
+      20.55
+    ],
+    "mean": 74.4
+  },
+  "clouds": {
+    "severity": [
+      94.65,
+      94.25,
+      92.8,
+      88.85,
+      79.25
+    ],
+    "mean": 89.96
+  },
+  "haze_update_new": {
+    "severity": [
+      93.5,
+      90.3,
+      83.95,
+      73.45,
+      58.8
+    ],
+    "mean": 80.0
+  },
+  "data_gaps": {
+    "severity": [
+      87.65,
+      78.15,
+      69.9,
+      57.25,
+      48.8
+    ],
+    "mean": 68.35000000000001
+  },
+  "compression_artifacts": {
+    "severity": [
+      73.75,
+      68.45,
+      59.55,
+      44.2,
+      21.3
+    ],
+    "mean": 53.45
+  },
+  "rotate_new": {
+    "severity": [
+      92.05,
+      90.85,
+      90.35,
+      89.5,
+      91.45
+    ],
+    "mean": 90.84
+  },
+  "scale_image": {
+    "severity": [
+      92.2,
+      90.65,
+      87.8,
+      83.55,
+      77.4
+    ],
+    "mean": 86.32000000000001
+  },
+  "translate_image_new": {
+    "severity": [
+      93.95,
+      93.65,
+      93.05,
+      92.8,
+      92.65
+    ],
+    "mean": 93.22
+  },
+  "avg": 70.18
+}
