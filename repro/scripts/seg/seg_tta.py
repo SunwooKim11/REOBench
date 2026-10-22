@@ -70,6 +70,8 @@ p.add_argument("--sevs", nargs="*", type=int, default=[1, 2, 3, 4, 5])
 p.add_argument("--no_clean", action="store_true")
 p.add_argument("--max_images", type=int, default=None, help="images per stream (random subset), for slow methods")
 p.add_argument("--seed", type=int, default=0)
+p.add_argument("--with_isa", action="store_true",
+               help="fsa / bnadapt: also apply batch ISA to the input (combination input + feature alignment). Adds _isa")
 p.add_argument("--fsa_layer", default=None,
                help="fsa (feature statistics alignment, no learning): module to align, e.g. backbone.blocks.7, "
                     "decode_head.conv_seg:in (feature fed to the classifier). Adds _<layer> to the output name")
@@ -87,6 +89,9 @@ tag = args.tag + (f"_bn{args.bn}" if args.method in ("tent", "sar") and args.bn 
 if args.method == "fsa":
     assert args.fsa_layer, "--fsa_layer is required for fsa"
     tag += "_" + args.fsa_layer.replace("backbone.", "").replace("decode_head.", "dh.").replace(":", "")
+if args.with_isa:
+    assert args.method in ("fsa", "bnadapt"), "--with_isa is only for fsa / bnadapt"
+    tag += "_isa"
 if args.method not in ("none", "isa", "fsa", "bnadapt") and args.lr != 0.00006 / 8:
     tag += f"_lr{args.lr:g}"
 OUT = f"{paths.SEG_TTA}/outputs/{args.model}_{args.set}"
@@ -157,8 +162,13 @@ def configure_norm(model):
     return model
 
 
+def isa_batch(x):       # batch-level input statistics alignment to the train pixel statistics (0-255 space)
+    mu = x.mean((0, 2, 3), keepdim=True); sd = x.std((0, 2, 3), keepdim=True).clamp_min(1e-6)
+    return (x - mu) / sd * SRC_STD + SRC_MEAN
+
+
 # source-side quantities (train split, never test): ISA pixel statistics, CoTTA anchor-confidence threshold
-if args.method in ("isa", "cotta", "fsa"):
+if args.method in ("isa", "cotta", "fsa") or args.with_isa:
     tr = sorted(os.listdir(TRAIN))
     sub = random.Random(0).sample(tr, 500)
     s1 = torch.zeros(3, dtype=torch.float64); s2 = torch.zeros(3, dtype=torch.float64); npx = 0; confs = []
@@ -174,10 +184,13 @@ if args.method in ("isa", "cotta", "fsa"):
             for i in range(0, len(sub), args.bs):
                 yield torch.stack([torch.from_numpy(np.asarray(Image.open(f"{TRAIN}/{n}").convert("RGB"), dtype=np.float32))
                                    .permute(2, 0, 1) for n in sub[i:i + args.bs]]).to(dev)
-        FSA_STATS = stat_align.source_stats(source, [args.fsa_layer], _train_batches(), lambda m, x: logits_of(m, x))
-        print(f"FSA at {args.fsa_layer}: {FSA_STATS[args.fsa_layer][0].numel()} channels")
     SRC_MEAN = (s1 / npx).float().view(1, 3, 1, 1).to(dev)
     SRC_STD = (s2 / npx - (s1 / npx) ** 2).sqrt().float().view(1, 3, 1, 1).to(dev)
+    if args.method == "fsa":  # with ISA, the source statistics are taken after ISA on the clean batches, as at test time
+        pre = isa_batch if args.with_isa else (lambda x: x)
+        FSA_STATS = stat_align.source_stats(source, [args.fsa_layer], _train_batches(),
+                                            lambda m, x: logits_of(m, pre(x)))
+        print(f"FSA at {args.fsa_layer}: {FSA_STATS[args.fsa_layer][0].numel()} channels")
     print(f"train pixel mean {SRC_MEAN.flatten().tolist()} std {SRC_STD.flatten().tolist()}")
     if args.method == "cotta":
         q5 = torch.quantile(torch.cat(confs), 0.05).item()
@@ -213,19 +226,14 @@ class Adapter:
                 q.detach_()
             self.opt = torch.optim.Adam([q for q in self.model.parameters()], lr=args.lr, betas=(0.9, 0.999))
 
-    @torch.no_grad()
-    def isa(self, x):
-        mu = x.mean((0, 2, 3), keepdim=True); sd = x.std((0, 2, 3), keepdim=True).clamp_min(1e-6)
-        return (x - mu) / sd * SRC_STD + SRC_MEAN
-
     def __call__(self, x):
         m = args.method
         if m in ("none", "bnadapt", "fsa"):
             with torch.no_grad():
-                return logits_of(self.model, x).argmax(1)
+                return logits_of(self.model, isa_batch(x) if args.with_isa else x).argmax(1)
         if m == "isa":
             with torch.no_grad():
-                return logits_of(self.model, self.isa(x)).argmax(1)
+                return logits_of(self.model, isa_batch(x)).argmax(1)
         if m == "tent":
             lg = logits_of(self.model, x)
             entropy(lg).mean().backward()

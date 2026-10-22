@@ -2,6 +2,7 @@
 
 Classification (AID, PN heads, severities 1-5): input = isa_batch, blocks.k = fsa at block k, norm / head:in.
 Segmentation (Potsdam B models, severities 3 and 5): input = isa, blocks.k, classifier input, decoder BN = bnadapt.
+Combination rows (scripts/run_combo.sh): batch ISA on the input + one feature alignment (`--with_isa`).
 Groups (NOTES_tta.md §4.2): geometry, occlusion, radiometric, degradation.
 
   ~/REOBench/.venv/bin/python scripts/analysis/summarize_depth_sweep.py
@@ -53,7 +54,8 @@ for m in ["satmae", "scalemae"]:
     rows = {}
     for name, fn in [("none", "none_s0"), ("input (ISA)", "isa_batch_s0")] + \
             [(f"block {b}", f"fsa_s0_blocks.{b}") for b in BLOCKS] + [("final norm", "fsa_s0_norm"),
-                                                                     ("head input", "fsa_s0_headin")]:
+                                                                     ("head input", "fsa_s0_headin")] + \
+            [(f"ISA + block {b}", f"fsa_s0_blocks.{b}_isa") for b in (7, 11)] + [("ISA + head in", "fsa_s0_headin_isa")]:
         f = d / f"{fn}.json"
         if f.exists():
             r = json.load(open(f))
@@ -66,7 +68,8 @@ for m in ["scalemae_B", "satmae_B"]:
     d = paths.SEG_TTA / "outputs" / m
     rows = {}
     for name, fn in [("none", "none"), ("input (ISA)", "isa")] + [(f"block {b}", f"fsa_blocks.{b}") for b in BLOCKS] + \
-            [("cls input", "fsa_dh.conv_segin"), ("decoder BN", "bnadapt")]:
+            [("cls input", "fsa_dh.conv_segin"), ("decoder BN", "bnadapt")] + \
+            [(f"ISA + block {b}", f"fsa_blocks.{b}_isa") for b in (3, 7, 11)] + [("ISA + dec BN", "bnadapt_isa")]:
         f = d / f"{fn}.json"
         if f.exists():
             r = json.load(open(f))

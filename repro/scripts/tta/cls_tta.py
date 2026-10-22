@@ -59,6 +59,8 @@ p.add_argument("--sar_reset", type=float, default=None,
                     "Adds _rst<val> to output")
 p.add_argument("--cotta_params", choices=["all", "ln"], default="all",
                help="CoTTA update set: all weights incl. head (official) or the Tent/SAR LayerNorm set. Adds _ln")
+p.add_argument("--with_isa", action="store_true",
+               help="fsa only: also apply batch ISA to the input (combination input + feature alignment). Adds _isa")
 p.add_argument("--fsa_layer", default=None,
                help="fsa (feature statistics alignment, no learning): module inside the backbone to align, e.g. "
                     "blocks.7 (block output, all tokens), norm (final norm output), or head:in (feature fed to the head). "
@@ -81,7 +83,8 @@ if args.sar_reset is not None:
     args.tag += f"_rst{args.sar_reset:g}"
 if args.method == "fsa":
     assert args.fsa_layer, "--fsa_layer is required for fsa"
-    args.tag += "_" + args.fsa_layer.replace(":", "")
+    args.tag += "_" + args.fsa_layer.replace(":", "") + ("_isa" if args.with_isa else "")
+assert not args.with_isa or args.method == "fsa", "--with_isa is only for fsa"
 if args.cotta_params != "all":
     args.tag += f"_{args.cotta_params}"
 OUT = f"{HERE}/outputs/{args.model}/{args.head_cfg}"
@@ -89,7 +92,7 @@ os.makedirs(OUT, exist_ok=True)
 
 # CoTTA augments and ISA re-standardizes in pixel space, so for them PN normalization moves inside Net
 # (same arithmetic); all other methods keep normalization in the data transform as before.
-PIXEL_SPACE = args.method in ("cotta", "isa_batch", "isa_image")
+PIXEL_SPACE = args.method in ("cotta", "isa_batch", "isa_image") or args.with_isa
 tf = T.Compose([T.ToTensor()] + ([T.Normalize(*NORM[args.model])] if args.head_cfg == "PN" and not PIXEL_SPACE else []))
 
 
@@ -185,7 +188,7 @@ if args.method == "cotta":
         conf = torch.cat([net(x.to(dev)).softmax(1).max(1)[0].cpu() for x, _ in src_loader])
     COTTA_AP = torch.quantile(conf, 0.05).item() if args.cotta_ap is None else args.cotta_ap
     print(f"CoTTA p_th = {COTTA_AP:.4f} ({'5% quantile of source confidence' if args.cotta_ap is None else 'fixed'})")
-if args.method in ("isa_batch", "isa_image"):
+if args.method in ("isa_batch", "isa_image") or args.with_isa:
     s1 = torch.zeros(3); s2 = torch.zeros(3); npx = 0
     for x, _ in src_loader:  # pixel space ([0,1], before any normalization)
         s1 += x.sum((0, 2, 3)); s2 += (x ** 2).sum((0, 2, 3)); npx += x.numel() // 3
@@ -197,7 +200,9 @@ if args.method in ("isa_batch", "isa_image"):
 if args.method == "fsa":  # source statistics of the aligned position, from the same 2,000 clean train images
     FSA_NAME = args.fsa_layer if args.fsa_layer == "head:in" else "backbone." + args.fsa_layer
     net.eval()
-    FSA_STATS = stat_align.source_stats(net, [FSA_NAME], (x.to(dev) for x, _ in src_loader), lambda m, x: m(x))
+    # with ISA, the source statistics are taken after ISA on the clean batches, as at test time
+    FSA_FWD = isa.ISA(net, ISA_MEAN, ISA_STD, level="batch").to(dev) if args.with_isa else net
+    FSA_STATS = stat_align.source_stats(net, [FSA_NAME], (x.to(dev) for x, _ in src_loader), lambda m, x: FSA_FWD(x))
     print(f"FSA at {FSA_NAME}: {FSA_STATS[FSA_NAME][0].numel()} channels")
     stat_align.StatAlign(net, FSA_STATS)  # hook stays on for every stream (no state is carried between batches)
 
@@ -206,7 +211,10 @@ def make_adapter():
     cotta_ref.clear()  # free the previous stream's teacher/anchor copies before building a new one
     torch.cuda.empty_cache()
     net.load_state_dict(init_state)  # reset to source model
-    if args.method in ("none", "fsa"):
+    if args.method == "fsa":
+        net.eval()
+        return lambda x, i: FSA_FWD(x)
+    if args.method == "none":
         net.eval()
         return lambda x, i: net(x)
     if args.method in ("isa_batch", "isa_image"):
