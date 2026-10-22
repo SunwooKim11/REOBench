@@ -1,0 +1,64 @@
+{
+  "config": {
+    "model": "scalemae",
+    "set": "B",
+    "method": "fsa",
+    "bn": "fixed",
+    "bs": 8,
+    "lr": 7.5e-06,
+    "sar_e0": 0.4,
+    "sar_reset": 0.2,
+    "cotta_thr": null,
+    "corruptions": [
+      "brightness_contrast",
+      "clouds",
+      "compression_artifacts",
+      "gaussian_blur",
+      "gaussian_noise",
+      "haze",
+      "motion_blur",
+      "salt_and_pepper_noise"
+    ],
+    "sevs": [
+      3,
+      5
+    ],
+    "no_clean": false,
+    "max_images": null,
+    "seed": 0,
+    "with_isa": true,
+    "fsa_layer": "backbone.blocks.7",
+    "tag": "",
+    "workers": 8
+  },
+  "streams": {
+    "clean": 64.73365529858108,
+    "brightness_contrast_s3": 64.62855644523802,
+    "brightness_contrast_s5": 64.61551007890026,
+    "clouds_s3": 61.93386647326392,
+    "clouds_s5": 54.44820744306729,
+    "compression_artifacts_s3": 52.98784051088392,
+    "compression_artifacts_s5": 37.17109324836014,
+    "gaussian_blur_s3": 62.06955796965256,
+    "gaussian_blur_s5": 58.158124328933404,
+    "gaussian_noise_s3": 56.19308614341693,
+    "gaussian_noise_s5": 52.370555716705624,
+    "haze_s3": 64.68427105623374,
+    "haze_s5": 64.59729328476689,
+    "motion_blur_s3": 62.34589543100395,
+    "motion_blur_s5": 58.26233437905724,
+    "salt_and_pepper_noise_s3": 51.24622574699502,
+    "salt_and_pepper_noise_s5": 38.217135551176064
+  },
+  "per_corruption": {
+    "brightness_contrast": 64.62203326206914,
+    "clouds": 58.191036958165604,
+    "compression_artifacts": 45.07946687962203,
+    "gaussian_blur": 60.11384114929298,
+    "gaussian_noise": 54.28182093006127,
+    "haze": 64.64078217050032,
+    "motion_blur": 60.3041149050306,
+    "salt_and_pepper_noise": 44.73168064908555
+  },
+  "avg8": 56.49559711297844
+}
