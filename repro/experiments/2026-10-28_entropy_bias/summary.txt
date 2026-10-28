@@ -1,0 +1,32 @@
+
+### satmae PN, source model, severity 5
+stream                      acc  auroc  low_ent  low_ent_acc  bias_L1 top1_share
+clean                      92.8  0.929    99.6%        92.9%    0.034       4.2%
+gaussian_noise_new         55.7  0.779    97.0%        57.1%    0.548      11.9%
+salt_and_pepper_noise      41.9  0.724    96.8%        42.8%    0.782      15.9%
+gaussian_blur              44.8  0.772    95.5%        46.5%    0.865      15.3%
+motion_blur                15.2  0.659    95.0%        15.7%    1.455      59.8%
+brightness_contrast        44.5  0.759    98.0%        45.2%    0.880      19.9%
+clouds                     80.2  0.850    98.5%        80.8%    0.254       8.5%
+haze_update_new            60.1  0.776    99.5%        60.4%    0.654      25.4%
+data_gaps                  50.1  0.774    95.8%        51.9%    0.677      10.4%
+compression_artifacts      39.8  0.718    91.3%        41.7%    0.859      20.4%
+rotate_new                 89.7  0.919    99.2%        90.3%    0.067       4.7%
+scale_image                65.5  0.822    98.4%        66.3%    0.365       7.5%
+translate_image_new        87.9  0.901    99.2%        88.4%    0.081       4.7%
+
+### scalemae PN, source model, severity 5
+stream                      acc  auroc  low_ent  low_ent_acc  bias_L1 top1_share
+clean                      95.2  0.954    98.2%        96.1%    0.025       4.3%
+gaussian_noise_new         56.1  0.789    76.5%        65.4%    0.638      12.9%
+salt_and_pepper_noise      39.6  0.777    69.2%        49.5%    0.894      12.7%
+gaussian_blur              39.1  0.777    67.5%        49.9%    0.943      15.9%
+motion_blur                21.0  0.818    73.8%        26.6%    1.313      23.0%
+brightness_contrast        52.1  0.778    82.9%        58.9%    0.747      19.1%
+clouds                     83.0  0.881    94.3%        86.3%    0.297       9.2%
+haze_update_new            74.2  0.833    92.1%        77.9%    0.450      11.6%
+data_gaps                  48.1  0.789    82.8%        55.1%    0.811      17.2%
+compression_artifacts      30.2  0.759    58.2%        41.5%    1.003      18.6%
+rotate_new                 92.4  0.921    97.2%        94.0%    0.066       4.5%
+scale_image                81.5  0.858    95.2%        84.0%    0.214       6.0%
+translate_image_new        93.0  0.932    97.3%        94.3%    0.062       4.2%
