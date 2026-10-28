@@ -65,6 +65,12 @@ p.add_argument("--fsa_layer", default=None,
                help="fsa (feature statistics alignment, no learning): module inside the backbone to align, e.g. "
                     "blocks.7 (block output, all tokens), norm (final norm output), or head:in (feature fed to the head). "
                     "Adds _<layer> to the output name")
+p.add_argument("--n_src", type=int, default=2000,
+               help="number of clean train images for the source-side quantities (Fisher, p_th, ISA/FSA stats). "
+                    "Adds _n<val> when not 2000")
+p.add_argument("--isa_target", choices=["train", "pretrain"], default="train",
+               help="ISA target statistics: clean AID train pixels, or the pretraining Normalize constants that ship "
+                    "with the model (no extra source data). Adds _isapre")
 p.add_argument("--tag", default="")
 p.add_argument("--workers", type=int, default=12)
 args = p.parse_args()
@@ -87,6 +93,10 @@ if args.method == "fsa":
 assert not args.with_isa or args.method == "fsa", "--with_isa is only for fsa"
 if args.cotta_params != "all":
     args.tag += f"_{args.cotta_params}"
+if args.n_src != 2000:
+    args.tag += f"_n{args.n_src}"
+if args.isa_target == "pretrain":
+    args.tag += "_isapre"
 OUT = f"{HERE}/outputs/{args.model}/{args.head_cfg}"
 os.makedirs(OUT, exist_ok=True)
 
@@ -149,11 +159,11 @@ if args.method in ("tent", "sar", "deyo"):
     print(f"adapting {len(names)} tensors, first {names[:2]} ... last {names[-2:]}")
 
 # source-side quantities needed by EATA (Fisher), CoTTA (augmentation threshold) and ISA (pixel stats).
-# All use 2,000 random clean AID *training* images (never the test split).
+# All use --n_src (default 2,000) random clean AID *training* images (never the test split).
 if args.method in ("eata", "cotta", "isa_batch", "isa_image", "fsa"):
     from torchvision import datasets
     src_items = datasets.ImageFolder(common.TRAIN_DIR).samples
-    src_idx = torch.randperm(len(src_items), generator=torch.Generator().manual_seed(0))[:2000].tolist()
+    src_idx = torch.randperm(len(src_items), generator=torch.Generator().manual_seed(0))[:args.n_src].tolist()
     src_loader = DataLoader(Files([src_items[i] for i in src_idx]), batch_size=args.bs, shuffle=False,
                             num_workers=args.workers)
 if args.method == "eata":
@@ -194,10 +204,12 @@ if args.method in ("isa_batch", "isa_image") or args.with_isa:
         s1 += x.sum((0, 2, 3)); s2 += (x ** 2).sum((0, 2, 3)); npx += x.numel() // 3
     ISA_MEAN = s1 / npx
     ISA_STD = (s2 / npx - ISA_MEAN ** 2).sqrt()
+    if args.isa_target == "pretrain":  # source-free: the model's own input Normalize constants
+        ISA_MEAN, ISA_STD = torch.tensor(NORM[args.model][0]), torch.tensor(NORM[args.model][1])
     print(f"ISA train pixel mean {ISA_MEAN.tolist()} std {ISA_STD.tolist()}")
 
 
-if args.method == "fsa":  # source statistics of the aligned position, from the same 2,000 clean train images
+if args.method == "fsa":  # source statistics of the aligned position, from the same --n_src clean train images
     FSA_NAME = args.fsa_layer if args.fsa_layer == "head:in" else "backbone." + args.fsa_layer
     net.eval()
     # with ISA, the source statistics are taken after ISA on the clean batches, as at test time
