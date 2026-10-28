@@ -8,6 +8,7 @@ Per (model, corruption) at severity 5 (+ clean), over the 2,000 test images:
   low_ent_acc: accuracy among those images = how often the samples entropy-TTA trusts most are actually right
   bias_L1    : L1 distance between the mean softmax and the true label distribution (Panda's prediction-bias measure)
   top1_share : share of predictions taken by the most predicted class (uniform = 1/30 = 3.3%)
+  top_classes: the 3 most predicted classes (name, % of predictions, % of true labels)
 
   ~/REOBench/.venv/bin/python scripts/analysis/entropy_bias.py      # from repro/, ~5 min on one GPU
 Output: experiments/2026-10-28_entropy_bias/{results.json, summary.txt}
@@ -67,6 +68,7 @@ cor = common.CorruptedAID(None)
 for ni, noise in enumerate(common.NOISES):
     streams.append((noise, [(p, c) for p, c, n, sv in cor.items if n == ni and sv == SEV - 1]))
 
+CLS_NAMES = common.class_names()
 res, lines = {}, []
 for model in ["satmae", "scalemae"]:
     tf = T.Compose([T.ToTensor(), T.Normalize(*NORM[model])])
@@ -90,7 +92,9 @@ for model in ["satmae", "scalemae"]:
         r = {"acc": 100 * ok.mean(), "auroc": auroc(-ent, ok), "low_ent": 100 * low.mean(),
              "low_ent_acc": 100 * ok[low].mean() if low.any() else float("nan"),
              "bias_L1": float(np.abs(P.mean(0) - q).sum()),
-             "top1_share": 100 * np.bincount(pred, minlength=C).max() / len(pred)}
+             "top1_share": 100 * np.bincount(pred, minlength=C).max() / len(pred),
+             "top_classes": [(CLS_NAMES[k], 100 * np.mean(pred == k), 100 * np.mean(Y == k))
+                             for k in np.bincount(pred, minlength=C).argsort()[::-1][:3]]}
         res[model][name] = r
         lines.append(f"{name:24s} {r['acc']:6.1f} {r['auroc']:6.3f} {r['low_ent']:7.1f}% {r['low_ent_acc']:11.1f}% "
                      f"{r['bias_L1']:8.3f} {r['top1_share']:9.1f}%")

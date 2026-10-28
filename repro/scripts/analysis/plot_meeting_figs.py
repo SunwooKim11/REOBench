@@ -5,6 +5,8 @@
   fig3_combination.png    : ISA alone / block 7 alone / ISA + block 7, radiometric and degradation
   fig4_corruptions.png    : one AID test image under radiometric and degradation corruptions + affine R2 (pixel_affine.py)
   fig5_feature_shift.png  : per-channel mean / scale shift by depth (feature_shift.py)
+  fig6_isa_example.png    : what ISA does to a real haze batch (pixel statistics, histograms)
+  fig7_norm_axes.png      : which values input Normalize / LayerNorm / BatchNorm / ISA average over
 
   /opt/conda/envs/segtta/bin/python scripts/analysis/plot_meeting_figs.py      # from repro/ (needs matplotlib)
 Output: docs/figs/meeting_2026-10/
@@ -56,9 +58,9 @@ SETTINGS = [  # title, getter, none file, input file, block file pattern, extra 
      [("final\nnorm", "fsa_s0_norm"), ("head\ninput", "fsa_s0_headin")]),
     ("Classification · ScaleMAE", lambda fn, g: cls_group("scalemae", fn, g), "none_s0", "isa_batch_s0", "fsa_s0_blocks.{}",
      [("final\nnorm", "fsa_s0_norm"), ("head\ninput", "fsa_s0_headin")]),
-    ("Segmentation · ScaleMAE", lambda fn, g: seg_group("scalemae_B", fn, g), "none", "isa", "fsa_blocks.{}",
-     [("classifier\ninput", "fsa_dh.conv_segin"), ("decoder\nBN", "bnadapt")]),
     ("Segmentation · SatMAE", lambda fn, g: seg_group("satmae_B", fn, g), "none", "isa", "fsa_blocks.{}",
+     [("classifier\ninput", "fsa_dh.conv_segin"), ("decoder\nBN", "bnadapt")]),
+    ("Segmentation · ScaleMAE", lambda fn, g: seg_group("scalemae_B", fn, g), "none", "isa", "fsa_blocks.{}",
      [("classifier\ninput", "fsa_dh.conv_segin"), ("decoder\nBN", "bnadapt")]),
 ]
 
@@ -85,10 +87,12 @@ for row, model in enumerate(["satmae", "scalemae"]):
     ax.axvline(100 / 30, color=INK2, lw=1.2, ls="--")
     ax.text(100 / 30 + 0.8, y[-1] - 0.45, "uniform 3.3%", color=INK2, fontsize=9, va="center")
     for yi, s in zip(y, show):
-        ax.text(r[s]["top1_share"] + 0.8, yi, f"{r[s]['top1_share']:.0f}%", va="center", fontsize=9, color=INK)
+        ax.text(r[s]["top1_share"] + 0.8, yi, f"{r[s]['top1_share']:.0f}%  {r[s]['top_classes'][0][0]}",
+                va="center", fontsize=9, color=INK)
     ax.set_yticks(y, [names[s] for s in show]); ax.set_xlabel("% of predictions taken by the most predicted class")
     ax.grid(axis="x", color=GRID, lw=0.8); ax.set_axisbelow(True)
-    ax.set_title("predictions collapse onto a few classes")
+    ax.set_xlim(0, max(r[s]["top1_share"] for s in show) * 1.35)
+    ax.set_title("predictions collapse onto one class (label = that class)")
 fig.suptitle("Source models on AID (PN heads, severity 5): the signal entropy-TTA learns from is unreliable",
              fontweight="bold", fontsize=13)
 h, l = axes[0, 0].get_legend_handles_labels()
@@ -123,8 +127,8 @@ fig.tight_layout(rect=(0, 0, 1, 0.94)); fig.savefig(OUT / "fig2_depth_sweep.png"
 combo = [  # setting label, getter, none, ISA, block 7, ISA + block 7
     ("Cls SatMAE", SETTINGS[0][1], "none_s0", "isa_batch_s0", "fsa_s0_blocks.7", "fsa_s0_blocks.7_isa"),
     ("Cls ScaleMAE", SETTINGS[1][1], "none_s0", "isa_batch_s0", "fsa_s0_blocks.7", "fsa_s0_blocks.7_isa"),
-    ("Seg ScaleMAE", SETTINGS[2][1], "none", "isa", "fsa_blocks.7", "fsa_blocks.7_isa"),
-    ("Seg SatMAE", SETTINGS[3][1], "none", "isa", "fsa_blocks.7", "fsa_blocks.7_isa"),
+    ("Seg SatMAE", SETTINGS[2][1], "none", "isa", "fsa_blocks.7", "fsa_blocks.7_isa"),
+    ("Seg ScaleMAE", SETTINGS[3][1], "none", "isa", "fsa_blocks.7", "fsa_blocks.7_isa"),
 ]
 fig, axes = plt.subplots(1, 2, figsize=(13, 4.8), sharey=True)
 w = 0.26
@@ -192,4 +196,105 @@ axes[0].legend(fontsize=9)
 fig.suptitle("Radiometric = scale change at the input; degradation = no mean shift at the input, "
              "a mean shift in the middle blocks (AID, severity 5)", fontweight="bold", fontsize=12)
 fig.tight_layout(); fig.savefig(OUT / "fig5_feature_shift.png", dpi=200); plt.close(fig)
+
+
+# ---------------------------------------------------------------- fig 6: what ISA does, on a real batch
+TRAIN_MU = np.array([0.39845189452171326, 0.4096486270427704, 0.3685896098613739])   # cls_tta.py log, 2,000 train images
+TRAIN_SD = np.array([0.20769336819648743, 0.18474073708057404, 0.18328900635242462])
+rng = np.random.RandomState(0)
+items = [(c, f) for c in cls_names for f in sorted(os.listdir(f"{TEST}/{c}"))]
+batch = [items[i] for i in rng.choice(len(items), 8, replace=False)]
+load = lambda p: np.asarray(Image.open(p).convert("RGB"), dtype=np.float32) / 255
+clean = np.stack([load(f"{TEST}/{c}/{f}") for c, f in batch])
+hazy = np.stack([load(f"{CORR}/{c}/haze_update_new/severity_5/{cls_names.index(c)}/{f}") for c, f in batch])
+mu_t, sd_t = hazy.mean((0, 1, 2)), hazy.std((0, 1, 2))
+fixed = np.clip((hazy - mu_t) / sd_t * TRAIN_SD + TRAIN_MU, 0, 1)
+fig = plt.figure(figsize=(16, 7.6))
+gs = fig.add_gridspec(3, 6, width_ratios=[1, 1, 1, 1, 0.15, 2.6])
+for j in range(4):
+    for i, (img, lab) in enumerate([(clean, "clean"), (hazy, "haze (severity 5)"), (fixed, "haze after ISA")]):
+        ax = fig.add_subplot(gs[i, j]); ax.imshow(img[j]); ax.set_xticks([]); ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        if j == 0:
+            ax.set_ylabel(lab, fontsize=11, color=INK)
+ax = fig.add_subplot(gs[:, 5])
+bins = np.linspace(0, 1, 60)
+for img, lab, col, ls in [(clean, "clean (same 8 images)", INK2, "-"), (hazy, "haze batch", ORANGE, "-"),
+                          (fixed, "haze after ISA", AQUA, "--")]:
+    h, _ = np.histogram(img[..., 0].ravel(), bins=bins, density=True)
+    ax.plot((bins[1:] + bins[:-1]) / 2, h, color=col, lw=2, ls=ls, label=lab)
+ax.set_xlabel("red-channel pixel value"); ax.set_yticks([]); ax.legend(loc="upper right", fontsize=9)
+ax.set_title("red channel: the haze batch is squeezed and shifted;\nISA stretches it back", fontsize=11)
+txt = ("per channel (R, G, B), over all pixels of the 8 test images:\n"
+       f"  haze batch   mean {', '.join(f'{v:.2f}' for v in mu_t)}   std {', '.join(f'{v:.2f}' for v in sd_t)}\n"
+       f"  train (2,000 clean)   mean {', '.join(f'{v:.2f}' for v in TRAIN_MU)}   std {', '.join(f'{v:.2f}' for v in TRAIN_SD)}\n"
+       "  x' = (x - batch mean) / batch std * train std + train mean   (6 numbers per batch, no learning)")
+fig.text(0.02, 0.005, txt, fontsize=10, family="monospace", color=INK, va="bottom")
+fig.suptitle("ISA on a real AID test batch: match each RGB channel's mean / std of the test batch to the training set",
+             fontweight="bold", fontsize=13)
+fig.tight_layout(rect=(0, 0.11, 1, 0.97)); fig.savefig(OUT / "fig6_isa_example.png", dpi=200); plt.close(fig)
+
+
+# ---------------------------------------------------------------- fig 7: which numbers each normalization averages
+import matplotlib.patches as mpatches  # noqa: E402
+NI, NT, NC = 3, 4, 6          # images in the batch, tokens (or pixels) per image, channels
+
+
+def grid(ax, title, sub, cells, color, hatch=None):
+    for im in range(NI):
+        for t in range(NT):
+            for c in range(NC):
+                y = -(im * (NT + 0.6) + t)
+                on = (im, t, c) in cells
+                ax.add_patch(mpatches.Rectangle((c, y), 0.92, 0.92, facecolor=color if on else "#ffffff",
+                                                edgecolor=INK2 if not on else color, lw=0.8, hatch=hatch if on else None,
+                                                alpha=1.0 if on else 1.0))
+        ax.text(-0.3, -(im * (NT + 0.6)) - 1.0, f"image {im + 1}", ha="right", va="center", fontsize=9, color=INK2)
+    ax.text(NC / 2, 1.5, "channels →", ha="center", fontsize=9, color=INK2)
+    ax.set_xlim(-2.6, NC + 0.2); ax.set_ylim(-(NI * (NT + 0.6)) - 0.2, 2.2); ax.axis("off")
+    ax.set_title(title, fontsize=11.5)
+    ax.text(NC / 2 - 1.2, -(NI * (NT + 0.6)) - 0.9, sub, ha="center", va="top", fontsize=9.5, color=INK)
+
+
+fig = plt.figure(figsize=(17, 9.6))
+gs = fig.add_gridspec(2, 4, height_ratios=[1.35, 1])
+col_all = {(im, t, 1) for im in range(NI) for t in range(NT)}
+grid(fig.add_subplot(gs[0, 0]), "① input Normalize (pre-processing)",
+     "one mean / std per channel,\nbut FIXED numbers from the\npretraining data - never computed\nfrom the test images",
+     col_all, "#d9d8d3", hatch="//")
+grid(fig.add_subplot(gs[0, 1]), "② ViT LayerNorm (every block)",
+     "one mean / std per TOKEN, over\nits 1,024 channels, recomputed\nevery time - each token on its own,\nnothing shared across tokens",
+     {(1, 2, c) for c in range(NC)}, BLUE)
+grid(fig.add_subplot(gs[0, 2]), "③ UperNet BatchNorm (decoder)",
+     "one mean / std per CHANNEL over\nthe batch; at test time the stored\ntraining values are used\n(bnadapt = recompute from test batch)",
+     col_all, ORANGE)
+grid(fig.add_subplot(gs[0, 3]), "ISA / feature alignment (ours)",
+     "like ③ with test-batch values, then\nmapped to the SOURCE mean / std;\nISA: at the pixels (3 channels)\nfsa: at a block output (1,024 channels)",
+     col_all, AQUA)
+# bottom: why LayerNorm cannot undo a per-channel shift
+ax = fig.add_subplot(gs[1, :2])
+tok = np.array([1.0, -0.5, 2.0, -1.0, 0.3, 0.8])
+cor = tok.copy(); cor[1] += 2.0                                       # corruption: +2 on channel 2, in every token
+ln = lambda v: (v - v.mean()) / v.std()
+xx = np.arange(NC)
+ax.bar(xx - 0.2, ln(tok), 0.38, color=INK2, label="clean token after LayerNorm")
+ax.bar(xx + 0.2, ln(cor), 0.38, color=BLUE, label="corrupted token after LayerNorm")
+ax.axhline(0, color=INK2, lw=1); ax.set_xticks(xx, [f"ch {i + 1}" for i in xx])
+ax.legend(fontsize=9, loc="upper right"); ax.grid(axis="y", color=GRID, lw=0.8); ax.set_axisbelow(True)
+ax.set_title("a corruption adds +2 to channel 2 of every token: LayerNorm (per token) does not remove it", fontsize=11)
+ax = fig.add_subplot(gs[1, 2:]); ax.axis("off")
+ax.text(0, 0.95, "Why this matters", fontsize=12, fontweight="bold", va="top")
+ax.text(0, 0.80,
+        "• LayerNorm subtracts the token's own average over channels. A shift that hits the\n"
+        "  same channel in every token barely moves that average, so it survives (ch 2 above).\n"
+        "• A per-channel shift is exactly what corruptions cause inside the network (fig 5),\n"
+        "  and ViT has no BatchNorm to absorb it - the backbone has only LayerNorm.\n"
+        "• To remove it you must compare the SAME channel across many tokens / images\n"
+        "  (column in ③ / ISA), i.e. use batch statistics: that is what bnadapt, ISA and\n"
+        "  feature alignment do, at different depths.",
+        fontsize=10.5, va="top", color=INK, linespacing=1.5)
+fig.suptitle("Three normalizations, three different sets of numbers (highlighted = values that share one mean / std)",
+             fontweight="bold", fontsize=13)
+fig.tight_layout(); fig.savefig(OUT / "fig7_norm_axes.png", dpi=200); plt.close(fig)
 print("saved to", OUT)

@@ -138,6 +138,8 @@ backbone까지 학습하는 full fine-tuning이나 TTA(테스트 시 파라미�
 **ISA = Input Statistics Alignment** (우리가 붙인 이름, 논문 방법 아님). 모델에 넣기 전에 **픽셀 값 자체**를 바꿈:
 테스트 배치의 RGB 채널별 평균·표준편차를 학습 데이터 값으로 맞춤.
 
+그림: `docs/figs/meeting_2026-10/fig6_isa_example.png` (실제 haze 배치에 ISA 적용), `fig7_norm_axes.png` (각 정규화가 어떤 값들을 묶어 평균·표준편차를 내는지, LayerNorm이 채널별 이동을 못 지우는 예).
+
 모델 안팎의 정규화는 세 종류이고 쓰는 통계가 다름:
 
 | | ① 입력 Normalize (전처리) | ② ViT LayerNorm | ③ UperNet head BatchNorm |
