@@ -37,7 +37,7 @@
 | Tent / SAR / DeYO / EATA / SAM | DeYO repo (Jhyun17/DeYO @3d7d289) | `collect_params`만 일반화(ViT-B 하드코딩 → 상위 25%). EATA·SAM은 0줄 변경 |
 | CoTTA | qinenergy/cotta `imagenet/` | 이미지 크기 변수화, torchvision API, 증강 임계값 `ap` 인자화 |
 | ViDA | Yangsenqiao/vida `imagenet/` | 두 파일 병합, HKA 버그는 기본 재현(`fix_hka`), 명세 `docs/verify/VIDA_SPEC.md` |
-| LSCD | AEAQA/LSCD-TTA (loss만) | 공식 루프는 SyntaxError → Tent식 루프 <br>공식 코드 = 논문 식 13 + SHOT식 diversity 항(×4, 논문에 없음). 제거(`--lscd_no_div`) 시 SatMAE PN clean 82.8 / avg 53.1 (공식 83.1 / 61.4, none 92.8 / 72.4) → clean 하락은 diversity 탓 아님, diversity는 붕괴를 막는 쪽 |
+| LSCD | AEAQA/LSCD-TTA (loss만) | 공식 루프는 SyntaxError → Tent식 루프 <br>공식 코드 = 논문 식 13 + SHOT식 diversity 항(×4, 논문에 없음). 제거(`--lscd_no_div`, PN, clean / avg): SatMAE 82.8 / 53.1 (공식 83.1 / 61.4, none 92.8 / 72.4), ScaleMAE 94.5 / 65.6 (공식 77.1 / 77.1, none 95.2 / 74.8) → diversity는 corruption 붕괴를 막지만(제거 시 avg −8~−12), ScaleMAE clean −18의 원인 |
 | ISA | 자체 baseline | 입력 채널 평균·표준편차를 source(AID train) 통계로 재정렬. batch 단위 / 이미지 단위 |
 
 ### 1.3 방법별 핵심 동작 (요약)
