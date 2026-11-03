@@ -65,6 +65,8 @@ p.add_argument("--fsa_layer", default=None,
                help="fsa (feature statistics alignment, no learning): module inside the backbone to align, e.g. "
                     "blocks.7 (block output, all tokens), norm (final norm output), or head:in (feature fed to the head). "
                     "Adds _<layer> to the output name")
+p.add_argument("--lscd_no_div", action="store_true",
+               help="lscd only: drop the code-only diversity term (= paper Eq. 13). Adds _nodiv")
 p.add_argument("--n_src", type=int, default=2000,
                help="number of clean train images for the source-side quantities (Fisher, p_th, ISA/FSA stats). "
                     "Adds _n<val> when not 2000")
@@ -93,6 +95,9 @@ if args.method == "fsa":
 assert not args.with_isa or args.method == "fsa", "--with_isa is only for fsa"
 if args.cotta_params != "all":
     args.tag += f"_{args.cotta_params}"
+if args.lscd_no_div:
+    assert args.method == "lscd", "--lscd_no_div is only for lscd"
+    args.tag += "_nodiv"
 if args.n_src != 2000:
     args.tag += f"_n{args.n_src}"
 if args.isa_target == "pretrain":
@@ -255,7 +260,7 @@ def make_adapter():
     if args.method == "lscd":
         lscd.configure_model(net)
         params, _ = lscd.collect_params(net)
-        a = lscd.LSCD(net, torch.optim.SGD(params, LR, momentum=0.9))
+        a = lscd.LSCD(net, torch.optim.SGD(params, LR, momentum=0.9), div=not args.lscd_no_div)
         return lambda x, i: a(x)
     mod = {"tent": tent, "sar": sar, "deyo": deyo}[args.method]
     mod.configure_model(net)

@@ -10,7 +10,8 @@ import torch
 import torch.nn as nn
 
 
-def lscd_loss(logits):  # = cmp_losses.py lscd(), unused wcce term dropped
+def lscd_loss(logits, div=True):  # = cmp_losses.py lscd(), unused wcce term dropped
+    # div=False: paper Eq. 13 (alpha WCSE + beta BCSE + tau LSD); the SHOT-style diversity term is code-only
     label_smoothing_args = 1e-2
     prob = logits.softmax(dim=1)
     pseudo_inds = prob.argmax(dim=1)
@@ -41,21 +42,22 @@ def lscd_loss(logits):  # = cmp_losses.py lscd(), unused wcce term dropped
     lsd_arg = 1e-3      # alpha
     div_arg = 4     # beta
     lsd_loss = -(prob * (1 / (1 - prob + lsd_arg)).log()).sum(dim=1).mean()
-    merge_lsd_loss = lsd_loss + div_arg * diversity_loss
+    merge_lsd_loss = lsd_loss + (div_arg * diversity_loss if div else 0)
 
     return 0.25 * ncse_loss + 1.0 * bse_loss + 1.5 * merge_lsd_loss
 
 
 class LSCD(nn.Module):
-    def __init__(self, model, optimizer):
+    def __init__(self, model, optimizer, div=True):
         super().__init__()
         self.model = model
         self.optimizer = optimizer
+        self.div = div
 
     @torch.enable_grad()
     def forward(self, x):
         outputs = self.model(x)
-        loss = lscd_loss(outputs)
+        loss = lscd_loss(outputs, self.div)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
