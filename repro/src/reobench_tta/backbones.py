@@ -34,12 +34,18 @@ SPECS = {
     "satdino_s16": ("satdino", "fMoW-RGB", "SatDINO", f"{W}/satdino/satdino-vit_small-16.pth", ("vit_small", 16)),
     "satdino_s8": ("satdino", "fMoW-RGB", "SatDINO", f"{W}/satdino/satdino-vit_small-8.pth", ("vit_small", 8)),
     "satdino_b16": ("satdino", "fMoW-RGB", "SatDINO", f"{W}/satdino/satdino-vit_base-16.pth", ("vit_base", 16)),
+    # DINOv3 ViT-L/16, both distilled from a ViT-7B teacher of their own data (HF facebook/*, gated, DINOv3 license)
+    "dinov3_web_l16": ("dinov3", "LVD-1689M (web)", "DINOv3 (distilled)", f"{W}/dinov3-vitl16-pretrain-lvd1689m", None),
+    "dinov3_sat_l16": ("dinov3", "SAT-493M (Maxar)", "DINOv3 (distilled)", f"{W}/dinov3-vitl16-pretrain-sat493m", None),
     "sup_in_r50": ("tv_resnet", "ImageNet-1k", "supervised (torchvision V1)", f"{W}/imagenet/resnet50-0676ba61.pth", None),
     "sup_in_vitb16": ("tv_vit", "ImageNet-1k", "supervised (torchvision V1)", f"{W}/imagenet/vit_b_16-c867db91.pth", "vit_b_16"),
     "sup_in_vitl16": ("tv_vit", "ImageNet-1k", "supervised (torchvision V1)", f"{W}/imagenet/vit_l_16-852ce7e3.pth", "vit_l_16"),
 }
-PAIRS = [("mae_in", "satmae"), ("moco_in", "moco_fmow"), ("moco_in", "gassl_fmow"),
-         ("dino_in_s16", "satdino_s16"), ("dino_in_s8", "satdino_s8"), ("dino_in_b16", "satdino_b16")]
+# main pairs (only the pretraining data differs). gassl_fmow (MoCo-v2+Geo+TP) is kept as an optional extra: it adds
+# geo-location / temporal-positive objectives, so it is not a clean pair of moco_in (2026-11-16 decision).
+PAIRS = [("mae_in", "satmae"), ("moco_in", "moco_fmow"),
+         ("dino_in_s16", "satdino_s16"), ("dino_in_s8", "satdino_s8"), ("dino_in_b16", "satdino_b16"),
+         ("dinov3_web_l16", "dinov3_sat_l16")]
 
 
 def _load(model, sd, allowed_missing=(), allowed_unexpected=()):
@@ -48,6 +54,17 @@ def _load(model, sd, allowed_missing=(), allowed_unexpected=()):
     bad_u = [k for k in msg.unexpected_keys if not k.startswith(tuple(allowed_unexpected))]
     assert not bad_m and not bad_u, f"missing {bad_m[:5]} unexpected {bad_u[:5]}"
     return msg
+
+
+class _DINOv3(nn.Module):
+    """transformers DINOv3ViTModel -> pooler_output (CLS after the final norm; 4 register tokens are dropped)."""
+
+    def __init__(self, net):
+        super().__init__()
+        self.net = net
+
+    def forward(self, x):
+        return self.net(pixel_values=x).pooler_output
 
 
 class _Supervised(nn.Module):
@@ -69,8 +86,19 @@ def build(name, pretrained=True):
     """Return (model in eval mode, (mean, std), feature dim). pretrained=False gives the same arch with random weights."""
     fam, _, _, ckpt, arch = SPECS[name]
     norm = FMOW_SATDINO if fam == "satdino" else IMAGENET
-    ck = torch.load(ckpt, map_location="cpu", weights_only=False) if pretrained else None
-    if fam == "vit_timm":
+    if fam == "dinov3":  # a HF folder, not a single file; normalization from its preprocessor_config.json
+        import json
+        from transformers import DINOv3ViTConfig, DINOv3ViTModel
+        pc = json.load(open(f"{ckpt}/preprocessor_config.json"))
+        norm = (tuple(pc["image_mean"]), tuple(pc["image_std"]))  # web: ImageNet, sat: (0.430, 0.411, 0.296) / (0.213, 0.156, 0.143)
+        net = DINOv3ViTModel.from_pretrained(ckpt) if pretrained else DINOv3ViTModel(DINOv3ViTConfig.from_pretrained(ckpt))
+        m = _DINOv3(net)
+        ck = None
+    else:
+        ck = torch.load(ckpt, map_location="cpu", weights_only=False) if pretrained else None
+    if fam == "dinov3":
+        pass
+    elif fam == "vit_timm":
         m = timm.create_model(arch, pretrained=False, num_classes=0, global_pool="token")
         if pretrained:
             _load(m, ck.get("model", ck), allowed_unexpected=("mask_token", "decoder", "head"))

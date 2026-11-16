@@ -134,3 +134,11 @@
   Beyond Accuracy의 Nat-supervised 그룹). fMoW supervised 짝은 없음.
 - 확인: EarthShift는 "ResNet50, ViT-b-16 pre-trained on ImageNet"이라고만 쓰고 supervised인지 명시 안 함(코드 확인 필요). EarthShift의
   "fully-supervised"는 무작위 초기화 후 과제에 바로 학습한 모델을 뜻함. Beyond Accuracy는 Nat-supervised로 명시.
+
+### 3.3 백본 구성 수정 (2026-11-16)
+- DINO 짝은 DINOv1(facebookresearch/dino, ICCV 2021) 유지: SatDINO가 DINOv1 코드·목적함수 위에 만들어져 정확한 짝은 v1뿐.
+- 최신 baseline 보강: **DINOv3 ViT-L/16 web(LVD-1689M) vs sat(SAT-493M)** 짝 추가. 둘 다 같은 구조, 각자 데이터의 ViT-7B에서 distill.
+  Beyond Accuracy(DINOv3-Sat), EarthShift(DINOv3)와 직접 연결. sat는 보유, web은 HF gated(DINOv3 license) → 사용자 계정으로 승인·다운로드 필요.
+- gassl_fmow(MoCo-v2+Geo+TP)는 주 짝에서 제외, 선택 항목으로 유지 (moco_fmow가 moco_in의 정확한 짝).
+- 확인 필요: DINOv3-Sat의 CLS kNN(AID 49.7)이 patch 평균(72.7)보다 낮음. 로딩 누락 키 없음. DINOv2/v3 linear 평가는 CLS+patch 평균을
+  같이 쓰는 관례라, 모델별 공식 linear 특징을 따를지 CLS로 통일할지 결정 필요.
