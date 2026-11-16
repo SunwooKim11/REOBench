@@ -141,6 +141,8 @@ def run(model, ds):
     lam = min(LAMBDAS, key=lambda l: val_nll[l])
     w, b = fit_head(z(tr_x), ytr, nc, lam)
     head = lambda a: a @ w + b
+    torch.save({"w": w.cpu(), "b": b.cpu(), "mu": mu, "sd": sd, "lambda": lam},  # reused by later analyses
+               f"{FEATS}/{model}/head_{ds}.pt")
 
     res = {"model": model, "dataset": ds, "lambda": lam, "val_acc": {str(k): v for k, v in val_acc.items()},
            "val_nll": {str(k): v for k, v in val_nll.items()}, "streams": {}}
