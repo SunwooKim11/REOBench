@@ -1,0 +1,5 @@
+# 논문 독해 메모 (사용자 작성 원문 + Claude 보충)
+
+| 파일 | 논문 | 관련 피드백 |
+|---|---|---|
+| [beyond_accuracy.md](beyond_accuracy.md) | Beyond Accuracy: Assessing Calibration of GeoFMs and Their Sensitivity to Distribution Shifts (arXiv 2608) | feedback/2026-11-W1_LSCD-TTA.md F2, F3 |

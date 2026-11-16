@@ -48,7 +48,7 @@
 - GeoFM의 능력·강건성을 보완한다는, 해결하려는 문제에 대한 근본적인 고민 필요.
 
 ## 할 일
-- [ ] F3: Beyond Accuracy 원문 확보·정독 (사용자 독해 후 메모 전달 예정)
+- [x] F3: Beyond Accuracy 원문 확보·정독 (2026-11-16, reading/beyond_accuracy.md)
 - [ ] F3: REOBench 계열 논문 목록 (EarthShift 등) 정리
 - [ ] F2: RS corruption vs 자연 영상 corruption의 latent feature 분포 비교 분석 설계
 - [ ] F2: "RS 성질로 인한 TTA 문제"가 corruption에서도 이어지는지 선행 연구 조사
@@ -58,3 +58,8 @@
 
 ## 진행 기록
 (사용자의 논문 독해 메모와 결정 사항을 날짜별로 추가)
+
+- 2026-11-16 F3: Beyond Accuracy 독해 메모 → [reading/beyond_accuracy.md](../reading/beyond_accuracy.md).
+  가져갈 것: (a) 서로 다른 물리 메커니즘의 corruption으로 효과가 하나에 특이하지 않음을 보이는 선정 논리, (b) "정규화 전 손상 →
+  정규화 불일치도 shift의 일부" 문장, (c) CKA·코사인·participation ratio로 표현 drift를 보는 분석 도구(F2의 latent 분석에 사용),
+  (d) EO 인코더의 "rigid + 과신" = 엔트로피 TTA가 신호를 잃는 이유와 연결. 다음: EarthShift 메모 → 최종 생각 → 방향 결정.
