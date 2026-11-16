@@ -1,0 +1,77 @@
+
+### aid: Spearman of each signal with accuracy over 60 streams (sign set so + = tracks accuracy) | ATC error (pt)
+model            conf  flip  mean   std |   ATC   max  bias | ATC_al   max  bias | flip_clean
+mae_in           0.89  1.00  0.95  0.81 |  12.5  79.8 +12.4 |    1.1  11.2  +0.0 |   2.3
+satmae           0.98  0.97  0.91  0.87 |   2.9  14.5  +2.2 |    2.3  10.0  -1.6 |   1.5
+scalemae         0.99  0.98  0.89  0.91 |   4.0  27.4  +3.5 |    1.3   6.0  -0.4 |   2.0
+moco_in          0.87  0.99  0.96  0.98 |  13.6  78.2 +13.0 |    0.8   5.6  +0.5 |   3.1
+moco_fmow        0.89  0.96  0.91  0.90 |  11.0  80.6 +10.9 |    1.3  11.2  +1.2 |   3.6
+gassl_fmow       0.98  0.98  0.96  0.97 |   4.3  49.8  +2.8 |    2.3   9.6  -2.3 |   2.4
+dino_in_s16      0.99  0.97  0.92  0.92 |   3.8  25.8  +3.8 |    0.6   4.9  +0.4 |   2.0
+satdino_s16      0.98  0.90  0.86  0.90 |   3.0  18.6  -2.9 |    2.9  18.6  -2.9 |   1.0
+dino_in_s8       0.98  0.97  0.93  0.94 |   1.7  27.0  +1.4 |    1.8   7.9  -1.8 |   1.6
+satdino_s8       0.98  0.94  0.88  0.91 |   0.8   4.6  +0.4 |    0.7   6.0  -0.6 |   1.0
+dino_in_b16      0.98  0.97  0.92  0.94 |   3.9  51.9  +3.7 |    0.9   5.5  -0.7 |   1.6
+satdino_b16      0.98  0.94  0.90  0.93 |   1.4  10.7  -0.5 |    1.2   8.7  -0.9 |   0.8
+dinov3_web_l16   0.94  0.91  0.73  0.75 |   0.5   3.0  -0.2 |    0.6   3.5  -0.6 |   1.0
+dinov3_sat_l16   0.99  0.98  0.94  0.95 |   6.7  48.2  +6.7 |    0.9   3.3  -0.0 |   2.0
+sup_in_r50       0.93  0.99  0.97  0.98 |   8.8  57.5  +8.6 |    3.7  15.7  +3.7 |   3.3
+sup_in_vitb16    0.99  0.97  0.90  0.87 |   2.6  26.5  +0.3 |    2.3  16.1  -2.1 |   1.8
+sup_in_vitl16    0.99  0.97  0.88  0.86 |   1.9  13.2  -0.9 |    2.3  18.0  -2.1 |   1.7
+--- aid per corruption (17 backbones x 5 severities): MAE, bias (+ = overestimates accuracy)
+             rotate   scale  transl  clouds    gaps  br/con    haze  gnoise     S&P   gblur   mblur    JPEG
+ATC MAE         0.6    11.7     1.9     1.6    12.2     1.6     2.0     1.3     3.7     1.3    18.1     2.9
+ATC bias       +0.1   +11.2    +1.5    +0.6   +11.0    +1.2    +1.5    +0.3    +2.4    +0.7   +13.5    +2.0
+ATC_al MAE      0.8     2.1     0.8     0.9     3.1     0.7     0.8     1.2     1.8     1.1     4.8     1.0
+ATC_al bias    +0.1    +0.8    -0.0    -0.4    -1.9    -0.3    -0.2    -0.6    -1.0    -0.5    -3.1    -0.1
+
+### r45: Spearman of each signal with accuracy over 60 streams (sign set so + = tracks accuracy) | ATC error (pt)
+model            conf  flip  mean   std |   ATC   max  bias | ATC_al   max  bias | flip_clean
+mae_in           0.96  0.98  0.95  0.89 |  12.6  66.2 +12.5 |    2.0  17.0  +1.8 |   3.7
+satmae           0.96  0.96  0.91  0.85 |   4.7  35.1  +4.0 |    1.4   5.2  -0.1 |   3.6
+scalemae         0.92  0.99  0.92  0.93 |  10.7  64.8 +10.5 |    1.3  11.1  +1.0 |   3.1
+moco_in          0.54  0.99  0.95  0.97 |  16.0  71.6 +15.6 |    1.6   8.0  -1.4 |   5.7
+moco_fmow        0.64  0.98  0.93  0.91 |  10.8  84.4 +10.3 |    0.9   8.4  +0.8 |   5.2
+gassl_fmow       0.98  0.98  0.95  0.97 |   4.9  44.2  +2.8 |    1.6   9.9  -1.6 |   3.1
+dino_in_s16      0.99  0.97  0.93  0.96 |   2.6  24.3  +1.6 |    1.8  10.3  -1.7 |   2.3
+satdino_s16      0.99  0.95  0.90  0.95 |   2.9  33.6  +2.8 |    0.8   6.6  +0.2 |   2.0
+dino_in_s8       1.00  0.98  0.96  0.96 |   2.4  12.0  -1.2 |    2.1   8.1  -2.1 |   2.0
+satdino_s8       0.98  0.96  0.90  0.93 |   3.4  27.0  +3.1 |    0.7   7.4  +0.2 |   2.0
+dino_in_b16      0.99  0.99  0.96  0.97 |   3.0  22.3  -0.4 |    2.3  11.0  -2.3 |   1.8
+satdino_b16      0.99  0.96  0.85  0.93 |   1.7   9.5  -0.9 |    2.4  12.0  -2.4 |   1.4
+dinov3_web_l16   0.96  0.94  0.85  0.88 |   0.9   6.7  -0.5 |    0.7   6.0  -0.6 |   1.2
+dinov3_sat_l16   0.98  0.96  0.89  0.94 |   3.4  38.8  +2.1 |    1.5   9.3  -1.4 |   2.7
+sup_in_r50       0.63  0.99  0.96  0.98 |  10.6  81.9  +9.7 |    1.0   3.8  -0.0 |   4.5
+sup_in_vitb16    0.99  0.97  0.96  0.95 |   1.0   5.6  +0.3 |    1.8   6.9  -1.8 |   3.1
+sup_in_vitl16    0.99  0.97  0.93  0.91 |   1.3   7.9  +0.6 |    2.1  13.6  -2.0 |   2.0
+--- r45 per corruption (17 backbones x 5 severities): MAE, bias (+ = overestimates accuracy)
+             rotate   scale  transl  clouds    gaps  br/con    haze  gnoise     S&P   gblur   mblur    JPEG
+ATC MAE         0.7     9.0     2.6     4.6    16.2     2.5     2.9     1.4     2.8     2.8    19.0     1.2
+ATC bias       -0.1    +7.4    +1.2    +3.0   +15.1    +1.4    +1.6    +0.6    +1.0    +2.0   +17.9    +0.2
+ATC_al MAE      0.5     2.4     0.7     1.4     3.5     0.8     0.8     0.8     1.6     0.5     4.6     0.8
+ATC_al bias    +0.2    -0.4    -0.3    -0.8    -2.9    -0.5    -0.7    -0.7    -1.4    -0.2    -1.5    -0.3
+
+### pooled over 17 backbones x 2 datasets x 60 streams (2,040 streams)
+ATC -> raw accuracy                 MAE  5.2  median  1.1  >5pt 19.6%  >10pt 12.8%  max 84.4  bias +4.1
+ATC_al -> aligned accuracy          MAE  1.6  median  0.7  >5pt  7.1%  >10pt  1.4%  max 18.6  bias -0.7
+ATC_al - k*excess_flip -> raw acc   MAE  2.4  median  1.2  >5pt 13.0%  >10pt  4.6%  max 26.1  bias -0.8
+(aligned acc - raw acc) vs excess_flip: slope k = 0.472, Pearson r = 0.942
+
+per backbone MAE (both datasets): ATC -> raw | ATC_al - k*flip -> raw
+  mae_in           12.5   3.7
+  satmae            3.8   3.1
+  scalemae          7.4   1.8
+  moco_in          14.8   4.0
+  moco_fmow        10.9   2.5
+  gassl_fmow        4.6   2.8
+  dino_in_s16       3.2   1.6
+  satdino_s16       2.9   1.9
+  dino_in_s8        2.1   2.3
+  satdino_s8        2.1   1.1
+  dino_in_b16       3.5   1.8
+  satdino_b16       1.6   1.7
+  dinov3_web_l16    0.7   0.9
+  dinov3_sat_l16    5.1   2.2
+  sup_in_r50        9.7   2.9
+  sup_in_vitb16     1.8   3.3
+  sup_in_vitl16     1.6   2.6

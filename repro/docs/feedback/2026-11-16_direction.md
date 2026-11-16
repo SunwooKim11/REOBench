@@ -150,3 +150,7 @@
 - RSPDBench 메모: `docs/reading/rspdbench.md`. 판단: 벤치마크째 채택하지 않고 연산자(P1·C1, 통제로 P2·P4)만 보조 표로.
 - 우선순위: (1) stage-1 분석 → (2) 자연 shift(RESISC45↔UCM, Potsdam→Vaihingen) → (3) 선별 백본 8–9개로 신호·TTA 실험
   → (4) RSPDBench 방식 연산자, DOFA, CLIP↔RemoteCLIP → (5) 다중분광·Prithvi·Galileo·TerraMind는 한계로 기술.
+- stage-1 분석: `experiments/2026-11-16_backbone_feats/ANALYSIS.md`. 추가 계산 `scripts/analysis/{labelfree_signals,eval_labelfree}.py`
+  → `signals/`. 핵심: confidence 기반 정확도 추정(ATC)은 motion blur·data gaps·scale과 MAE-ImageNet·MoCo·ResNet에서 크게 과신
+  (10pt 초과 12.8%), head 입력을 source 통계로 정렬하면 1.4%로 줄고, 정렬 전후 예측 flip 비율이 모든 백본에서 정확도를 따라감(0.90–1.00).
+  다음: RESISC45↔UCM에서 재현, 정렬 조건(배치 크기·혼합 stream) 흔들기, 선행 연구(AETTA 등) 확인.
