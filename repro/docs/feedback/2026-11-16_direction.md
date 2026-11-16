@@ -119,3 +119,10 @@
   적용해 latent 지표(head 불필요)를 비교하는 기준점.
 - GASSL: 체크포인트 4종, 입력 정규화, linear probe 프로토콜, ImageNet MoCo-v2와의 비교.
 - SatDINO: 공개 가중치(ViT-S/B, patch 크기), GSD 인코딩이 추론 때 GSD 입력을 요구하는지(ScaleMAE와 같은 문제), ImageNet DINO와의 비교.
+
+### 3.1 체크포인트 확인 결과 (2026-11-16) → `scripts/tools/download_backbones.sh`
+- MAE ViT-L ImageNet, MoCo-v2 200ep ImageNet, DINO ViT-S/16·S/8·B/16 ImageNet: 공식 URL 200 확인.
+- SatDINO: HF strakajk/satdino-{vit_small-16, vit_small-8, vit_base-16} (Apache-2.0). 키 'teacher'(백본), 'linear_head'(fMoW 63클래스).
+  README에 정규화 값과 추론 시 GSD 입력 여부는 없음(코드 확인 필요). 학습에 GSD 예측 손실만 언급.
+- GASSL: 공식 Zenodo가 이 서버에서 403(트래픽 차단). torchgeo HF 미러(cc-by-4.0)는 **MoCo-v2+Geo+TP만** 있음 → ImageNet MoCo-v2와의
+  짝에 Geo+TP 차이가 섞임. 순수 MoCo-v2 fMoW는 다른 곳에서 받아 복사 필요. GASSL 정규화 = ImageNet 값, 224px. repo에 라이선스 파일 없음.
