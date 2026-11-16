@@ -26,10 +26,16 @@ from .paths import THIRD
 
 W = "/data/rs/pretrained_weights"
 IMAGENET = ((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+FMOW_SATMAE = ((0.4182007312774658, 0.4214799106121063, 0.3991275727748871),
+               (0.28774282336235046, 0.27541765570640564, 0.2764017581939697))  # = cls_tta.py NORM["satmae"] (PN heads)
 FMOW_SATDINO = ((0.433, 0.436, 0.407), (0.198, 0.193, 0.195))  # SatDINO normalization_values["fmow"] (b033d3f)
 
 # name: (family, pretraining data, method, checkpoint, arch)
 SPECS = {
+    # REOBench MIM pair members at 224 (pretraining size: the checkpoint pos_embed 14x14 is used as is; at 256 REOBench drops
+    # it). ScaleMAE gets input_res = 1 as in its official eval. Model code = REOBench/Classification (common.py).
+    "satmae": ("reobench_mim", "fMoW-RGB", "SatMAE (MAE)", "/data/rs/pretrained_weights/satmae_fmow_non_temporal_rgb.pth", "satmae"),
+    "scalemae": ("reobench_mim", "fMoW-RGB", "Scale-MAE (MAE + GSD PE)", "/data/rs/pretrained_weights/scalemae-vitlarge-800.pth", "scalemae"),
     "mae_in": ("vit_timm", "ImageNet-1k", "MAE", f"{W}/imagenet/mae_pretrain_vit_large.pth", "vit_large_patch16_224"),
     "moco_in": ("resnet_moco", "ImageNet-1k", "MoCo-v2 200ep", f"{W}/imagenet/moco_v2_200ep_pretrain.pth.tar", None),
     "moco_fmow": ("resnet_moco", "fMoW-RGB", "MoCo-v2 200ep (GASSL baseline)", f"{W}/gassl/moco_fmow_200ep.pth.tar", None),
@@ -60,6 +66,16 @@ def _load(model, sd, allowed_missing=(), allowed_unexpected=()):
     bad_u = [k for k in msg.unexpected_keys if not k.startswith(tuple(allowed_unexpected))]
     assert not bad_m and not bad_u, f"missing {bad_m[:5]} unexpected {bad_u[:5]}"
     return msg
+
+
+class _ReobenchMIM(nn.Module):
+    def __init__(self, net, name):
+        super().__init__()
+        self.net, self.name = net, name
+
+    def forward(self, x):
+        from . import common
+        return common.features(self.net, self.name, x)
 
 
 class _DINOv3(nn.Module):
@@ -93,7 +109,7 @@ class _Supervised(nn.Module):
 def build(name, pretrained=True):
     """Return (model in eval mode, (mean, std), feature dim). pretrained=False gives the same arch with random weights."""
     fam, _, _, ckpt, arch = SPECS[name]
-    norm = FMOW_SATDINO if fam == "satdino" else IMAGENET
+    norm = FMOW_SATDINO if fam == "satdino" else FMOW_SATMAE if arch == "satmae" else IMAGENET
     if fam == "dinov3":  # a HF folder, not a single file; normalization from its preprocessor_config.json
         import json
         from transformers import DINOv3ViTConfig, DINOv3ViTModel
@@ -106,6 +122,15 @@ def build(name, pretrained=True):
         ck = torch.load(ckpt, map_location="cpu", weights_only=False) if pretrained else None
     if fam == "dinov3":
         pass
+    elif fam == "reobench_mim":
+        from . import common
+        mk = common.models_vit if arch == "satmae" else common.scale_models_vit
+        kw = dict(patch_size=16, in_chans=3) if arch == "satmae" else {}
+        net = mk.vit_large_patch16(img_size=224, num_classes=0, drop_path_rate=0.0, global_pool=False, **kw)
+        if pretrained:
+            _load(net, ck["model"], allowed_missing=("head",),
+                  allowed_unexpected=("mask_token", "decoder", "fpn", "fcn_high", "fcn_low"))  # MAE / Scale-MAE decoders
+        m = _ReobenchMIM(net, arch)
     elif fam == "vit_timm":
         m = timm.create_model(arch, pretrained=False, num_classes=0, global_pool="token")
         if pretrained:
