@@ -63,3 +63,6 @@
   가져갈 것: (a) 서로 다른 물리 메커니즘의 corruption으로 효과가 하나에 특이하지 않음을 보이는 선정 논리, (b) "정규화 전 손상 →
   정규화 불일치도 shift의 일부" 문장, (c) CKA·코사인·participation ratio로 표현 drift를 보는 분석 도구(F2의 latent 분석에 사용),
   (d) EO 인코더의 "rigid + 과신" = 엔트로피 TTA가 신호를 잃는 이유와 연결. 다음: EarthShift 메모 → 최종 생각 → 방향 결정.
+- 2026-11-16 F2/F3: Beyond Accuracy Results 이후 분석 추가 (reading/beyond_accuracy.md "Claude 분석"). 재료 M1~M8.
+  실험 후보(결정은 EarthShift 메모와 사용자 최종 생각 이후): (a) drift를 공통 이동과 샘플별 잔차로 분해 + CKA·cosine·PR,
+  (b) TTA 방법별 ECE·NLL, (c) MAE ViT-L(ImageNet) vs SatMAE(fMoW) 통제 비교.

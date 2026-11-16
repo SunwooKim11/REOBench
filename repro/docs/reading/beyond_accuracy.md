@@ -176,3 +176,94 @@ The three metrics are therefore complementary rather than redundant: CKA is a  s
 | motion blur | 비행 방향 smearing | 수평 커널 (AID-C 실제 길이 10~30) |
 | 선정 원칙 | 물리 메커니즘이 서로 다른 3종 → 효과가 하나에 특이한지 확인 | 12종 (기하·환경·센서) |
 | seed | (base seed, image index)로 고정 | 없음 (우리 RESISC45-C는 고정) |
+
+---
+
+## Claude 분석: Results 이후 읽는 법과 가져갈 재료 (2026-11-16, 사용자 요청)
+
+### 0. 지표 입문 (이 논문을 읽는 데 필요한 만큼)
+- **ECE**: 예측을 confidence 구간(15개)으로 나누고, 구간마다 |평균 confidence − 실제 정확도|를 재서 가중 평균. 0이면 "90% 확신한
+  예측이 실제로 90% 맞음". **signed ECE** = 평균 confidence − 평균 정확도. 양수 = 과신.
+- **NLL, Brier**: 정답 클래스에 준 확률을 직접 채점. ECE는 구간 나누기에 의존하므로 보조 확인용으로 같이 봄.
+- **temperature scaling(TS)**: logit을 상수 T로 나눠 confidence만 낮춤(예측 클래스는 안 바뀜). T는 clean 검증 400장으로 한 번 맞춤.
+- **selective prediction**: confidence 낮은 예측을 버리면 남은 것의 정확도가 오르는가. "하위 10% 버렸을 때 정확도 이득"과 eAURC(0에
+  가까울수록 confidence가 맞고 틀림을 잘 가름).
+- **Kendall τ**: 두 조건에서 인코더 16개의 순위가 얼마나 같은가 (1 = 같음, 0 = 무관).
+- **linear CKA**: 같은 샘플 N개의 clean feature X와 corrupted feature Y에 대해 "샘플들 사이의 상대 배치"가 보존됐는지. 계산 전에
+  **feature마다 샘플 평균을 뺌(열 중심화)**. 회전·전체 스케일에 불변.
+- **샘플별 cosine**: 같은 샘플의 clean/corrupted feature가 얼마나 같은 방향인지 (개별 이동).
+- **participation ratio(PR)**: 분산이 몇 개 방향에 퍼져 있는지 (유효 차원 수).
+
+### 1. Results 한 줄씩
+| 절 | 결과 | 핵심 숫자 |
+|---|---|---|
+| A | clean에서는 GeoFM과 일반 인코더가 구분 안 됨 | acc 0.847 vs 0.839, ECE 0.034 vs 0.038 |
+| B | shift에서 정확도와 calibration이 같이 무너지고, 방향은 **과신** | 평균 acc 0.84 → cloud s3 0.34 / s5 0.15, Poisson–Gaussian s3 0.15, motion blur s3 0.66. signed ECE 거의 전부 양수 |
+| B | clean 순위로는 shift 아래 calibration 순위를 못 맞힘 | acc 순위 τ 0.39 (clean→cloud s3), ECE 순위 τ 0.07. shift끼리는 일관(s3→s5 τ 0.72) |
+| B | 분할도 같음. mIoU 하락은 비슷한데 ECE 악화는 GeoFM이 큼 | s5/clean pixel-ECE 비: motion blur 4.75× vs 3.47×, P–G 8.30× vs 7.34× |
+| B | RGB만 쓰는 데이터(ADVANCE, RESISC45)에서도 EO가 더 과신 | cloud s3 ECE 0.44 vs 0.25, clean은 0.023 vs 0.024 |
+| C | EO 인코더는 덜 움직이고(B1), 움직여도 confidence가 안 변하고(B2), "많이 움직였는데 확신하고 틀린" 샘플이 많음(B3) | CKA 0.82 vs 0.61, PR 13 vs 31, drift–confidence ρ −0.07 vs −0.17, 0.14 vs 0.06 |
+| C | 강도별 CKA 하락 속도가 다름 | EO 0.93→0.71, 일반 0.83→0.40 (s1→s5) |
+| C | CKA가 높은 인코더일수록 ECE가 더 늘어남 | 15개 조건 모두 ρ > 0 (중앙값 0.39), 6개만 p < 0.05 |
+| D | 학습 데이터를 1%로 줄여도 같은 패턴 | acc 순위 τ 0.75, ECE 순위 τ 0.28 |
+| E | TS는 shift에서 효과 0, ensemble은 일부, GP head는 clean을 희생 | EO cloud s3 ECE 0.400 → 0.403 (TS). SVGP: 심한 구름 ECE 절반, clean ECE 3배(0.108 vs 0.036) |
+| F | confidence로 틀린 예측을 걸러낼 수 없음 | 하위 10% 기권 이득 → 0 (일부 음수), eAURC 0.038 → 0.187 (cloud s3) |
+
+논문이 스스로 인정한 한계: C절은 상관 분석·seed 1개·n = 8 vs 7. Panopticon은 rigid한데 가장 덜 과신(반례). EO와 일반 그룹은
+아키텍처·크기·augmentation도 달라 "도메인 효과"로 단정 못 함. 기하 손상 미실험. fine-tuning·UperNet 미실험.
+
+### 2. 가져갈 재료
+
+**M1. "엔트로피 기반 TTA가 GeoFM에서 안 듣는 이유"의 외부 증거 (가장 직접적)**
+- F절: confidence 하위 10%를 버려도 정확도 이득이 0 → confidence가 맞고 틀림을 못 가름. EATA·SAR·DeYO의 "엔트로피 낮은 샘플만 신뢰"는
+  selective prediction과 같은 가정이므로 같은 이유로 실패.
+- B절: 실패 방향이 과신 → 엔트로피 최소화는 과신을 더 키우는 방향.
+- 우리 §4.3(SatMAE 91~99% 확신인데 정확도는 전체와 같음, entropy AUROC 0.93 → 0.66~0.82)과 같은 현상을 16개 인코더·4개 데이터셋에서
+  독립적으로 본 것. → "SatMAE/AID만의 현상이 아니다"의 근거 (교수님 F3 reward hacking 우려 대응).
+
+**M2. "신호를 confidence가 아니라 표현에서 가져와야 한다"는 저자들의 제안 (우리 방향의 인용 근거)**
+> "A more promising direction may be to base correction and abstention on signals other than the model's own confidence. …
+> the representation itself carries information about shift: the CKA and participation-ratio drift measures … operate on the
+> embedding rather than the softmax." (§V-e)
+- 통계 정렬(ISA, 블록 정렬)은 정확히 이 방향. 이 논문은 진단까지만 하고 적응은 안 함 → 우리가 채우는 자리.
+- TS가 실패하는 이유 = "clean 데이터로 한 번 맞추고 shift를 본 적이 없어서". TTA는 라벨 없는 테스트 배치를 본다는 점이 차이.
+
+**M3. rigidity 퍼즐에 대한 해석 (Claude 추론, 논문 주장 아님 → 검증 필요)**
+- CKA는 feature마다 샘플 평균을 빼고 계산함. 그래서 **모든 샘플에 공통인 이동(Y = X + c)은 CKA에 전혀 안 잡힘** (CKA = 1).
+- 그런데 linear head는 절대 좌표에서 동작: logit = Wz + b이므로 공통 이동 c는 모든 샘플의 logit에 Wc를 더함 → 특정 클래스 쪽으로
+  예측이 쏠리고 confidence는 그대로 높음.
+- 이 그림은 세 가지를 동시에 설명: (B1) CKA 높음, (B2) drift가 커도 confidence 안 떨어짐, 우리 §4.3의 예측 쏠림(motion blur → Beach 60%).
+- 그리고 우리 §5.7(손상이 채널 평균 이동으로 나타남)과 같은 말. 공통 이동은 통계 정렬이 정확히 되돌리는 성분.
+- 예측: "rigid한 인코더(CKA 높음)일수록 통계 정렬로 회복되는 비율이 크다". 맞으면 "RS FM은 rigid해서 과신하지만, 같은 이유로 싸게
+  고쳐진다"는 문제 제기 → 해법 연결이 됨.
+- 주의: 논문 본문에는 cosine 결과 숫자가 없어(정의만 있음) 이 해석을 논문만으로는 확인 못 함.
+
+**M4. latent 분석 도구 (교수님 F2 "latent feature 분포 보기")**
+- CKA + 샘플별 cosine + PR + drift–confidence 상관 + "high-drift & confidence > 0.9 & 오답" 비율. 4개 층에 hook.
+- 우리 `feature_shift.py`(채널 평균 이동)에 이 지표들을 추가하면 선행 논문과 같은 도구로 보고 가능.
+- 추가로 M3 검증용 분해: drift ‖x_corr − x_clean‖²를 (공통 이동) + (샘플별 잔차)로 나눠 공통 이동이 차지하는 비율.
+
+**M5. calibration을 TTA의 두 번째 평가축으로**
+- none / Tent / EATA / ISA / 블록 정렬에 대해 정확도와 함께 ECE·NLL 보고. 가설: 엔트로피 최소화는 ECE를 악화, 통계 정렬은 개선.
+- FOA도 ECE를 같이 보고함(3.2). logit만 저장하면 되므로 비용 작음.
+
+**M6. 설정 방어 문장 (사용자 메모 §F에 이미 표시)**
+- 정규화 전 손상("the normalization mismatch … is itself part of the shift") → ISA 대상의 정당성, 학습 셋 통계만 쓴다는 가정.
+- 물리 메커니즘이 다른 손상 여러 개에서 같은 효과 → 한 손상의 artifact가 아님. 합성이지만 물리적 동기 + 실제 shift 벤치마크로 보완.
+
+**M7. 이 논문이 비워 둔 곳 = 우리가 할 수 있는 곳**
+- 기하 손상 미실험 (REOBench에는 있음). UperNet 등 풍부한 decoder 미실험 (우리 분할이 UperNet). 적응 방법 없음.
+- "pretraining 도메인만 다른 통제 비교가 필요"(§IV-C, §V-c)라고 명시. **MAE ViT-L(ImageNet) vs SatMAE ViT-L(fMoW)** 는 아키텍처와
+  objective가 같고 사전학습 데이터만 다름 → 이 통제 실험이 됨 (교수님 F4, F5와 연결. 체크포인트 세부는 확인 필요).
+- 저자들의 대안 가설: 자연 영상 사전학습은 Gaussian blur·photometric jitter augmentation을 많이 쓰고, EO MIM은 crop·flip·masking 위주
+  → 격차가 도메인이 아니라 augmentation 노출 때문일 수 있음.
+
+**M8. 겹치는 데이터**
+- RESISC45가 이 논문의 분류 4종에 포함(Ntest 6,300 = 우리 RESISC45-C와 같은 크기. 같은 torchgeo split인지는 미확인).
+- motion blur는 "REOBench를 따라" 수평 커널이지만 폭이 3~21(224px). 이 논문에서 motion blur가 "약한 손상"인 것은 이 설정 때문일 수
+  있음. REOBench(MIM 최대 하락)와 반대로 보이므로 "motion blur는 약하다"는 가져오면 안 됨.
+
+### 3. 가져오면 안 되는 것
+- "EO pretraining이 과신의 원인" → 저자도 가설로만 둠 (상관, 교란 변수, 반례).
+- "CKA가 높으면 나쁘다" → 높은 CKA 자체가 아니라 "정확도는 떨어졌는데 confidence가 안 변함"이 문제.
+- 우리 백본(SatMAE, ScaleMAE)은 이 논문의 16개에 없음. 수치를 그대로 옮겨 말할 수 없고, 같은 지표를 우리 모델에서 재야 함.
