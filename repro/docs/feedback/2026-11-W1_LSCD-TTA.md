@@ -49,7 +49,7 @@
 
 ## 할 일
 - [x] F3: Beyond Accuracy 원문 확보·정독 (2026-11-16, reading/beyond_accuracy.md)
-- [ ] F3: REOBench 계열 논문 목록 (EarthShift 등) 정리
+- [x] F3: REOBench 계열 논문 목록 (EarthShift 등) 정리 (2026-11-16, reading/earthshift.md)
 - [ ] F2: RS corruption vs 자연 영상 corruption의 latent feature 분포 비교 분석 설계
 - [ ] F2: "RS 성질로 인한 TTA 문제"가 corruption에서도 이어지는지 선행 연구 조사
 - [ ] F4: fMoW 사전학습 ResNet / ViT 체크포인트 목록과 각 head 학습 방식
@@ -66,3 +66,6 @@
 - 2026-11-16 F2/F3: Beyond Accuracy Results 이후 분석 추가 (reading/beyond_accuracy.md "Claude 분석"). 재료 M1~M8.
   실험 후보(결정은 EarthShift 메모와 사용자 최종 생각 이후): (a) drift를 공통 이동과 샘플별 잔차로 분해 + CKA·cosine·PR,
   (b) TTA 방법별 ECE·NLL, (c) MAE ViT-L(ImageNet) vs SatMAE(fMoW) 통제 비교.
+- 2026-11-16 F3/F5: EarthShift 독해 메모 → [reading/earthshift.md](../reading/earthshift.md). 가져갈 것: TTA 공백 문장, fine-tuning이
+  강건성을 못 올림, scale shift(RESISC45↔UCM)에서 ID의 43% 손실, 합성+실제 shift 둘 다 필요. 주의: ResNet 우위는 프로토콜(ViT ID 77.5%)과
+  Sentinel 계열 GFM의 입력 영역 문제가 섞여 있고, 우리 백본은 이 논문에 없음. 다음: 사용자 브레인스토밍 → 방향 결정.
