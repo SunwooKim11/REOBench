@@ -142,3 +142,11 @@
 - gassl_fmow(MoCo-v2+Geo+TP)는 주 짝에서 제외, 선택 항목으로 유지 (moco_fmow가 moco_in의 정확한 짝).
 - 확인 필요: DINOv3-Sat의 CLS kNN(AID 49.7)이 patch 평균(72.7)보다 낮음. 로딩 누락 키 없음. DINOv2/v3 linear 평가는 CLS+patch 평균을
   같이 쓰는 관례라, 모델별 공식 linear 특징을 따를지 CLS로 통일할지 결정 필요.
+
+## 진행 기록 2026-11-17
+
+- stage 1 전부 완료: 분류 지표 34개(백본 17 × AID/RESISC45), 분할 drift 2개, RRSHID 17개, natural_vs_rs 17개 + 픽셀.
+- 결과표: `experiments/2026-11-16_backbone_feats/RESULTS.md` (생성: `scripts/analysis/summarize_stage1.py`). 수치만, 해석 없음.
+- RSPDBench 메모: `docs/reading/rspdbench.md`. 판단: 벤치마크째 채택하지 않고 연산자(P1·C1, 통제로 P2·P4)만 보조 표로.
+- 우선순위: (1) stage-1 분석 → (2) 자연 shift(RESISC45↔UCM, Potsdam→Vaihingen) → (3) 선별 백본 8–9개로 신호·TTA 실험
+  → (4) RSPDBench 방식 연산자, DOFA, CLIP↔RemoteCLIP → (5) 다중분광·Prithvi·Galileo·TerraMind는 한계로 기술.

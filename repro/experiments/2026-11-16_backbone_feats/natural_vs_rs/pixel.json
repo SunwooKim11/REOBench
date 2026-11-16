@@ -1,0 +1,422 @@
+{
+ "imagenet/gaussian_noise_1": {
+  "psnr": 24.515886306762695,
+  "ms_ssim": 0.907017171382904
+ },
+ "imagenet/gaussian_noise_2": {
+  "psnr": 21.43806266784668,
+  "ms_ssim": 0.8446760773658752
+ },
+ "imagenet/gaussian_noise_3": {
+  "psnr": 18.421178817749023,
+  "ms_ssim": 0.7649683356285095
+ },
+ "imagenet/gaussian_noise_4": {
+  "psnr": 15.817551612854004,
+  "ms_ssim": 0.6795123815536499
+ },
+ "imagenet/gaussian_noise_5": {
+  "psnr": 13.392301559448242,
+  "ms_ssim": 0.5770006775856018
+ },
+ "imagenet/impulse_noise_1": {
+  "psnr": 22.638301849365234,
+  "ms_ssim": 0.8747032284736633
+ },
+ "imagenet/impulse_noise_2": {
+  "psnr": 19.780630111694336,
+  "ms_ssim": 0.8051806688308716
+ },
+ "imagenet/impulse_noise_3": {
+  "psnr": 18.099870681762695,
+  "ms_ssim": 0.7566785216331482
+ },
+ "imagenet/impulse_noise_4": {
+  "psnr": 15.411874771118164,
+  "ms_ssim": 0.6642048954963684
+ },
+ "imagenet/impulse_noise_5": {
+  "psnr": 13.390434265136719,
+  "ms_ssim": 0.575268566608429
+ },
+ "imagenet/gaussian_blur_1": {
+  "psnr": 28.745737075805664,
+  "ms_ssim": 0.9720999598503113
+ },
+ "imagenet/gaussian_blur_2": {
+  "psnr": 25.06265640258789,
+  "ms_ssim": 0.9178113341331482
+ },
+ "imagenet/gaussian_blur_3": {
+  "psnr": 23.247234344482422,
+  "ms_ssim": 0.8561050295829773
+ },
+ "imagenet/gaussian_blur_4": {
+  "psnr": 22.09418296813965,
+  "ms_ssim": 0.7982831597328186
+ },
+ "imagenet/gaussian_blur_5": {
+  "psnr": 20.625951766967773,
+  "ms_ssim": 0.7018642425537109
+ },
+ "imagenet/motion_blur_1": {
+  "psnr": 23.724943161010742,
+  "ms_ssim": 0.8961794972419739
+ },
+ "imagenet/motion_blur_2": {
+  "psnr": 21.580299377441406,
+  "ms_ssim": 0.8195329904556274
+ },
+ "imagenet/motion_blur_3": {
+  "psnr": 19.903400421142578,
+  "ms_ssim": 0.729479193687439
+ },
+ "imagenet/motion_blur_4": {
+  "psnr": 18.66644287109375,
+  "ms_ssim": 0.6455172896385193
+ },
+ "imagenet/motion_blur_5": {
+  "psnr": 18.021915435791016,
+  "ms_ssim": 0.5974137187004089
+ },
+ "imagenet/jpeg_compression_1": {
+  "psnr": 29.10403060913086,
+  "ms_ssim": 0.9625224471092224
+ },
+ "imagenet/jpeg_compression_2": {
+  "psnr": 28.119661331176758,
+  "ms_ssim": 0.9510087370872498
+ },
+ "imagenet/jpeg_compression_3": {
+  "psnr": 27.525774002075195,
+  "ms_ssim": 0.9426091313362122
+ },
+ "imagenet/jpeg_compression_4": {
+  "psnr": 26.141830444335938,
+  "ms_ssim": 0.9179649949073792
+ },
+ "imagenet/jpeg_compression_5": {
+  "psnr": 24.815715789794922,
+  "ms_ssim": 0.8878033757209778
+ },
+ "imagenet/brightness_1": {
+  "psnr": 21.626346588134766,
+  "ms_ssim": 0.9801424741744995
+ },
+ "imagenet/brightness_2": {
+  "psnr": 15.982309341430664,
+  "ms_ssim": 0.9501603245735168
+ },
+ "imagenet/brightness_3": {
+  "psnr": 12.895689964294434,
+  "ms_ssim": 0.9017491936683655
+ },
+ "imagenet/brightness_4": {
+  "psnr": 10.860547065734863,
+  "ms_ssim": 0.8316962718963623
+ },
+ "imagenet/brightness_5": {
+  "psnr": 9.4998140335083,
+  "ms_ssim": 0.7468370795249939
+ },
+ "imagenet/contrast_1": {
+  "psnr": 17.710731506347656,
+  "ms_ssim": 0.7462552785873413
+ },
+ "imagenet/contrast_2": {
+  "psnr": 16.40477180480957,
+  "ms_ssim": 0.640104353427887
+ },
+ "imagenet/contrast_3": {
+  "psnr": 15.268731117248535,
+  "ms_ssim": 0.5132846832275391
+ },
+ "imagenet/contrast_4": {
+  "psnr": 14.26487922668457,
+  "ms_ssim": 0.36737340688705444
+ },
+ "imagenet/contrast_5": {
+  "psnr": 13.804688453674316,
+  "ms_ssim": 0.28664571046829224
+ },
+ "aid/gaussian_noise_1": {
+  "psnr": 24.342939376831055,
+  "ms_ssim": 0.8891287446022034
+ },
+ "aid/gaussian_noise_2": {
+  "psnr": 21.15013313293457,
+  "ms_ssim": 0.8110191226005554
+ },
+ "aid/gaussian_noise_3": {
+  "psnr": 18.128868103027344,
+  "ms_ssim": 0.7167990803718567
+ },
+ "aid/gaussian_noise_4": {
+  "psnr": 15.602566719055176,
+  "ms_ssim": 0.6211345195770264
+ },
+ "aid/gaussian_noise_5": {
+  "psnr": 13.337779998779297,
+  "ms_ssim": 0.5140861868858337
+ },
+ "aid/impulse_noise_1": {
+  "psnr": 23.007753372192383,
+  "ms_ssim": 0.8646461367607117
+ },
+ "aid/impulse_noise_2": {
+  "psnr": 20.109989166259766,
+  "ms_ssim": 0.7838022112846375
+ },
+ "aid/impulse_noise_3": {
+  "psnr": 18.438432693481445,
+  "ms_ssim": 0.72770756483078
+ },
+ "aid/impulse_noise_4": {
+  "psnr": 15.794328689575195,
+  "ms_ssim": 0.6235130429267883
+ },
+ "aid/impulse_noise_5": {
+  "psnr": 13.82640552520752,
+  "ms_ssim": 0.5283817648887634
+ },
+ "aid/gaussian_blur_1": {
+  "psnr": 31.62342643737793,
+  "ms_ssim": 0.9776162505149841
+ },
+ "aid/gaussian_blur_2": {
+  "psnr": 27.260353088378906,
+  "ms_ssim": 0.9122270345687866
+ },
+ "aid/gaussian_blur_3": {
+  "psnr": 25.40323257446289,
+  "ms_ssim": 0.8388333916664124
+ },
+ "aid/gaussian_blur_4": {
+  "psnr": 24.3269100189209,
+  "ms_ssim": 0.773168683052063
+ },
+ "aid/gaussian_blur_5": {
+  "psnr": 23.05902099609375,
+  "ms_ssim": 0.6705456376075745
+ },
+ "aid/motion_blur_1": {
+  "psnr": 26.12910270690918,
+  "ms_ssim": 0.8894920349121094
+ },
+ "aid/motion_blur_2": {
+  "psnr": 24.1390438079834,
+  "ms_ssim": 0.806097686290741
+ },
+ "aid/motion_blur_3": {
+  "psnr": 22.71935272216797,
+  "ms_ssim": 0.7141187787055969
+ },
+ "aid/motion_blur_4": {
+  "psnr": 21.748580932617188,
+  "ms_ssim": 0.6351879239082336
+ },
+ "aid/motion_blur_5": {
+  "psnr": 21.260560989379883,
+  "ms_ssim": 0.5913900136947632
+ },
+ "aid/jpeg_compression_1": {
+  "psnr": 31.456130981445312,
+  "ms_ssim": 0.9671345353126526
+ },
+ "aid/jpeg_compression_2": {
+  "psnr": 30.190805435180664,
+  "ms_ssim": 0.953988790512085
+ },
+ "aid/jpeg_compression_3": {
+  "psnr": 29.439058303833008,
+  "ms_ssim": 0.9442672729492188
+ },
+ "aid/jpeg_compression_4": {
+  "psnr": 27.663328170776367,
+  "ms_ssim": 0.9144831299781799
+ },
+ "aid/jpeg_compression_5": {
+  "psnr": 25.997047424316406,
+  "ms_ssim": 0.8779488801956177
+ },
+ "aid/brightness_1": {
+  "psnr": 21.050790786743164,
+  "ms_ssim": 0.9888924956321716
+ },
+ "aid/brightness_2": {
+  "psnr": 15.03357982635498,
+  "ms_ssim": 0.9668934345245361
+ },
+ "aid/brightness_3": {
+  "psnr": 11.684057235717773,
+  "ms_ssim": 0.9309422969818115
+ },
+ "aid/brightness_4": {
+  "psnr": 9.403266906738281,
+  "ms_ssim": 0.8719205856323242
+ },
+ "aid/brightness_5": {
+  "psnr": 7.8338165283203125,
+  "ms_ssim": 0.7859477996826172
+ },
+ "aid/contrast_1": {
+  "psnr": 22.721696853637695,
+  "ms_ssim": 0.7757847905158997
+ },
+ "aid/contrast_2": {
+  "psnr": 21.434337615966797,
+  "ms_ssim": 0.6822100877761841
+ },
+ "aid/contrast_3": {
+  "psnr": 20.305496215820312,
+  "ms_ssim": 0.5708664655685425
+ },
+ "aid/contrast_4": {
+  "psnr": 19.306499481201172,
+  "ms_ssim": 0.4440583884716034
+ },
+ "aid/contrast_5": {
+  "psnr": 18.850393295288086,
+  "ms_ssim": 0.37563708424568176
+ },
+ "r45/gaussian_noise_1": {
+  "psnr": 24.373821258544922,
+  "ms_ssim": 0.8938333988189697
+ },
+ "r45/gaussian_noise_2": {
+  "psnr": 21.198909759521484,
+  "ms_ssim": 0.817213773727417
+ },
+ "r45/gaussian_noise_3": {
+  "psnr": 18.19095230102539,
+  "ms_ssim": 0.7230512499809265
+ },
+ "r45/gaussian_noise_4": {
+  "psnr": 15.659899711608887,
+  "ms_ssim": 0.6264099478721619
+ },
+ "r45/gaussian_noise_5": {
+  "psnr": 13.361956596374512,
+  "ms_ssim": 0.5176672339439392
+ },
+ "r45/impulse_noise_1": {
+  "psnr": 22.93622589111328,
+  "ms_ssim": 0.8676763772964478
+ },
+ "r45/impulse_noise_2": {
+  "psnr": 20.041748046875,
+  "ms_ssim": 0.7871742844581604
+ },
+ "r45/impulse_noise_3": {
+  "psnr": 18.36623764038086,
+  "ms_ssim": 0.7306854724884033
+ },
+ "r45/impulse_noise_4": {
+  "psnr": 15.718639373779297,
+  "ms_ssim": 0.6252902746200562
+ },
+ "r45/impulse_noise_5": {
+  "psnr": 13.740697860717773,
+  "ms_ssim": 0.5290794372558594
+ },
+ "r45/gaussian_blur_1": {
+  "psnr": 31.201576232910156,
+  "ms_ssim": 0.976150393486023
+ },
+ "r45/gaussian_blur_2": {
+  "psnr": 26.931663513183594,
+  "ms_ssim": 0.9086893796920776
+ },
+ "r45/gaussian_blur_3": {
+  "psnr": 25.125017166137695,
+  "ms_ssim": 0.834835946559906
+ },
+ "r45/gaussian_blur_4": {
+  "psnr": 24.080341339111328,
+  "ms_ssim": 0.7695276141166687
+ },
+ "r45/gaussian_blur_5": {
+  "psnr": 22.847721099853516,
+  "ms_ssim": 0.6677066087722778
+ },
+ "r45/motion_blur_1": {
+  "psnr": 25.836795806884766,
+  "ms_ssim": 0.8855575323104858
+ },
+ "r45/motion_blur_2": {
+  "psnr": 23.892440795898438,
+  "ms_ssim": 0.8012206554412842
+ },
+ "r45/motion_blur_3": {
+  "psnr": 22.491554260253906,
+  "ms_ssim": 0.7084842324256897
+ },
+ "r45/motion_blur_4": {
+  "psnr": 21.542211532592773,
+  "ms_ssim": 0.627845823764801
+ },
+ "r45/motion_blur_5": {
+  "psnr": 21.04326629638672,
+  "ms_ssim": 0.5813738107681274
+ },
+ "r45/jpeg_compression_1": {
+  "psnr": 31.201536178588867,
+  "ms_ssim": 0.967388391494751
+ },
+ "r45/jpeg_compression_2": {
+  "psnr": 29.9637508392334,
+  "ms_ssim": 0.9539682269096375
+ },
+ "r45/jpeg_compression_3": {
+  "psnr": 29.242589950561523,
+  "ms_ssim": 0.944220244884491
+ },
+ "r45/jpeg_compression_4": {
+  "psnr": 27.539066314697266,
+  "ms_ssim": 0.9137226343154907
+ },
+ "r45/jpeg_compression_5": {
+  "psnr": 25.89474105834961,
+  "ms_ssim": 0.8754798769950867
+ },
+ "r45/brightness_1": {
+  "psnr": 21.069988250732422,
+  "ms_ssim": 0.988913357257843
+ },
+ "r45/brightness_2": {
+  "psnr": 15.037332534790039,
+  "ms_ssim": 0.9670493602752686
+ },
+ "r45/brightness_3": {
+  "psnr": 11.652488708496094,
+  "ms_ssim": 0.933399498462677
+ },
+ "r45/brightness_4": {
+  "psnr": 9.31994915008545,
+  "ms_ssim": 0.8804001808166504
+ },
+ "r45/brightness_5": {
+  "psnr": 7.688206195831299,
+  "ms_ssim": 0.8011080622673035
+ },
+ "r45/contrast_1": {
+  "psnr": 22.514162063598633,
+  "ms_ssim": 0.7700412273406982
+ },
+ "r45/contrast_2": {
+  "psnr": 21.226667404174805,
+  "ms_ssim": 0.6737882494926453
+ },
+ "r45/contrast_3": {
+  "psnr": 20.09767723083496,
+  "ms_ssim": 0.5592403411865234
+ },
+ "r45/contrast_4": {
+  "psnr": 19.100252151489258,
+  "ms_ssim": 0.4288111925125122
+ },
+ "r45/contrast_5": {
+  "psnr": 18.642271041870117,
+  "ms_ssim": 0.35801008343696594
+ }
+}
