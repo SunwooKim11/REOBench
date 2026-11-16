@@ -1,0 +1,14 @@
+model          data         method                             dim  kNN AID  random  feat std         IN top-1
+mae_in         ImageNet-1k  MAE                               1024     55.7    27.0     0.518                 
+moco_in        ImageNet-1k  MoCo-v2 200ep                     2048     68.7    18.0     0.015                 
+moco_fmow      fMoW-RGB     MoCo-v2 200ep (GASSL baseline)    2048     68.7    26.3     0.040                 
+gassl_fmow     fMoW-RGB     MoCo-v2+Geo+TP (GASSL)            2048     77.3    19.7     0.079                 
+dino_in_s16    ImageNet-1k  DINO                               384     78.0    24.7     4.809                 
+dino_in_s8     ImageNet-1k  DINO                               384     80.7    28.0     4.181                 
+dino_in_b16    ImageNet-1k  DINO                               768     77.7    26.0     2.373                 
+satdino_s16    fMoW-RGB     SatDINO                            384     88.3    25.0     2.724                 
+satdino_s8     fMoW-RGB     SatDINO                            384     89.3    25.7     2.261                 
+satdino_b16    fMoW-RGB     SatDINO                            768     88.0    28.3     1.262                 
+sup_in_r50     ImageNet-1k  supervised (torchvision V1)       2048     73.7    24.7     0.427     76.1 [76.13]
+sup_in_vitb16  ImageNet-1k  supervised (torchvision V1)        768     70.0    27.0     0.710     81.1 [81.07]
+sup_in_vitl16  ImageNet-1k  supervised (torchvision V1)       1024     71.3    26.3     0.696     79.9 [79.66]
