@@ -4,7 +4,13 @@ Each pair shares architecture and pretraining method; only the pretraining data 
 reference anchors without an fMoW pair. Checkpoints: scripts/tools/download_backbones.sh -> /data/rs/pretrained_weights.
 
     model, norm, dim = backbones.build("mae_in")      # norm = (mean, std) to put in T.Normalize
-    feats = model(x)                                  # (B, dim): CLS after the final norm (ViT) / global avg pool (ResNet)
+    feats = model(x)                                  # (B, dim): the feature each method's own linear evaluation uses
+
+Linear-probe feature per family (official protocol of the model; identical inside a pair):
+  MAE, SatMAE, DINO / SatDINO, supervised ViT : CLS after the final norm (SatDINO's released heads are CLS-only, so the
+                                                DINO pair uses that instead of DINO's ImageNet setting of 4 blocks / avgpool)
+  DINOv3                                      : [CLS, patch mean] (2 x dim)
+  ResNet-50                                   : global average pool
 
 The ViT-L MIM pair at 256 px (SatMAE, ScaleMAE as in REOBench) stays in common.build_backbone; here everything is the
 model's own pretraining resolution (224, timm / torchvision / SatDINO code). Loading fails loudly on unexpected key gaps.
@@ -57,14 +63,16 @@ def _load(model, sd, allowed_missing=(), allowed_unexpected=()):
 
 
 class _DINOv3(nn.Module):
-    """transformers DINOv3ViTModel -> pooler_output (CLS after the final norm; 4 register tokens are dropped)."""
+    """transformers DINOv3ViTModel -> [CLS, mean of patch tokens] after the final norm (2 x dim), the input of the official
+    DINOv3 linear classifier (facebookresearch/dinov3 hub/classifiers.py). Tokens = CLS, register tokens, patches."""
 
     def __init__(self, net):
         super().__init__()
-        self.net = net
+        self.net, self.skip = net, 1 + net.config.num_register_tokens
 
     def forward(self, x):
-        return self.net(pixel_values=x).pooler_output
+        h = self.net(pixel_values=x).last_hidden_state
+        return torch.cat([h[:, 0], h[:, self.skip:].mean(1)], dim=1)
 
 
 class _Supervised(nn.Module):
