@@ -8,7 +8,7 @@
 #                   plain MoCo-v2 fMoW = Zenodo only (see below)
 #   DINO ViT-S/B    SatDINO ViT-S/16, S/8, B/16 (HF strakajk, Apache-2.0) DINO ViT-S/16, S/8, B/16 (facebookresearch/dino)
 #
-# All URLs checked with HEAD on 2026-11-16 (sizes below). Total about 2.7 GB.
+# All URLs checked with HEAD on 2026-11-16 (sizes below). Total about 4.3 GB.
 # Zenodo (GASSL official, record 7379715) answers 403 "unusual traffic" from this server, so the plain MoCo-v2 fMoW
 # checkpoint (the exact pair of ImageNet MoCo-v2) has to be fetched elsewhere and copied in:
 #   https://zenodo.org/record/7379715/files/moco.pth.tar?download=1  ->  $OUT/gassl/moco_fmow_200ep.pth.tar
@@ -42,6 +42,15 @@ get https://dl.fbaipublicfiles.com/dino/dino_vitbase16_pretrain/dino_vitbase16_p
 for a in vit_small-16 vit_small-8 vit_base-16; do
   get https://huggingface.co/strakajk/satdino-$a/resolve/main/satdino-$a.pth $OUT/satdino/satdino-$a.pth
 done
+
+# Supervised ImageNet-1k reference anchors (no fMoW pair; link to EarthShift R50-imgnet / ViT-imgnet and Beyond Accuracy
+# Nat-supervised). Pinned torchvision IMAGENET1K_V1 files, loaded from disk with torchvision.models.<arch>() + load_state_dict
+# so the exact weights do not depend on the torchvision version. Normalization = ImageNet mean/std.
+#   resnet50 V1 (76.13%, classic recipe: random-resized-crop + flip only; V2 80.86% uses TrivialAugment/mixup/cutmix, not used)
+#   vit_b_16 V1 (81.07%), vit_l_16 V1 (79.66%) (torchvision ViT recipe: IN-1k from scratch with heavy augmentation)
+get https://download.pytorch.org/models/resnet50-0676ba61.pth $OUT/imagenet/resnet50-0676ba61.pth
+get https://download.pytorch.org/models/vit_b_16-c867db91.pth $OUT/imagenet/vit_b_16-c867db91.pth
+get https://download.pytorch.org/models/vit_l_16-852ce7e3.pth $OUT/imagenet/vit_l_16-852ce7e3.pth
 
 echo "[$(date '+%F %T')] DONE"
 ls -la $OUT/imagenet $OUT/gassl $OUT/satdino
