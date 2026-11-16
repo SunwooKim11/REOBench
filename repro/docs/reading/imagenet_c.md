@@ -69,3 +69,32 @@
   3) **손상량 맞추기**: PSNR(픽셀 손상) 또는 기준 모델의 clean 대비 정확도 하락(의미 손상)이 같아지도록 값을 고름.
   → 제안: 2)를 주 비교로 하고 PSNR을 함께 보고(차이가 손상량 차이로 설명되는지 확인). 값은 결과를 보기 전에 정하고 공개하면 조정 자체는 문제
   없음(ImageNet-C·REOBench의 값도 설계자가 고른 임의값). 우리 방법이 좋아 보이도록 값을 고르는 것만 피하면 됨.
+
+## 7. 손상 세기 값의 근거 조사 (2026-11-16, 조사 에이전트 + 원문 확인)
+결론: **세 벤치마크 모두 물리적 근거가 없음.** 모두 "현실 상황"이 아니라 스트레스 테스트로 봐야 함.
+
+- **ImageNet-C**: 저자 답변(GitHub issue #12, Claude가 API로 원문 확인) — "The values were initially chosen so that the
+  MS-SSIM(x, corruption_s(x)) = 1 - s/10 for severity s ∈ {1..5}. Since MS-SSIM is not a perfect measure I used some discretion."
+  후속 답변: TF MS-SSIM 코드로 소수 이미지만 보고 정했고, "the current severity levels probably do not track the MS-SSIM well".
+  즉 **지각 유사도 0.9 → 0.5 사다리를 출발점으로 손으로 조정**. ImageNet-C-bar(Mintun 2021)는 ImageNet-C 오류와 맞추도록 자기 값을 정했을
+  뿐 원래 값의 근거는 아님.
+- **REOBench**: README·issue(4건)에 값 근거나 코드/데이터 불일치 언급 없음. 논문은 현상의 존재만 인용.
+- **Beyond Accuracy**: 공개 코드 없음. Poisson–Gaussian 값은 "센서별로 경험적으로" 정했다고만 하고 숫자 미공개. 인용한 노이즈 문헌(Foi 2008)은
+  카메라 raw 노이즈 모델 추정법이고 위성 크기는 없음. motion blur 인용(Sieberth 2014/2015)은 UAV이고 "2 px 정도부터 문제"라는 내용.
+
+### 물리량과 비교 (VHR 광학 위성; [추정]은 에이전트 계산)
+| 손상 | ImageNet-C | REOBench (AID-C 데이터) | 실제 위성 수준 (출처) | 판단 |
+|---|---|---|---|---|
+| Gaussian noise σ (0~1) | 0.08~0.38 | 0.04~0.08 | 약 0.002~0.01 [추정]. SNR 150~250 (Pleiades, Sentinel-2 사양·실측), 어두운 수면에서 26~98 (PlanetScope) | 둘 다 과함. REOBench 약 5~20배, ImageNet-C 약 10~100배 |
+| salt & pepper | 픽셀 3~27% | 0.5~5% | L1 제품에서 불량 픽셀은 보정됨 → ≪0.1% [추정] | 둘 다 비현실적 |
+| Gaussian blur 추가 σ | 1~6 px | 약 0.8~2.0 px | 시스템 PSF σ 약 0.5~0.7 px (Pleiades MTF 0.16~0.3 at Nyquist), 추가 열화 ≲1~1.5 px [추정] | REOBench s1~3 그럴듯, s4~5 강함. ImageNet-C s3~5 비현실적 |
+| motion blur 길이 | 반경 10~20 | 10~30 px (공개 코드는 2~10) | 위성 jitter ≤1 px (ZY-3, ALOS), UAV 약 2 px | 둘 다 위성에 비현실적. **여기서는 REOBench가 약하지 않음** |
+| JPEG | q 25~7 | q 50~10 | 위성 온보드 웨이블릿 압축 2.9~3.3 bpp(12-bit) ≈ JPEG q 75 이상 [추정] | 둘 다 실제 운용보다 훨씬 가혹 |
+| 밝기/대비 | +0.1~0.5 / ×0.4~0.05 | +0~0.4 / ×1~0.2 | 태양 고도에 따른 곱셈 변화 ×0.5~1.5 정도 [추정, 출처 없음] | REOBench s1~2 그럴듯, s4~5 극단 |
+| haze | fog (불균일) | i = 0.2~0.6 | 경로 반사도 0.03~0.15 → i ≈ 0.05~0.3 [추정]. 전 지구 구름 피복 55~67% (MODIS) | REOBench s1~2 현실적, s4~5는 얇은 구름 수준 |
+
+- 센서 사양으로 강도를 정한 RS 손상 벤치마크는 찾지 못함 (HyperTTA도 "통일된 벤치마크 부재"를 지적).
+- 주의: AID·RESISC45 자체가 Google Earth에서 재표본·압축된 RGB라, "센서 기준 깨끗한 영상"이라는 출발점부터 근사임.
+- 우리에게 주는 의미: (1) 강도 값 자체를 문제 삼는 리뷰에는 "ImageNet-C도 MS-SSIM 기반 임의값, REOBench는 대부분 그보다 물리량에 가까움"으로
+  답할 수 있음. (2) 손상량을 맞출 지표로 PSNR보다 **MS-SSIM**이 ImageNet-C 설계 원리와 같음 → (b) 분석에 MS-SSIM도 함께 보고하는 것을 고려.
+  (3) motion blur s4~5와 JPEG는 위성 현실보다 훨씬 가혹하므로 해석할 때 "극한 조건"으로 명시.
