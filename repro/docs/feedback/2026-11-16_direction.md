@@ -96,3 +96,26 @@
 4. 보류: CLIP 2종, 분할 누락 손상 4종, occlusion, D4.
 
 필요한 준비: RESISC45 linear head (SatMAE, ScaleMAE, MAE-IN), MAE ViT-L ImageNet 체크포인트, logit 저장.
+
+## 3. 백본 구성 (2026-11-16 논의, 사용자 우선순위 = 백본 넓히기 먼저)
+
+질문: fMoW/위성 사전학습 백본으로 통일할까, general 백본도 넣을까. **제안: 둘 중 하나가 아니라 "쌍"으로.**
+(아키텍처, 사전학습 방식)이 같은 fMoW 모델과 ImageNet 모델을 짝지어, general 백본을 통제군으로 넣는다.
+
+| 사전학습 방식 / 구조 | fMoW | ImageNet 짝 | 상태 |
+|---|---|---|---|
+| MIM, ViT-L/16 | SatMAE fMoW-RGB, ScaleMAE (보유) | MAE ViT-L (facebookresearch/mae) | 짝 다운로드 필요 |
+| contrastive, ResNet50 | MoCo-v2 fMoW (GASSL repo의 baseline, 200ep), GASSL = MoCo-v2+Geo+TP | MoCo-v2 ImageNet | GASSL repo에 4종 체크포인트 표 확인(링크 미확인). torchgeo `ResNet50_Weights.FMOW_RGB_GASSL` 존재 |
+| self-distillation, ViT-S/B | SatDINO (github.com/strakaj/SatDINO) | DINO ImageNet ViT-S/16, B/16 | 공개 가중치 종류 미확인 |
+
+- 통일안의 문제: 결과가 RS 사전학습 때문인지 ViT/MAE 일반 성질인지 못 가림 (F2 미충족).
+- general을 그냥 추가하는 안의 문제: 구조·크기가 섞임 (EarthShift, Beyond Accuracy가 스스로 한계로 적음).
+- 쌍 구성: F4(fMoW ResNet·ViT), F5(선택 근거), F2(자연 vs RS), Beyond Accuracy가 "필요하다"고 한 통제 실험을 동시에 충족. 6~7개로 작음.
+- ResNet을 넣는 추가 이유: BN이 있어 기존 TTA(BN adapt, Tent)의 원래 대상. ViT에는 그 자리가 없어서 "어디서 정렬할지"가 문제가 됨.
+- 주의: 짝이 완전히 같지는 않음(epoch, 해상도, SatDINO·ScaleMAE의 GSD 인코딩, GASSL의 지리 정보). 비교는 쌍 안에서만. 입력 정규화 상수는 모델별 확인.
+
+읽을 논문과 확인할 것:
+- ImageNet-C: 손상 15종 중 REOBench와 겹치는 것, 강도 정의, "테스트 손상으로 학습 금지" 규칙. 같은 손상 함수를 ImageNet val과 AID에
+  적용해 latent 지표(head 불필요)를 비교하는 기준점.
+- GASSL: 체크포인트 4종, 입력 정규화, linear probe 프로토콜, ImageNet MoCo-v2와의 비교.
+- SatDINO: 공개 가중치(ViT-S/B, patch 크기), GSD 인코딩이 추론 때 GSD 입력을 요구하는지(ScaleMAE와 같은 문제), ImageNet DINO와의 비교.
