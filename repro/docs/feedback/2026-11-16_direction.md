@@ -126,3 +126,11 @@
   README에 정규화 값과 추론 시 GSD 입력 여부는 없음(코드 확인 필요). 학습에 GSD 예측 손실만 언급.
 - GASSL: 공식 Zenodo가 이 서버에서 403(트래픽 차단). torchgeo HF 미러(cc-by-4.0)는 **MoCo-v2+Geo+TP만** 있음 → ImageNet MoCo-v2와의
   짝에 Geo+TP 차이가 섞임. 순수 MoCo-v2 fMoW는 다른 곳에서 받아 복사 필요. GASSL 정규화 = ImageNet 값, 224px. repo에 라이선스 파일 없음.
+
+### 3.2 supervised ImageNet 백본을 어떻게 넣나 (2026-11-16 논의)
+- 짝(주 비교)은 사전학습 방식을 맞춰야 하므로 SSL끼리: fMoW 쪽이 전부 SSL(SatMAE, GASSL, SatDINO)이라 ImageNet 쪽도 SSL(MAE, MoCo-v2, DINO).
+  SatMAE vs supervised ImageNet ViT는 데이터와 학습 방식(라벨 유무)이 동시에 달라 원인 분리가 안 됨.
+- supervised ImageNet ResNet50·ViT는 **참고 기준(anchor)** 으로 추가 제안: 선행 논문과 숫자를 잇는 연결점(EarthShift에서 가장 강건한 R50-imgnet,
+  Beyond Accuracy의 Nat-supervised 그룹). fMoW supervised 짝은 없음.
+- 확인: EarthShift는 "ResNet50, ViT-b-16 pre-trained on ImageNet"이라고만 쓰고 supervised인지 명시 안 함(코드 확인 필요). EarthShift의
+  "fully-supervised"는 무작위 초기화 후 과제에 바로 학습한 모델을 뜻함. Beyond Accuracy는 Nat-supervised로 명시.
