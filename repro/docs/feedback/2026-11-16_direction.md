@@ -160,3 +160,6 @@
   가장 가까움(단, 학습 필요). 비어 있는 곳: frozen EO FM, 통계 정렬 후 ATC 회복 주장, 정렬 전후 flip, 공통 이동으로 보정 여부 결정.
 - SAE + pruning 아이디어(Deletion Tuning에서 착안) 조사: `docs/PRIOR_ART_sae_pruning.md`. LLM 불필요, 아이디어 그대로의 선행 연구는 없음,
   그러나 단위 pruning이 손상 정확도를 올린다는 근거도 없음. SAE 전에 저장된 feature로 "shift 방향 사영 제거" oracle 실험을 먼저 할 것.
+- shift 방향 제거 oracle(SAE 전 검증): `scripts/analysis/shift_direction_oracle.py`, 결과표 `experiments/2026-11-17_shift_oracle/RESULTS.md`.
+  17개 백본 평균(AID-C): 다른 손상에서 구한 방향 제거는 k=4 +0.2pt, k=16 −2.6pt, k=64 −17.8pt(무작위 64개는 −0.7pt).
+  같은 손상에서 구한 방향(상한)도 k=4 +5.8pt로 정렬(+5.2pt)과 같은 수준. 개별 차원 제거는 0. → head 입력에서의 pruning은 근거 없음.
