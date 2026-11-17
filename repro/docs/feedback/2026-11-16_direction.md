@@ -197,3 +197,9 @@
   곱은 17개 전부에서 0.92 이상 → confidence와 flip은 서로 다른 정보를 가짐.
 - sup_in_r50의 손상별 frac_common은 data gaps 0.381 / motion blur 0.339 / scale 0.320이 상위 3개(나머지 0.02–0.20) = 과신이 몰린 3종과 일치.
 - 주의: 합성 손상, 단일 손상 stream, 배치 64, 선형 head 기준의 오류 탐지 결과이고 TTA에 넣어 본 것은 아님. SAR 임계값은 원 논문 기본값.
+
+### 2026-11-17 feature 이동을 head 부분공간·logit에서 분해 (AID-C, 17개 백본, scratch 스크립트)
+- 이동 에너지 중 head가 읽는 29차원 부분공간에 들어가는 몫: 공통 9–16%, 표본별 3–15% (무작위 기준 1.4–7.6%).
+- logit에서: 공통 이동의 클래스 간 표준편차 0.40–2.62, 표본별 잡음 표준편차 0.82–2.18 (clean margin 5.2–8.5).
+- 백본 간 과신(signed ECE)과의 Spearman: 공통 logit 이동 0.91, 표본별 logit 잡음 0.92, CKA −0.14, frac_common 0.21.
+- 사용자 노트 검토 내용은 `docs/STUDY_stage1_metrics.md` §7에 정리.
