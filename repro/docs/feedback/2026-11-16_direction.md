@@ -163,3 +163,6 @@
 - shift 방향 제거 oracle(SAE 전 검증): `scripts/analysis/shift_direction_oracle.py`, 결과표 `experiments/2026-11-17_shift_oracle/RESULTS.md`.
   17개 백본 평균(AID-C): 다른 손상에서 구한 방향 제거는 k=4 +0.2pt, k=16 −2.6pt, k=64 −17.8pt(무작위 64개는 −0.7pt).
   같은 손상에서 구한 방향(상한)도 k=4 +5.8pt로 정렬(+5.2pt)과 같은 수준. 개별 차원 제거는 0. → head 입력에서의 pruning은 근거 없음.
+- LPIPS 추가: `scripts/analysis/pixel_metrics.py`, 결과표 `experiments/2026-11-16_backbone_feats/pixel_metrics/RESULTS.md`.
+  손상 종류 간 해로움 순위(기하 3종 제외 45개 조건, 17개 백본 평균 하락과의 Spearman): AID PSNR 0.34 / MS-SSIM 0.70 / LPIPS 0.88–0.90,
+  RESISC45 0.52 / 0.83 / 0.82–0.88. 손상 안의 단계 순서는 네 지표가 같음(0.85–0.89). 기하 손상은 쌍 거리로 못 잼.
