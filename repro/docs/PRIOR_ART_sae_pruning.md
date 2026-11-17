@@ -121,3 +121,31 @@ feature를 비교 → shift에 민감하거나 쓸모없는 단위를 지워(pru
 - CD-Buffer (CVPR 2026, TTA에서 "빼는" 채널 제거)는 2차 메모에서만.
 - GeoChat·RS-LLaVA의 세부(encoder, frozen 여부, LLM)는 검색 snippet 기준.
 - ReAct, DICE 원문은 열지 않음(SCALE 논문의 기술로 대신).
+
+## F. 학습된 이진 마스크만으로 적응 (추가 조사, 2026-11-17)
+
+결론: 가중치는 고정하고 마스크만 학습하는 적응은 vision에서도 지도학습 전이·연속 학습에서는 확립돼 있다.
+**라벨 없는 loss로 마스크를 학습해 손상에 대한 test-time / source-free / 연속 TTA를 하는 연구는 못 찾음.**
+
+| 연구 | 마스크 대상 | 마스크를 학습하는 loss | 망각에 대한 근거 |
+|---|---|---|---|
+| Deletion Tuning (NeurIPS 2026, arXiv 2611.10866) | LLM 블록의 gate projection, 0.05% 미만 | 과제 loss(SFT, RL, distillation) + 정규화, Wanda 초기화 | 측정함: 이전 과제 정확도가 base에서 약 1pt 이내(LoRA는 최대 −5.4, 전체 fine-tuning은 −1.3~−3.1) |
+| Piggyback (Mallya et al., 2018, arXiv 1801.06519) | 고정된 vision 네트워크의 모든 가중치, 과제당 1 bit | 지도학습 | 구조상 0(base 가중치 불변) |
+| Supermasks in Superposition (NeurIPS 2020) | 고정된 무작위 네트워크 위의 과제별 마스크 | 지도학습 | 구조상 0. 출력 엔트로피는 "어느 과제의 마스크를 쓸지" 추론에만 사용 |
+| Regularized Mask Tuning (ICCV 2023, arXiv 2307.15049) | CLIP 파라미터 일부(평균 2.56%) | few-shot 라벨 | 주장만 |
+| Self-Masking Networks (GCPR 2024, arXiv 2409.07577) | ResNet-50(SwAV), CLIP ViT-B/32 가중치 | **라벨 없는 SwAV clustering loss** | 시험 안 함. shift 실험도 없음. EuroSAT 포함 |
+| MaskLLM (NeurIPS 2024, arXiv 2409.17481) | LLM의 N:M sparsity 패턴 | 언어 모델 loss | 주제 아님 |
+
+- Deletion Tuning의 한계: 작은 모델에서 전체 fine-tuning에 못 미침(Llama 1B GSM8K 54.4 vs 60.5). 대등하다는 주장은 큰 모델에서만.
+  우리 ViT-B/L은 그 LLM들보다 훨씬 작다. 학습 시 메모리는 LoRA보다 큼.
+- 마스크의 망각은 도메인마다 마스크를 초기화하면 자명하게 0이다. 실제 질문은 "엔트로피로 학습한 마스크가 연속 stream에서 붕괴하거나
+  떠내려가는가"이고, 이것은 아무도 재지 않았다.
+- 못 찾은 것: 분류기의 TTA에서 이진 가중치·뉴런 마스크가 유일한 적응 수단인 연구, vision에서 마스크 적응의 망각을 실제로 측정한 결과.
+- 미확인: Soft-TransFormers (arXiv 2411.16073, 실수값 과제별 마스크).
+
+### 수정된 검증 순서 (SAE 없이, AID에서 SatMAE + 강건한 백본 하나)
+
+1. oracle: clean−손상 쌍으로 shift 방향을 추정해 상위 k개를 빼거나 가리고, 추정에 쓰지 않은 손상에서 고정 head 정확도 측정.
+2. 마스크만 학습하는 TTA: 마지막 블록 MLP 가중치(또는 최종 feature 차원)에 이진 마스크를 두고 라벨 없는 loss로 학습,
+   같은 파라미터 예산의 TENT와 비교.
+3. 1이나 2가 몇 pt라도 회복할 때만 SAE를 학습해 PCA·원래 뉴런·무작위 sparse code와 비교.
