@@ -176,3 +176,15 @@
 ### 2026-11-17 백본·데이터셋 정리
 - 지금까지 돌린 백본 17개, 데이터셋, 실험별 범위, 빈 곳을 `docs/WRAPUP_backbones_datasets_2026-11-17.md`에 정리.
 - MoCo-v3 ImageNet ResNet50/ViT-B 추가는 하지 않기로 함(사용자 판단: 지금 범위로 충분).
+
+### 2026-11-17 과신의 원인 확인 (AID-C, 저장 feature, scratch 스크립트)
+- 가설 "ResNet은 손상에서 feature 크기가 커져 logit이 부풀어 과신한다"는 **sup_in_r50에서 기각**. 표본별 feature norm을 clean 평균으로
+  고정해도 과신(confidence − 정확도, 60조건 평균)은 +13.2 → +12.4. norm 비는 1.08, 최대 logit은 오히려 clean의 0.86배(ViT-B 0.85배와 같음).
+  moco_in만 부분 효과(+18.3 → +13.0, norm 비 1.44).
+- 과신은 3종 손상에 몰려 있음: sup_in_r50 data gaps +50.4 / scale +31.2 / motion blur +29.9, 나머지 9종 평균 +5.2.
+  이 3종에서 예측이 한 클래스로 쏠림(가장 많이 예측된 클래스의 비율 52 / 32 / 31%, clean 약 5%).
+  sup_in_vitb16은 같은 3종에서 +5.7 / +12.1 / +3.4, 쏠림 20 / 20 / 12%.
+- 평균만 맞추는 정렬(align m)이 과신을 크게 줄임: sup_in_r50 +13.2 → +5.3, mae_in +16.4 → +3.7, moco_in +18.3 → +7.9
+  (표준편차까지 맞추면 moco_in만 +4.2로 더 줄어듦).
+- 정리: 과신은 구조 고유의 calibration 성질이라기보다 "특정 손상에서 feature가 집단으로 한 클래스 쪽으로 이동 → 예측 쏠림"의 증상.
+  ResNet이 왜 그 3종에서 쏠리고 supervised ViT는 덜 쏠리는지는 미확인.
