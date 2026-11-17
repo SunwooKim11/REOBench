@@ -172,3 +172,7 @@
   Cross-Scale MAE(NeurIPS 2023)는 InfoNCE+MAE 혼합이라 ImageNet 짝이 없음. MillionAID의 iBOT·MoCo-v3 ViT는 가중치 못 찾음.
   CLIP 계열(RemoteCLIP, GeoRSCLIP, SkyCLIP, Git-RSCLIP)은 전부 CLIP/SigLIP에서 이어 학습. ImageNet 쪽 MoCo-v3 ViT-S/B 300ep는 공식 공개.
 - 겹치는 선행 연구 발견: arXiv 2611.13849 (GeoCV@WACV 2027), 같은 대응 쌍 설계로 clean 장면 분류 비교. 메모 `docs/reading/matched_pair_study.md`.
+
+### 2026-11-17 백본·데이터셋 정리
+- 지금까지 돌린 백본 17개, 데이터셋, 실험별 범위, 빈 곳을 `docs/WRAPUP_backbones_datasets_2026-11-17.md`에 정리.
+- MoCo-v3 ImageNet ResNet50/ViT-B 추가는 하지 않기로 함(사용자 판단: 지금 범위로 충분).
