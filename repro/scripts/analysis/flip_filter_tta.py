@@ -21,7 +21,7 @@ zero gradient. Baselines without learning: none, align_ms.
 
 Per stream: acc, ECE, signed ECE, NLL, AUROC (feat_metrics.stream_metrics) and the share of samples used for the update.
 
-  ~/REOBench/.venv/bin/python scripts/analysis/flip_filter_tta.py [--models ...] [--datasets aid r45] [--bs 64]   # CPU
+  ~/REOBench/.venv/bin/python scripts/analysis/flip_filter_tta.py [--models ...] [--datasets aid r45] [--bs 64] [--device cuda]
 Output: experiments/2026-11-17_flip_tta/bs<bs>/<model>_<ds>.json
 """
 import argparse
@@ -57,11 +57,11 @@ def entropy(logits):
 def adapt(Z, w, b, inp, loss, lr, bs):
     """Z: (S, N, D) streams already in stream order. Returns the online logits (S, N, C) and the used share per stream."""
     S, N, D = Z.shape
-    g = torch.ones(S, 1, D, requires_grad=True)
-    be = torch.zeros(S, 1, D, requires_grad=True)
+    g = torch.ones(S, 1, D, device=Z.device, requires_grad=True)
+    be = torch.zeros(S, 1, D, device=Z.device, requires_grad=True)
     opt = torch.optim.Adam([g, be], lr=lr)  # element-wise, and the loss is a sum over streams -> streams are independent
     e0 = 0.4 * math.log(w.shape[1])
-    out, used = [], torch.zeros(S)
+    out, used = [], torch.zeros(S, device=Z.device)
     for i in range(0, N, bs):
         zb = Z[:, i:i + bs]
         za = batch_align(zb)
@@ -106,7 +106,7 @@ def run(model, ds, bs, lrs):
             assert int(sel.sum()) == n, (cname, s, int(sel.sum()))
             names.append(f"{cname}_s{s}")
             Z.append(((c_x[sel] - mu) / sd)[perm]); Y.append(cd["y"][sel][perm])
-    Z, Y = torch.stack(Z), torch.stack(Y)
+    Z, Y, w, b = torch.stack(Z).to(dev), torch.stack(Y).to(dev), w.to(dev), b.to(dev)
     del c_x
     res = {"model": model, "dataset": ds, "bs": bs, "streams": names, "methods": {}}
     with torch.no_grad():
@@ -121,6 +121,7 @@ def run(model, ds, bs, lrs):
                 logits, used = adapt(Z, w, b, inp, loss, lr, bs)
                 key = f"{inp}_{loss}_lr{lr:g}"
                 res["methods"][key] = {"m": metrics(logits, Y), "used": used.tolist()}
+                del logits
                 mean = lambda k_: sum(x[k_] for x in res["methods"][key]["m"][1:]) / 60
                 print(f"  {model} {ds} {key:22s} clean {res['methods'][key]['m'][0]['acc']:5.1f} corrupted {mean('acc'):5.1f} "
                       f"sECE {mean('signed_ece'):+.3f} used {100 * used[1:].mean():5.1f}% ({time.time() - t0:.0f}s)", flush=True)
@@ -133,9 +134,12 @@ if __name__ == "__main__":
     ap.add_argument("--datasets", nargs="*", default=["aid", "r45"])
     ap.add_argument("--bs", type=int, default=64)
     ap.add_argument("--lrs", nargs="*", type=float, default=[1e-4, 1e-3, 1e-2])
-    ap.add_argument("--threads", type=int, default=32)
+    ap.add_argument("--threads", type=int, default=4)
+    ap.add_argument("--device", default="cpu")
     args = ap.parse_args()
     torch.set_num_threads(args.threads)
+    dev = torch.device(args.device)
+    fm.dev = dev
     out = OUT / f"bs{args.bs}"
     out.mkdir(parents=True, exist_ok=True)
     for m in args.models:

@@ -211,3 +211,13 @@
 - Entropy Enigma(ICML 2024) PDF 텍스트 독해 → `docs/reading/entropy_enigma.md`. Weighted Flips = EM 적응 전후 flip(초기 confidence 가중) → 2차식으로
   정확도 추정. "flip이 정확도를 따른다"는 관찰은 선행. 우리 쪽에 남는 것: 학습 없는 flip, frozen EO FM, 표본 단위 필터.
   해야 할 것: WF와 COT를 baseline으로 직접 비교.
+
+### 2026-11-17 밤샘 실행: 17개 백본 전체 통과 TTA (`scripts/tta/cls_tta_fm.py`, tmux `fmtta`)
+- 이미지를 백본에 통과시키고 norm 층 affine을 학습(상위 25% 블록과 마지막 norm 제외 = SAR/DeYO 규칙). head는 stage-1 선형 head.
+  방법: none, none_al, tent, entf, flipf, bothf, tent_al, flipf_al, sar, eata (+ BN 백본만 tent_bnstat).
+  순서: AID-C 프로토콜 lr → AID-C lr×10 (tent·필터 변형) → RESISC45-C. 결과: `experiments/2026-11-17_fm_tta/<ds>/<model>/<method>.json` (이어 돌리기 가능).
+- 축소 시험(3 stream)에서 확인: none이 stage-1 정확도와 일치(dino_in_s16 95.6, satdino_s16 96.7, sup_in_vitb16 92.7, satmae 92.7, dinov3_web 97.8, sup_in_r50 90.8).
+- **BN 백본**: 모든 BN을 배치 통계로 바꾸는 교과서 TENT는 sup_in_r50의 AID clean을 90.8 → 62.1로 떨어뜨림(running 통계가 ImageNet 것이고 head가
+  그 feature로 학습됐기 때문). 그래서 BN도 running 통계 유지 + affine만 학습을 기본으로 하고, 배치 통계판은 tent_bnstat으로 따로 남김.
+- **미해결**: dinov3_web_l16에서 EATA가 clean 6.2%로 붕괴(3 stream 시험). 원인 미확인 → DINOv3의 EATA 수치는 확인 전까지 쓰지 말 것.
+- 서버 CPU 제한이 12코어(cgroup cpu.max)라 CPU 작업이 DataLoader를 굶김 → feature 수준 실행(`flip_filter_tta.py`)을 `--device cuda`로 옮김.
