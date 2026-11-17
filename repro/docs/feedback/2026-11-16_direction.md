@@ -203,3 +203,11 @@
 - logit에서: 공통 이동의 클래스 간 표준편차 0.40–2.62, 표본별 잡음 표준편차 0.82–2.18 (clean margin 5.2–8.5).
 - 백본 간 과신(signed ECE)과의 Spearman: 공통 logit 이동 0.91, 표본별 logit 잡음 0.92, CKA −0.14, frac_common 0.21.
 - 사용자 노트 검토 내용은 `docs/STUDY_stage1_metrics.md` §7에 정리.
+
+### 2026-11-17 flip 필터 TTA 실행 시작, Entropy Enigma 독해
+- `scripts/analysis/flip_filter_tta.py`: 저장 feature 위에서 head 입력 affine만 EM으로 학습(ViT에서는 마지막 LayerNorm만 학습하는 TENT와 같음).
+  입력 raw/정렬 × 필터 tent/entf/flipf/bothf × lr 1e-4…1e-1, 17개 백본 × AID-C/RESISC45-C, 배치 64 → 16. CPU, tmux `fliptta`.
+  결과: `experiments/2026-11-17_flip_tta/bs{64,16}/`, 표는 `scripts/analysis/summarize_flip_tta.py`.
+- Entropy Enigma(ICML 2024) PDF 텍스트 독해 → `docs/reading/entropy_enigma.md`. Weighted Flips = EM 적응 전후 flip(초기 confidence 가중) → 2차식으로
+  정확도 추정. "flip이 정확도를 따른다"는 관찰은 선행. 우리 쪽에 남는 것: 학습 없는 flip, frozen EO FM, 표본 단위 필터.
+  해야 할 것: WF와 COT를 baseline으로 직접 비교.
