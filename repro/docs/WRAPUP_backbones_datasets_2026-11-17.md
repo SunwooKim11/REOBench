@@ -76,6 +76,17 @@ torchgeo 표에 없는 데이터(AID, RRSHID, ImageNet)는 원 논문 값이며,
 | RRSHID | haze 쌍 (라벨 없음) | 위성, 같은 지역 다시기 촬영 (중국) | 3,053 쌍 | – | 256x256 | 미확인 | RGB | 없음 |
 | ImageNet-1k (val) | C | 웹 사진 | 50,000 | 1,000 | 제각각 | – | RGB | 없음 |
 
+- **Potsdam·Vaihingen의 "타일"과 "패치"**
+  - 타일 = 원본 파일 한 장. ISPRS가 도시 한 구역을 항공 정사사진으로 크게 찍어 배포한 단위입니다. Potsdam은 6,000x6,000 타일
+    38장, Vaihingen은 크기가 제각각인 타일 33장입니다. torchgeo는 파일 단위로 세기 때문에 # Samples에 타일 수가 들어갑니다.
+  - 패치 = 타일을 모델 입력 크기로 자른 조각. 6,000x6,000은 GPU에 통째로 넣을 수 없어서 잘라 씁니다.
+  - 분할은 픽셀마다 라벨이 있어서, "샘플 수"가 자르는 방식(크기, 간격, 겹침)에 따라 바뀝니다. 같은 Potsdam이라도 512 간격이면
+    타일당 144장, 256 간격이면 529장이 됩니다. 그래서 원본 단위인 타일 수로 세는 것이 데이터 크기를 비교하기에 안정적입니다.
+    실제 학습 신호의 양은 픽셀 수입니다(Potsdam 38 × 6,000² ≈ 13.7억 픽셀).
+  - REOBench Potsdam test: 타일 14장(2_13, 2_14, 3_13, 3_14, 4_13, 4_14, 4_15, 5_13, 5_14, 5_15, 6_13, 6_14, 6_15, 7_13) ×
+    타일당 144장(512x512, 512 간격, 마지막 칸은 가장자리에 맞춤 → 가로 12 × 세로 12) = 2,016 패치. 파일 이름
+    `3_13_4608_5488_5120_6000.png` = 타일 3_13의 x 4,608–5,120, y 5,488–6,000 구간입니다.
+  - Vaihingen mmseg 패치: train 344 / val 398 (512x512, `docs/DATASETS_2026-11.md` §5).
 - torchgeo에 없는 것은 AID와 fMoW입니다. UC Merced는 torchgeo에 "UC Merced"라는 이름으로 있습니다.
 - Vaihingen 파일은 근적외·적·녹(IRRG) 3채널입니다. torchgeo 표에는 RGB로 적혀 있지만 실제 채널 구성은 IRRG라 RGB 모델에는
   센서 shift가 같이 들어갑니다(`docs/DATASETS_2026-11.md` §5).
@@ -104,7 +115,34 @@ REOBench 12종 손상: rotate, scale, translate, clouds, data gaps, brightness/c
 salt & pepper, gaussian blur, motion blur, JPEG. natural_vs_rs의 ImageNet-C 7종: gaussian noise, impulse noise(salt & pepper),
 gaussian blur, motion blur, JPEG, brightness, contrast.
 
-### 2.3 배경지식: Source, Bands, Resolution
+### 2.3 사전학습 데이터 (같은 열 형식)
+
+백본이 사전학습에 쓴 데이터입니다. 우리 실험에서는 이 데이터를 직접 쓰지 않았고, 테스트에서도 뺐습니다.
+Task는 데이터에 붙은 라벨 종류입니다. self-supervised 백본(MAE, MoCo, DINO 계열)은 라벨을 쓰지 않습니다.
+
+| Dataset | Task | Source | # Samples | # Classes | Size (px) | Resolution (m) | Bands | 쓴 백본 |
+|---|---|---|---:|---:|---|---|---|---|
+| ImageNet-1k (train) | C | 웹 사진 (Flickr·검색 엔진에서 모아 사람이 라벨링) | 1,281,167 | 1,000 | 제각각 | – | RGB | mae_in, moco_in, dino_in × 3, sup_in × 3 (라벨은 sup_in만 사용) |
+| fMoW-RGB | C | Maxar(DigitalGlobe) WorldView 위성 | 약 36만 (train) | 62 + false detection | 제각각 (물체 주변을 잘라냄) | 이미지별 메타데이터 (서브미터, 예 0.53) | RGB (원본 4/8 band를 JPEG로 변환) | satmae, scalemae, moco_fmow, gassl_fmow, satdino × 3 |
+| LVD-1689M | – | 웹 (Instagram 공개 게시물 170억 장에서 큐레이션) | 16.89억 | – | 제각각 | – | RGB | dinov3_web_l16 |
+| SAT-493M | – | Maxar RGB 정사 영상에서 무작위 추출 | 4.93억 | – | 512x512 | 0.6 | RGB | dinov3_sat_l16 |
+
+- **fMoW** (Functional Map of the World, Christie et al. CVPR 2018)
+  - 원본(fMoW-full)은 207개국에서 모은 100만 장 이상의 4/8 band 다중분광 TIFF입니다. fMoW-RGB는 이를 RGB JPEG로 바꾼 판입니다.
+  - 클래스는 공항, 병원, 경기장 같은 **시설·건물 종류**입니다. 장면 전체를 분류하는 AID·RESISC45와 달리 물체 중심입니다.
+  - 같은 장소를 여러 날짜에 찍은 시계열이 있습니다. GASSL이 "같은 장소 다른 시각"을 positive 쌍으로 쓰는 이유가 이것입니다.
+  - 이미지마다 GSD가 메타데이터에 있지만 우리 코드(Scale-MAE 포함)는 쓰지 않습니다(`docs/NOTES_concepts.md`).
+  - train 약 36만 장은 REOBench 저자 답변의 "fMoW 36만 장"과 SatMAE 논문 기재값입니다. 정확한 split 수는 fMoW 공식 저장소에서
+    다시 확인하지 않았습니다.
+  - fMoW-Sentinel(SatMAE, Sentinel-2 13 band)은 같은 장소의 다중분광판이지만 우리 백본은 쓰지 않습니다.
+- **ImageNet-1k** (ILSVRC-2012): train 1,281,167 / val 50,000, 1,000클래스. 물체 중심 자연 사진입니다. natural_vs_rs에서 쓴
+  ImageNet은 이 val에서 클래스당 5장(5,000장)입니다.
+- **DINOv3 두 데이터**: 둘 다 각자 데이터로 ViT-7B를 먼저 학습하고, 우리가 쓴 ViT-L/16은 그 7B에서 distill한 모델입니다.
+  SAT-493M은 Maxar 상용 영상이라 공개되지 않았습니다.
+- **규모 차이가 쌍 비교에 섞입니다.** MAE↔SatMAE, DINO↔SatDINO, MoCo 쌍은 ImageNet 128만 장 대 fMoW-RGB 약 36만 장(약 3.5배)이라
+  "도메인 차이"와 "데이터 양 차이"가 같이 들어갑니다. DINOv3 쌍은 둘 다 수억 장 규모라 이 혼동이 상대적으로 작습니다.
+
+### 2.4 배경지식: Source, Bands, Resolution
 
 **Source (영상을 어디서 얻었나)**
 - **Google Earth**: Google이 여러 위성·항공 영상을 모자이크하고 색 보정해서 보여주는 8-bit RGB 지도 영상입니다. 이미지마다 원
