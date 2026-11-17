@@ -166,3 +166,9 @@
 - LPIPS 추가: `scripts/analysis/pixel_metrics.py`, 결과표 `experiments/2026-11-16_backbone_feats/pixel_metrics/RESULTS.md`.
   손상 종류 간 해로움 순위(기하 3종 제외 45개 조건, 17개 백본 평균 하락과의 Spearman): AID PSNR 0.34 / MS-SSIM 0.70 / LPIPS 0.88–0.90,
   RESISC45 0.52 / 0.83 / 0.82–0.88. 손상 안의 단계 순서는 네 지표가 같음(0.85–0.89). 기하 손상은 쌍 거리로 못 잼.
+- fMoW contrastive ViT 조사(agent): **처음부터 fMoW-RGB로 contrastive 학습한 ViT의 공개 가중치는 없음.**
+  SatMAE 논문의 MoCo-v3 baseline은 ViT-B, fMoW-Sentinel(10밴드, 96px)이고 공개된 적 없음(README·Zenodo 2건·HF 확인). Claude의 이전 기억
+  ("ViT-L, fMoW-RGB")은 틀림. torchgeo의 fMoW 가중치는 GASSL ResNet-50과 Scale-MAE뿐. SatMIP(ECCV 2024)은 가중치 미공개.
+  Cross-Scale MAE(NeurIPS 2023)는 InfoNCE+MAE 혼합이라 ImageNet 짝이 없음. MillionAID의 iBOT·MoCo-v3 ViT는 가중치 못 찾음.
+  CLIP 계열(RemoteCLIP, GeoRSCLIP, SkyCLIP, Git-RSCLIP)은 전부 CLIP/SigLIP에서 이어 학습. ImageNet 쪽 MoCo-v3 ViT-S/B 300ep는 공식 공개.
+- 겹치는 선행 연구 발견: arXiv 2611.13849 (GeoCV@WACV 2027), 같은 대응 쌍 설계로 clean 장면 분류 비교. 메모 `docs/reading/matched_pair_study.md`.
