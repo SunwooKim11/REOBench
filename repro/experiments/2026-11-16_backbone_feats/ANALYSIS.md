@@ -1,7 +1,19 @@
-# Stage 1 분석 (2026-11-17)
+ # Stage 1 분석 (2026-11-17)
 
 수치 출처: `RESULTS.md`(전체 표), `signals/summary.txt`(label-free 신호 평가).
 범위: 백본 17개 × AID-C / RESISC45-C(12종 × 5단계 = 60개 stream), frozen backbone + 선형 head, seed 0.
+
+## 용어
+
+- **stream**: 한 조건의 test 이미지 묶음. "AID test 2,000장에 haze 3단계를 건 것"이 stream 하나. 손상 12종 × 5단계 = 60개,
+  여기에 clean 1개. 백본 17 × 데이터셋 2 × 60 = 2,040개.
+- **ATC** (Average Thresholded Confidence, Garg et al. 2022): 라벨 없이 정확도를 추정하는 방법.
+  라벨이 있는 clean 데이터에서 "confidence가 t보다 큰 비율 = 정확도"가 되는 임계값 t를 정해 두고,
+  새 stream에서는 confidence가 t보다 큰 샘플의 비율을 그 stream의 정확도 추정값으로 쓴다.
+- **오차 (pt)**: |ATC 추정 정확도 − 실제 정확도|, 퍼센트포인트. 실제 60%인 stream을 85%로 추정하면 25pt.
+- **정렬 (align)**: head에 들어가는 feature를 배치(64장)마다 채널별로 평균 0·표준편차 1로 만든 뒤 source(clean train)의
+  평균·표준편차를 입힌다. 라벨도 학습도 필요 없다.
+- **flip**: 정렬 전 예측과 정렬 후 예측이 다른 샘플의 비율(%).
 
 ## 한 줄 요약
 
@@ -49,6 +61,32 @@ confidence로 정확도를 추정하는 표준 방법 ATC(임계값 이상 confi
 - **frac_common은 "얼마나 고쳐지는가"의 예측 변수로는 약하다.** 손상별 회복 비율이 frac_common과 잘 안 맞는다
   (motion blur는 frac_common 0.42로 가장 높지만 회복 38%, haze는 0.31인데 58%).
   "공통 이동의 크기"(rel_drift × frac_common)는 회복 pt와 순위 상관 0.82–0.98이지만, 큰 하락에서 큰 회복이 나오는 효과가 섞여 있다.
+
+## 3.5 feature 지표(CKA, cos, rel_drift, PR, AUROC, hdhc)는 무엇을 말하는가
+
+백본별로 60개 stream에 걸친 순위 상관(Spearman). 범위는 백본 17개, AID / RESISC45.
+
+| 지표 | 정확도 하락과의 상관 | 비고 |
+|---|---|---|
+| 1 − CKA | 0.56–0.95 / 0.66–0.95 | 최저가 mae_in (0.56 / 0.66). 나머지 16개는 0.81 이상 |
+| 1 − cos | 0.81–0.94 / 0.85–0.94 | |
+| rel_drift | 0.85–0.95 / 0.84–0.95 | |
+| 공통 이동 크기 (rel_drift × frac_common) | 0.73–0.97 / 0.85–0.96 | mae_in에서 0.95 / 0.95 |
+| 1 − PR ratio | 0.12–0.92 / 0.05–0.92 | ImageNet 사전학습 DINO·MAE에서 0.4 이하 |
+
+- **CKA는 mae_in에서만 정확도 하락을 놓친다.** mae_in은 손상 평균 CKA가 0.941로 17개 중 가장 높은데 정확도는 22–25pt 떨어진다.
+  이 백본은 frac_common이 0.49로 가장 높다. CKA는 평행이동에 불변이라 "모든 샘플이 같이 밀리는 이동"을 못 본다는 가설과 맞는다.
+  같은 백본에서 공통 이동 크기는 상관 0.95다.
+- **PR ratio(유효 차원 변화)는 정확도와 관계가 약하다.** RS 사전학습 백본(ScaleMAE 제외)에서는 손상 시 유효 차원이 줄며 상관이 0.8 이상이지만,
+  ImageNet 사전학습 DINO·MAE에서는 차원이 거의 안 줄고(PR ratio 0.95–1.06) 상관도 낮다.
+- **AUROC(confidence가 맞은 샘플과 틀린 샘플을 가르는 정도)는 평균 0.78–0.94로 유지된다.** stream 안에서의 샘플 순서는
+  대체로 남아 있고, 무너지는 것은 confidence의 전체 수준이다. 단 과신 백본의 최악 stream에서는 0.35–0.63까지 떨어진다
+  (sup_in_r50 RESISC45 0.35, moco_in RESISC45 0.41, mae_in AID 0.45).
+- **hdhc_wrong(많이 움직였고 confidence 0.9 초과인데 틀린 샘플 비율)은 과신 백본에서 높다.** AID 평균: moco_in 8.0%, mae_in 6.3%,
+  sup_in_r50 4.8%, moco_fmow 4.8%. DINO 계열·supervised ViT는 0.4–2.6%.
+- **ATC가 과대추정하는 정도는 과신 백본에서만 공통 이동 크기와 같이 움직인다.** 상관이 mae_in 0.90 / 0.96, moco_in 0.91 / 0.86,
+  sup_in_r50 0.79 / 0.79, scalemae 0.58 / 0.87. DINO 계열·supervised ViT에서는 −0.77 ~ +0.78로 부호가 일정하지 않다(과대추정 자체가 작다).
+  "공통 이동이 과신을 만든다"는 설명은 confidence가 무너지는 백본에 한해 지지된다.
 
 ## 4. 사전학습 데이터 쌍 (ImageNet → RS)
 
