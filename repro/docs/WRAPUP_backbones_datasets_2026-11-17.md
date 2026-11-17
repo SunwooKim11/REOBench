@@ -59,21 +59,76 @@ DINOv3 web↔sat. 각 쌍은 구조와 방법이 같고 사전학습 데이터�
 
 ## 2. 데이터셋
 
-| 데이터 | 작업 | 클래스 | 규모 | 출처 | 쓴 실험 |
-|---|---|---:|---|---|---|
-| AID | 분류 | 30 | train 7,999 / test 2,000 | REOBench 배포본 | stage 1, 정렬, 신호, oracle, 픽셀 지표 |
-| AID-C | 분류, 합성 손상 | 30 | 120,000 (test 2,000 × 12종 × 5단계) | REOBench 배포본 | 위와 같음 |
-| RESISC45 | 분류 | 45 | train 18,900 / val 6,300 / test 6,300 | torchgeo split | 위와 같음 |
-| RESISC45-C | 분류, 합성 손상 | 45 | 378,000 (test 6,300 × 12종 × 5단계) | **우리가 생성** (REOBench 코드, 파라미터 4개를 AID-C에 맞춤) | 위와 같음 |
-| EarthShift R45 | 분류, 자연 shift | 19 | train 7,915 / val 2,726 / test 2,659 | RESISC45에서 거름 (EarthShift 표 1과 일치) | 자연 shift |
-| EarthShift UCM | 분류, 자연 shift | 19 | train 1,142 / val 379 / test 379 (전체 1,900) | UC Merced에서 우리가 split | 자연 shift |
-| Potsdam-C | 분할, 합성 손상 | 5 (+clutter 무시) | test 2,016 패치 × 8종 × 5단계 | REOBench 배포본 | 분할 drift (2개 모델만) |
-| RRSHID | 실제 haze 쌍 (라벨 없음) | – | 쌍 thin 763 / moderate 1,526 / thick 764 | 공개 데이터 | 실제 vs 합성 haze |
-| natural_vs_rs | 같은 손상을 자연·RS에 | – | ImageNet val 5,000 / AID test 2,000 / R45 test 1,996 × 7종 × 5단계 | ImageNet-C 함수·파라미터로 우리가 생성 | 자연 vs RS 손상 비교, 픽셀 지표 |
+### 2.1 원본 데이터 (torchgeo 표 형식, License 제외)
+
+열은 [torchgeo Benchmark Datasets 표](https://docs.torchgeo.org/en/stable/api/datasets.html)와 같습니다.
+Task: C = 분류, S = 의미 분할. 값은 **원본 데이터 기준**이고, 우리가 실제로 쓴 크기·split은 §2.2에 있습니다.
+torchgeo 표에 없는 데이터(AID, RRSHID, ImageNet)는 원 논문 값이며, 확인하지 못한 칸은 "미확인"으로 두었습니다.
+
+| Dataset | Task | Source | # Samples | # Classes | Size (px) | Resolution (m) | Bands | torchgeo |
+|---|---|---|---:|---:|---|---|---|---|
+| AID | C | Google Earth | 10,000 | 30 | 600x600 | 0.5–8 | RGB | 없음 |
+| RESISC45 | C | Google Earth | 31,500 | 45 | 256x256 | 0.2–30 | RGB | 있음 |
+| UC Merced | C | USGS National Map | 2,100 | 21 | 256x256 | 0.3 | RGB | 있음 |
+| Potsdam | S | Aerial | 38 (타일) | 6 | 6,000x6,000 | 0.05 | MSI (RGB + IR, 우리는 RGB만) | 있음 |
+| Vaihingen | S | Aerial | 33 (타일) | 6 | 1,281–3,816 | 0.09 | IRRG (torchgeo 표기는 RGB) | 있음 |
+| LoveDA | S | Google Earth | 5,987 | 7 | 1,024x1,024 | 0.3 | RGB | 있음 |
+| RRSHID | haze 쌍 (라벨 없음) | 위성, 같은 지역 다시기 촬영 (중국) | 3,053 쌍 | – | 256x256 | 미확인 | RGB | 없음 |
+| ImageNet-1k (val) | C | 웹 사진 | 50,000 | 1,000 | 제각각 | – | RGB | 없음 |
+
+- torchgeo에 없는 것은 AID와 fMoW입니다. UC Merced는 torchgeo에 "UC Merced"라는 이름으로 있습니다.
+- Vaihingen 파일은 근적외·적·녹(IRRG) 3채널입니다. torchgeo 표에는 RGB로 적혀 있지만 실제 채널 구성은 IRRG라 RGB 모델에는
+  센서 shift가 같이 들어갑니다(`docs/DATASETS_2026-11.md` §5).
+- RRSHID: Zhu et al. 2025, "Real-World Remote Sensing Image Dehazing: Benchmark and Baseline"
+  ([arXiv 2503.17966](https://arxiv.org/abs/2503.17966), [github.com/lwCVer/RRSHID](https://github.com/lwCVer/RRSHID)).
+  가시거리로 thin(>10 km) 763 / moderate(5–10 km) 1,526 / thick(<5 km) 764쌍으로 나뉘며, 우리 서버 파일 수와 일치합니다.
+  센서와 해상도는 확인하지 못했습니다.
+
+### 2.2 우리가 쓴 형태
+
+| 데이터 | Task | # Samples (우리 split) | # Classes | Size (px, 파일) | 만든 곳 | 쓴 실험 |
+|---|---|---|---:|---|---|---|
+| AID | C | train 7,999 / test 2,000 | 30 | 256x256 | REOBench 배포본 (원본 600을 256으로 줄여 배포) | stage 1, 정렬, 신호, oracle, 픽셀 지표 |
+| AID-C | C | 120,000 (test 2,000 × 12종 × 5단계) | 30 | 256x256 | REOBench 배포본 | 위와 같음 |
+| RESISC45 | C | train 18,900 / val 6,300 / test 6,300 | 45 | 256x256 | torchgeo split | 위와 같음 |
+| RESISC45-C | C | 378,000 (test 6,300 × 12종 × 5단계) | 45 | 256x256 | **우리가 생성** (REOBench 코드, 파라미터 4개를 AID-C에 맞춤) | 위와 같음 |
+| EarthShift R45 | C | train 7,915 / val 2,726 / test 2,659 | 19 | 256x256 | RESISC45에서 거름 (EarthShift 표 1과 일치) | 자연 shift |
+| EarthShift UCM | C | train 1,142 / val 379 / test 379 (전체 1,900) | 19 | 256x256 | UC Merced에서 우리가 split | 자연 shift |
+| Potsdam-C | S | test 2,016 패치 × 8종 × 5단계 | 5 (+clutter 무시) | 512x512 | REOBench 배포본 | 분할 drift (2개 모델만) |
+| RRSHID | 쌍 | thin 763 / moderate 1,526 / thick 764 쌍 | – | 256x256 | 공개 데이터 그대로 | 실제 vs 합성 haze |
+| natural_vs_rs | C | ImageNet val 5,000 / AID test 2,000 / R45 test 1,996 × 7종 × 5단계 | 1,000 / 30 / 45 | 224x224 | ImageNet-C 함수·파라미터로 우리가 생성 (ImageNet은 공개 ImageNet-C 파일) | 자연 vs RS 손상 비교, 픽셀 지표 |
+
+분류 백본에는 모두 224x224로 resize해서 넣었습니다(crop 없음).
 
 REOBench 12종 손상: rotate, scale, translate, clouds, data gaps, brightness/contrast, haze, gaussian noise,
-salt & pepper, gaussian blur, motion blur, JPEG. natural_vs_rs의 ImageNet-C 7종: gaussian noise, impulse noise,
+salt & pepper, gaussian blur, motion blur, JPEG. natural_vs_rs의 ImageNet-C 7종: gaussian noise, impulse noise(salt & pepper),
 gaussian blur, motion blur, JPEG, brightness, contrast.
+
+### 2.3 배경지식: Source, Bands, Resolution
+
+**Source (영상을 어디서 얻었나)**
+- **Google Earth**: Google이 여러 위성·항공 영상을 모자이크하고 색 보정해서 보여주는 8-bit RGB 지도 영상입니다. 이미지마다 원
+  센서·촬영일·처리가 다르고 공개되지 않아서, 해상도가 한 값이 아니라 범위(RESISC45 0.2–30 m)로 적힙니다. 물리 단위(반사율)가
+  아니라 "보기 좋게 만든 화면"이라 RSPDBench식 센서 물리 근거를 그대로 옮기기 어렵습니다. AID, RESISC45, LoveDA가 여기 속합니다.
+- **USGS National Map**: 미국 지질조사국의 항공 정사사진(orthoimagery)입니다. UC Merced는 미국 도시 지역을 1 ft(약 0.3 m)로
+  잘랐습니다. 한 기관의 일관된 항공 사진이라 Google Earth 데이터보다 색·해상도가 균일합니다.
+- **Aerial**: 비행기에 실은 카메라로 직접 찍은 영상입니다. ISPRS Potsdam·Vaihingen이 여기 속하고 해상도가 수 cm로 매우 세밀합니다.
+- **Sentinel-2 / Landsat**: 공공 위성입니다(ESA / NASA·USGS). 반사율 단위의 다중분광 영상을 줍니다. 해상도는 10–60 m(Sentinel-2)로
+  거칩니다. EuroSAT, BigEarthNet이 여기 속하고 Prithvi·DOFA 같은 다중분광 모델이 주로 이쪽으로 학습됩니다.
+- **fMoW (사전학습 데이터)**: Maxar(DigitalGlobe) 상용 위성 영상입니다. fMoW-RGB는 RGB JPEG이고, fMoW-Sentinel은 같은 장소의
+  Sentinel-2 다중분광판입니다. 우리 RS 백본은 전부 fMoW-RGB로 학습됐습니다(DINOv3 sat은 Maxar SAT-493M).
+
+**Bands (채널 구성)**
+- **RGB**: 가시광선 빨강·초록·파랑 3채널. 자연 사진과 같은 형식이라 ImageNet 모델을 그대로 쓸 수 있습니다.
+- **MSI (multispectral)**: 가시광 + 근적외(NIR) + 단파적외(SWIR) 등 수~십여 개 채널. Sentinel-2는 13개입니다. torchgeo는 RGB에
+  IR 채널이 하나만 더 있어도(Potsdam의 RGBIR) MSI로 적습니다.
+- **IRRG**: 근적외·빨강·초록을 RGB 자리에 넣은 false-colour 영상. 식물이 빨갛게 보입니다(Vaihingen).
+- **HSI (hyperspectral)**: 좁은 파장 band가 수백 개.
+- **SAR**: 레이더 영상. 스스로 전파를 쏘는 능동 센서라 구름과 밤에도 찍히지만, 광학 영상과 모양이 완전히 다릅니다.
+
+**Resolution (m)** = GSD(ground sample distance), 픽셀 한 변이 지상에서 몇 m인지입니다. 작을수록 세밀합니다. 같은 256 px라도
+UC Merced(0.3 m)는 약 77 m 범위를, RESISC45의 30 m 이미지는 약 7.7 km 범위를 담습니다. EarthShift가 R45↔UCM을 "scale shift"라고
+부르는 이유가 이 GSD 차이입니다.
 
 ## 3. 실험별 범위
 
@@ -116,3 +171,49 @@ gaussian blur, motion blur, JPEG, brightness, contrast.
 **선행 연구와 겹치는 부분**
 - 사전학습 데이터만 다른 쌍을 clean 정확도로 비교하는 설계는 arXiv 2611.13849가 먼저 했습니다
   (`docs/reading/matched_pair_study.md`). 우리 기여는 손상·shift·confidence 쪽입니다.
+
+## 5. 데이터·백본 선택 이유 (질문과 답)
+
+### RESISC45는 어디서 나왔고, RESISC45-C는 왜 만들었나
+- RESISC45는 EarthShift가 만든 데이터가 아닙니다. 원래 NWPU-RESISC45(Cheng et al., Proc. IEEE 2017)라는 독립된 장면 분류
+  데이터입니다. EarthShift는 이걸 UC Merced와 묶어 scale shift(R45↔UCM)에 썼고, Beyond Accuracy도 분류 4종 중 하나로 씁니다.
+- REOBench 12종 손상을 입힌 RESISC45-C는 우리만 만들었습니다. REOBench의 분류 손상 세트는 AID-C뿐입니다. Beyond Accuracy도
+  RESISC45에 손상을 입히지만 종류가 3종(cloud/shadow, Poisson–Gaussian 노이즈, motion blur)으로 다르고 데이터는 공개되지 않았습니다.
+  공개된 RESISC45-C가 따로 있는지는 저장한 노트에 없고 웹 검색은 하지 않았습니다.
+- 만든 이유는 지도교수 피드백 F3입니다(`docs/feedback/2026-11-W1_LSCD-TTA.md`). 벤치마크 하나에만 맞추면 reward hacking 우려가
+  있으니 2개 이상으로 하라는 지적이었습니다. RESISC45를 고른 이유:
+  - EarthShift의 R45↔UCM 자연 shift와 같은 데이터라 합성 손상과 실제 shift를 같은 데이터 위에서 비교할 수 있습니다.
+  - Beyond Accuracy와 겹치는 RGB 데이터라 그 논문과 직접 비교할 수 있습니다.
+
+### RRSHID는 왜 넣었고, REOBench의 haze는 무엇인가
+- 실제 haze와 합성 haze를 비교하려고 넣었습니다. 출처는 REOBench OpenReview 토론입니다(`docs/reading/reobench_openreview.md`).
+  리뷰어 h8bd가 "haze가 회색 덧칠 같다"고 지적했고, 저자들은 RRSHID 기준 FID 90.56이라는 숫자만 답했습니다. 같은 장면의
+  clear/hazy 쌍이라 FID보다 직접적인 비교(feature 이동, 예측 일치율)가 가능해서 썼습니다.
+- REOBench haze는 이미지 전체를 흰색 쪽으로 균일하게 섞는 연산입니다: `x·(1−i) + 1·i`, i = 0.2 / 0.3 / 0.4 / 0.5 / 0.6
+  (단계 1→5, `~/REOBench/Corrupt Image Generation/image_generation_without_annotations.py` `add_haze_batch`).
+  픽셀마다 같은 affine이라 공간 구조가 없습니다. ImageNet-C의 fog는 plasma fractal을 더해 공간적으로 불균일합니다.
+- 그래서 결과가 크게 갈립니다. 실제 haze는 채널별 affine으로 설명되는 비율(R²)이 0.35–0.43이고 합성 haze는 정의상 1.0입니다.
+  hazy와 clear의 예측 일치율도 실제 1.6–28.2%, 합성 39–84%였습니다(`RESULTS.md` §C).
+
+### ImageNet-C 7종과 REOBench의 대응 (impulse, contrast)
+두 종류가 REOBench에 없는 것이 아니라 이름이 다르거나 하나로 합쳐져 있습니다(`docs/reading/imagenet_c.md` §2).
+
+| ImageNet-C | REOBench |
+|---|---|
+| gaussian_noise | gaussian_noise |
+| impulse_noise | salt_and_pepper_noise (ImageNet-C 코드가 s&p를 impulse라고 부름) |
+| gaussian_blur (추가 세트) | gaussian_blur |
+| motion_blur | motion_blur |
+| jpeg_compression | compression_artifacts |
+| brightness, contrast (따로) | brightness_contrast (밝기↑ + 대비↓를 한 번에) |
+
+- natural_vs_rs의 질문은 "같은 함수·같은 파라미터가 자연 이미지와 RS 이미지에 다르게 작용하는가"입니다. 그래서 REOBench가 아니라
+  ImageNet-C 파라미터를 AID·RESISC45에 적용했고, ImageNet 쪽은 공개 ImageNet-C 파일을 그대로 썼습니다.
+- REOBench의 clouds, haze, data gaps, rotate, scale, translate는 ImageNet-C에 같은 함수가 없어 이 비교에서 빠졌습니다
+  (haze↔fog는 함수가 달라 짝으로 두지 않음).
+
+### contrastive ViT 쌍은 왜 없나
+- fMoW-RGB로 처음부터 contrastive 학습한 ViT의 공개 체크포인트가 없습니다. SatMAE 논문의 MoCo-v3 baseline은 ViT-B, fMoW-Sentinel
+  (10 band, 96 px)이고 공개되지 않았습니다. RemoteCLIP 등 CLIP 계열은 모두 OpenAI CLIP이나 LAION 가중치에서 이어 학습했습니다.
+- 그래서 contrastive 쌍은 ResNet-50 MoCo-v2뿐이고, 이 점은 한계로 적습니다. ImageNet MoCo-v3(ResNet-50, ViT-B)로 "contrastive냐
+  ResNet이냐"를 가르는 실험은 하지 않기로 했습니다(2026-11-17).
