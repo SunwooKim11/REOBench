@@ -221,3 +221,11 @@
   그 feature로 학습됐기 때문). 그래서 BN도 running 통계 유지 + affine만 학습을 기본으로 하고, 배치 통계판은 tent_bnstat으로 따로 남김.
 - **미해결**: dinov3_web_l16에서 EATA가 clean 6.2%로 붕괴(3 stream 시험). 원인 미확인 → DINOv3의 EATA 수치는 확인 전까지 쓰지 말 것.
 - 서버 CPU 제한이 12코어(cgroup cpu.max)라 CPU 작업이 DataLoader를 굶김 → feature 수준 실행(`flip_filter_tta.py`)을 `--device cuda`로 옮김.
+
+### 2026-11-17 flip 필터 TTA (feature 수준) 결과 — `experiments/2026-11-17_flip_tta/bs{64,16}/RESULTS.md`
+- 17개 백본 평균 손상 정확도, 배치 64 (AID-C / RESISC45-C): none 81.8 / 75.2, align_ms 87.3 / 81.2,
+  raw tent lr 0.01 78.7 / 63.7, raw entf lr 0.01 79.4 / 66.2, raw flipf lr 0.001 82.4 / 76.3 (17 / 17개 백본에서 none보다 높음),
+  raw flipf lr 0.01 84.0 / 74.3 (16 / 7개), al tent lr 0.001 87.3 / 81.0. lr 0.1은 전부 붕괴.
+- 배치 16: align_ms 85.8 / 79.3 (이득 +4.0 / +4.0, clean 비용 −1.4 / −1.9), raw tent lr 0.01 74.1 / 54.5, raw flipf lr 0.001 83.1 / 76.8.
+- 정리: head 입력 affine만 학습하는 조건에서는 (1) EM과 엔트로피 필터는 해롭다, (2) flip 필터는 손해를 막고 소폭 이득, (3) 학습 없는
+  정렬을 넘는 방법은 없다, (4) 배치가 작아지면 정렬 이득이 줄고 clean 비용이 생긴다.
