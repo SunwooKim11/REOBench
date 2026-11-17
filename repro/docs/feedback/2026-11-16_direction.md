@@ -154,3 +154,5 @@
   → `signals/`. 핵심: confidence 기반 정확도 추정(ATC)은 motion blur·data gaps·scale과 MAE-ImageNet·MoCo·ResNet에서 크게 과신
   (10pt 초과 12.8%), head 입력을 source 통계로 정렬하면 1.4%로 줄고, 정렬 전후 예측 flip 비율이 모든 백본에서 정확도를 따라감(0.90–1.00).
   다음: RESISC45↔UCM에서 재현, 정렬 조건(배치 크기·혼합 stream) 흔들기, 선행 연구(AETTA 등) 확인.
+- 자연 shift RESISC45↔UCM(EarthShift 19클래스) 실행: `scripts/analysis/natural_shift.py`, 결과표 `experiments/2026-11-17_natural_shift/RESULTS.md`.
+  지표 공부 노트 `docs/STUDY_stage1_metrics.md`. 문헌 조사(feature 통계를 쓰는 완화·정확도 추정 방법) 진행 중.

@@ -8,6 +8,8 @@ Sets (corrupted sets keep "src" = row of the clean test image they were made fro
   aid_train 7,999 / aid_test 2,000 / aid_c 120,000 (12 corruptions x 5 severities)
   r45_train 18,900 / r45_val 6,300 / r45_test 6,300 / r45_c 378,000 (torchgeo splits, 45 classes; RESISC45-C from
   scripts/tools/make_corrupted_cls.py)
+  es_{r45,ucm}_{train,val,test}: EarthShift 19 shared classes (RESISC45 7,915 / 2,726 / 2,659, UC Merced 1,142 / 379 / 379;
+  not in the default --sets, pass them explicitly)
 
   ~/REOBench/.venv/bin/python -u scripts/analysis/extract_feats.py [--models ...] [--sets ...]   # from repro/
 Output: /data/rs/feats/<model>/<set>.pt = {feats fp16 (N, D), y, corr, sev, src}; existing files are skipped.
@@ -64,9 +66,19 @@ def r45_c_items():
     return out
 
 
+UCM = "/data/rs/ucmerced"
+
+
+def es_items(ds, split):  # EarthShift 19-class RESISC45 <-> UC Merced splits (scripts/tools/make_rs_splits.py)
+    root, img = (R45, "NWPU-RESISC45") if ds == "r45" else (UCM, "UCMerced_LandUse/Images")
+    lines = [l.split() for l in open(f"{root}/earthshift19/{split}.txt") if l.strip()]
+    return [(f"{root}/{img}/{f}", int(y), -1, 0, i) for i, (f, y) in enumerate(lines)]
+
+
 ITEMS = {"aid_train": lambda: aid_items("train"), "aid_test": lambda: aid_items("test"), "aid_c": aid_c_items,
          "r45_train": lambda: r45_items("train"), "r45_val": lambda: r45_items("val"), "r45_test": lambda: r45_items("test"),
-         "r45_c": r45_c_items}
+         "r45_c": r45_c_items,
+         **{f"es_{d}_{sp}": (lambda d=d, sp=sp: es_items(d, sp)) for d in ("r45", "ucm") for sp in ("train", "val", "test")}}
 
 
 class Files(Dataset):
