@@ -156,3 +156,5 @@
   다음: RESISC45↔UCM에서 재현, 정렬 조건(배치 크기·혼합 stream) 흔들기, 선행 연구(AETTA 등) 확인.
 - 자연 shift RESISC45↔UCM(EarthShift 19클래스) 실행: `scripts/analysis/natural_shift.py`, 결과표 `experiments/2026-11-17_natural_shift/RESULTS.md`.
   지표 공부 노트 `docs/STUDY_stage1_metrics.md`. 문헌 조사(feature 통계를 쓰는 완화·정확도 추정 방법) 진행 중.
+- 문헌 조사 완료: `docs/PRIOR_ART_feature_signals.md`. 평균 재중심화는 NEO(ICLR 2026)가 선점, flip 기반 추정은 Weighted Flips(ICML 2024)가
+  가장 가까움(단, 학습 필요). 비어 있는 곳: frozen EO FM, 통계 정렬 후 ATC 회복 주장, 정렬 전후 flip, 공통 이동으로 보정 여부 결정.
