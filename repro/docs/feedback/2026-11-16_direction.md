@@ -229,3 +229,14 @@
 - 배치 16: align_ms 85.8 / 79.3 (이득 +4.0 / +4.0, clean 비용 −1.4 / −1.9), raw tent lr 0.01 74.1 / 54.5, raw flipf lr 0.001 83.1 / 76.8.
 - 정리: head 입력 affine만 학습하는 조건에서는 (1) EM과 엔트로피 필터는 해롭다, (2) flip 필터는 손해를 막고 소폭 이득, (3) 학습 없는
   정렬을 넘는 방법은 없다, (4) 배치가 작아지면 정렬 이득이 줄고 clean 비용이 생긴다.
+
+### 2026-11-18 밤샘 TTA 결과(AID-C 완료), head 부분공간 분해를 저장소로 옮김
+- `experiments/2026-11-17_fm_tta/RESULTS.md` (`scripts/tta/summarize_fm_tta.py`). AID-C 17개 백본 평균 손상 정확도:
+  none 81.8, none_al(정렬만) 87.3, tent 81.4, entf 81.5, flipf 84.3, bothf 84.2, sar 80.6, tent_al 88.1, flipf_al 87.9, tent_bnstat 68.0(BN 4개).
+  lr×10: tent 76.1, entf 76.4, flipf 83.8, bothf 83.8, tent_al 88.6, flipf_al 86.9.
+  → 백본 안쪽을 학습해도 EM·엔트로피 필터·SAR은 평균적으로 손해, flip 필터는 +2.5pt, 정렬 위의 TENT가 정렬만보다 +0.8(lr×10: +1.3, 16/17 백본).
+- **EATA 붕괴**: mae_in, dino_in_b16, dinov3_web/sat, sup_in_vitl16에서 약 6%. 원인 미확인(구현 또는 Fisher 스케일 의심). EATA 열은 사용 금지.
+- RESISC45-C는 진행 중(작은 백본부터).
+- `scripts/analysis/head_subspace.py` → `experiments/2026-11-18_head_subspace/` (어제의 scratch 측정을 정식화, AID + RESISC45).
+  이동 에너지 4분할 평균: head 부분공간 안 = 공통 1.2–6.5% + 표본별 2.6–13.0%, 밖 = 83–94%. 과신·정확도 하락과의 백본 간 Spearman:
+  logit 공통 이동 0.90 / 0.82–0.92, logit 표본별 잡음 0.91–0.94 / 0.91–0.93, CKA −0.12~−0.41, frac_common 0.11–0.39 (두 데이터셋).
