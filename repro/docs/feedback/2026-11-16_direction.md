@@ -240,3 +240,10 @@
 - `scripts/analysis/head_subspace.py` → `experiments/2026-11-18_head_subspace/` (어제의 scratch 측정을 정식화, AID + RESISC45).
   이동 에너지 4분할 평균: head 부분공간 안 = 공통 1.2–6.5% + 표본별 2.6–13.0%, 밖 = 83–94%. 과신·정확도 하락과의 백본 간 Spearman:
   logit 공통 이동 0.90 / 0.82–0.92, logit 표본별 잡음 0.91–0.94 / 0.91–0.93, CKA −0.12~−0.41, frac_common 0.11–0.39 (두 데이터셋).
+
+### 2026-11-19 전체 통과 TTA 완료 (AID-C, AID-C lr×10, RESISC45-C; 11-19 11:19 종료)
+- RESISC45-C 17개 백본 평균 손상 정확도: none 75.2, none_al 81.1, tent 71.2, entf 71.8, sar 71.8, flipf 79.1, bothf 79.0,
+  tent_al 83.0, flipf_al 82.4, tent_bnstat 61.2(BN 4개). tent_al은 17개 전부에서 none_al보다 높음(+1.9pt).
+- 두 데이터셋 공통: (1) EM·엔트로피 필터·SAR은 평균 손해(과신 백본에서 붕괴: moco_in RESISC45-C tent 27.4, sar 20.3),
+  (2) flip 필터는 17/17 이득(+2.5 / +3.9pt), (3) 정렬 + TENT가 가장 높음(정렬만 대비 +0.8 / +1.9pt), (4) 정렬 뒤에는 flip 필터가 보탬이 안 됨.
+- EATA 붕괴 지속(5개 백본에서 약 3%, 원인 미확인) → EATA 열 사용 금지. RESISC45-C는 lr×10 미실행.
