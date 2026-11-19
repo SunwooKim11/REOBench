@@ -12,6 +12,7 @@ source at the listed commit and copy the tracked files over it. Every change is 
 | `reobench_seg/` | this repo's `Segmentation/` (mmseg 0.21, RVSA based) | build_backbone `.model`, configurable checkpoint / feature blocks, pos-embed interpolation, label 255 → ignore, mmcv max version; configs in `configs/repro/` | Potsdam baselines A / B and segmentation TTA |
 | `lpips/` | PyPI lpips 0.1.4 (richzhang/PerceptualSimilarity; `lpips/{__init__,lpips,pretrained_networks}.py`, `weights/v0.1/*.pth`, `LICENSE`, BSD-2) | `__init__.py`: `from lpips.trainer import *` commented out, `trainer.py` removed (training only; needs scipy/tqdm) [REOBench repro] | LPIPS in `scripts/analysis/pixel_metrics.py` |
 | `satdino/` | strakaj/SatDINO @ b033d3f (`satdino/__init__.py`, `utils.py`, `vision_transformer_satdino.py`, `LICENSE`, Apache-2.0) | nothing (byte-identical) | SatDINO backbones in `src/reobench_tta/backbones.py` |
+| `entropy_enigma/` | oripress/EntropyEnigma @ 04ac397 (`main.py`, `rdumb.py`, `temperature_scaling.py`, `LICENSE`, MIT) | nothing (byte-identical; the driver `scripts/verify/weighted_flips_repro.py` imports its functions) | Weighted Flips reproduction on ImageNet-C |
 
 Environment for the two segmentation copies: conda `segtta` (python 3.10, torch 2.0.1+cu118, mmcv-full 1.7.2).
 Set `TIMM_FUSED_ATTN=0` for `reobench_seg` (torch 2.0.1 fused attention backward crashes on the H200).
