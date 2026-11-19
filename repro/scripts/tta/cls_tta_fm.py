@@ -15,11 +15,17 @@ BatchNorm backbones (ResNet-50): the BN layers keep their running statistics (ev
   the extra method tent_bnstat (BatchNorm backbones only).
 Updated parameters (tent, sar and the flip variants): affine of the norm layers except the top 25% of the blocks and the
 final norm (ViT), except layer4 (ResNet-50) -- the SAR / DeYO rule, generalised over the block naming of each family.
-EATA: all norm layers and Fisher from 2,000 clean train images (its official setting).
+EATA: Fisher from 2,000 clean train images, fisher_alpha 2000 (official values).
+  eata         = the same parameter set as above (final norm and top blocks excluded)
+  eata_allnorm = every norm layer, as in the official code. It diverges on 5 backbones (mae_in, dino_in_b16, dinov3_web_l16,
+                 dinov3_sat_l16, sup_in_vitl16 -> chance accuracy even on clean): the Fisher of a few final-norm elements is
+                 12.6 - 5,050, far above the stability limit of the quadratic penalty under SGD with momentum,
+                 lr * 2 * alpha * F < 2 (1 + 0.9), i.e. F < 0.95 at lr 0.001. Those elements feed feature channels whose
+                 clean-train std is close to 0 (down to 2e-6), which the head-input standardisation divides by.
 
 Methods
   none, none_al : no learning; none_al = head input re-standardised per batch (align_ms), computed in the same pass
-  tent, sar, eata : src/reobench_tta/tta (official code)
+  tent, sar, eata, eata_allnorm : src/reobench_tta/tta (official code)
   entf    : entropy minimisation on the samples with entropy < E0 only (the reliability filter alone: no SAM, no weights)
   flipf   : entropy minimisation on the samples whose prediction is the same with and without head-input alignment
   bothf   : entf and flipf
@@ -207,19 +213,23 @@ def run(name, ds, methods, args):
     fishers = None
     for method in todo:
         t0 = time.time()
-        if method == "eata" and fishers is None:
+        if method in ("eata", "eata_allnorm") and fishers is None:
             tr = ef.aid_items("train") if ds == "aid" else ef.r45_items("train")
             pick = torch.randperm(len(tr), generator=torch.Generator().manual_seed(0))[:2000].tolist()
             fishers = fisher_of(net0, DataLoader(Files([tr[i][:2] for i in pick], tf), batch_size=args.bs, num_workers=args.workers))
+            sub = set(names)
+            print(f"  fisher max: all norms {max(v[0].max().item() for v in fishers.values()):.3g}, adapted set "
+                  f"{max(v[0].max().item() for k, v in fishers.items() if k in sub):.3g} (stability limit {1.9 / (2000 * lr):.3g})", flush=True)
 
         def make():
             net = copy.deepcopy(net0)
             if method == "none":
                 return net, None
             configure(net, bn_batch_stats=method == "tent_bnstat")
-            if method == "eata":
-                a = eata.EATA(SimpleNamespace(), net, torch.optim.SGD(eata.collect_params(net)[0], lr, momentum=0.9), fishers,
-                              2000.0, e_margin=e0, d_margin=0.05)
+            if method in ("eata", "eata_allnorm"):
+                ps, ns = eata.collect_params(net) if method == "eata_allnorm" else collect(net)
+                fz = fishers if method == "eata_allnorm" else {k: v for k, v in fishers.items() if k in set(ns)}
+                a = eata.EATA(SimpleNamespace(), net, torch.optim.SGD(ps, lr, momentum=0.9), fz, 2000.0, e_margin=e0, d_margin=0.05)
                 return net, a
             params, _ = collect(net)
             if method in ("tent", "tent_bnstat"):

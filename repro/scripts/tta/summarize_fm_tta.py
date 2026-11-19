@@ -14,7 +14,7 @@ D = paths.EXP / "2026-11-17_fm_tta"
 ORDER = ["mae_in", "satmae", "scalemae", "moco_in", "moco_fmow", "gassl_fmow", "dino_in_s16", "satdino_s16", "dino_in_s8",
          "satdino_s8", "dino_in_b16", "satdino_b16", "dinov3_web_l16", "dinov3_sat_l16", "sup_in_r50", "sup_in_vitb16",
          "sup_in_vitl16"]
-BASE = ["none", "none_al", "tent", "entf", "flipf", "bothf", "tent_al", "flipf_al", "sar", "eata", "tent_bnstat"]
+BASE = ["none", "none_al", "tent", "entf", "flipf", "bothf", "tent_al", "flipf_al", "sar", "eata", "eata_allnorm", "tent_bnstat"]
 X10 = ["tent_x10", "entf_x10", "flipf_x10", "bothf_x10", "tent_al_x10", "flipf_al_x10"]
 
 
@@ -31,7 +31,8 @@ out = ["# 17개 백본 전체 통과 TTA 결과표 (2026-11-17~18, 수치만)", 
        "none_al = 학습 없이 head 입력만 정렬. entf = 엔트로피 < 0.4 ln C인 샘플만, flipf = 정렬 전후 예측이 같은 샘플만, bothf = 둘 다,",
        "`_al` = 정렬한 head 입력으로 예측·손실. tent_bnstat = 모든 BN을 배치 통계로(교과서 TENT, BN 백본만).",
        "손상 = 12종 × 5단계 60개 stream 평균. 정의는 `scripts/tta/cls_tta_fm.py` docstring.",
-       "**주의: EATA는 일부 백본에서 clean까지 붕괴(약 6%)하며 원인 미확인. 확인 전까지 EATA 열은 쓰지 말 것.**", ""]
+       "eata = TENT·SAR과 같은 파라미터 집합(마지막 norm과 상위 블록 제외). eata_allnorm = 공식 코드처럼 모든 norm 층: 5개 백본에서 발산",
+       "(마지막 norm의 일부 원소에서 Fisher가 12.6~5,050으로, SGD에서 2차 penalty가 안정한 한계 0.95를 넘음. docstring 참고).", ""]
 for ds, title in (("aid", "AID / AID-C"), ("r45", "RESISC45 / RESISC45-C")):
     R = {(m, k): json.load(open(D / ds / m / f"{k}.json")) for m in ORDER for k in BASE + X10 if (D / ds / m / f"{k}.json").exists()}
     ms = [m for m in ORDER if (m, "none") in R]
@@ -47,7 +48,7 @@ for ds, title in (("aid", "AID / AID-C"), ("r45", "RESISC45 / RESISC45-C")):
             cols = ref + keys
             out += [f"## {title}: {name}, {tag} (백본 {len(ms)}개)", ""]
             rows = [[m] + [fmt.format(R[(m, k)][metric]) if (m, k) in R else "–" for k in cols] for m in ms]
-            full = [m for m in ms if all((m, k) in R for k in cols if k != "tent_bnstat")]
+            full = [m for m in ms if all((m, k) in R for k in cols if k not in ("tent_bnstat", "eata"))]
             rows.append([f"**평균 ({len(full)}개)**"] + [fmt.format(sum(R[(m, k)][metric] for m in full if (m, k) in R) /
                                                                  max(1, sum((m, k) in R for m in full))) for k in cols])
             if metric == "avg":

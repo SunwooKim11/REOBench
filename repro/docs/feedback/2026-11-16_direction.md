@@ -247,3 +247,15 @@
 - 두 데이터셋 공통: (1) EM·엔트로피 필터·SAR은 평균 손해(과신 백본에서 붕괴: moco_in RESISC45-C tent 27.4, sar 20.3),
   (2) flip 필터는 17/17 이득(+2.5 / +3.9pt), (3) 정렬 + TENT가 가장 높음(정렬만 대비 +0.8 / +1.9pt), (4) 정렬 뒤에는 flip 필터가 보탬이 안 됨.
 - EATA 붕괴 지속(5개 백본에서 약 3%, 원인 미확인) → EATA 열 사용 금지. RESISC45-C는 lr×10 미실행.
+
+### 2026-11-19 EATA 붕괴 원인과 수정
+- 원인: 공식 EATA는 모든 norm 층을 학습하고 Fisher penalty(α = 2000)를 건다. 5개 백본(mae_in, dino_in_b16, dinov3_web/sat, sup_in_vitl16)에서
+  마지막 norm의 원소 1~44개의 Fisher가 12.6~5,050 → SGD(momentum 0.9)에서 2차 penalty가 안정하려면 lr·2αF < 3.8, 즉 F < 0.95(lr 0.001)인데
+  이를 크게 넘어 발산. 붕괴한 5개 = 한계를 넘는 5개와 정확히 일치. 그 원소들은 clean-train 표준편차가 거의 0인 feature 채널
+  (최소 2e-6)로 이어지고, head 입력 표준화가 그 값으로 나누면서 gradient가 커진다.
+- 수정: `eata` = TENT·SAR과 같은 파라미터 집합(마지막 norm·상위 25% 블록 제외), 이 집합의 Fisher 최대값은 5e-4 이하. 3-stream 시험에서
+  clean 정확도 유지(mae_in 94.3, dino_in_b16 96.1, sup_in_vitl16 94.9, dinov3_web 97.8). 기존 결과는 `eata_allnorm.json`으로 보존.
+  17개 백본 × AID-C/RESISC45-C 재실행 중(tmux `eata`, `run_eata.log`).
+- 분산이 거의 0인 채널(중앙값의 1/100 미만): dino_in_b16 5개, dinov3_web 2개, dinov3_sat 5개, sup_in_vitl16 34개, 나머지 0개.
+  이 채널을 0으로 두어도 stage-1 정확도 변화는 0.3pt 이하, 평균 이동에서 차지하는 몫 3.6% 이하 → 기존 분석에는 영향 없음.
+- flip 계산의 교차 확인: 서로 다른 세 코드 경로(labelfree_signals.py / flip_filter_tta.py / cls_tta_fm.py)의 AID-C 평균 flip이 일치.
