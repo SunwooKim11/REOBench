@@ -10,3 +10,4 @@
 | [matched_pair_study.md](matched_pair_study.md) | Satellite Pretraining Is Not One Thing (arXiv 2611.13849), agent 요약 | 백본 쌍 설계의 선행 연구 |
 | [entropy_enigma.md](entropy_enigma.md) | The Entropy Enigma / Weighted Flips (ICML 2024), Claude가 PDF 텍스트를 읽음 | flip 신호의 가장 가까운 선행 연구 |
 | [gold.md](gold.md) | GOLD: The Golden Subspace (CVPR 2026), Claude가 PDF 텍스트를 읽음 | "head가 읽는 방향"의 선행 연구 |
+| [dsbr.md](dsbr.md) | DSBR: Entropy Minimization without Model Collapse (arXiv 2606.02339), Claude가 PDF 텍스트를 읽음 | 예측 쏠림 → EM 붕괴, 클래스별 재가중 baseline |

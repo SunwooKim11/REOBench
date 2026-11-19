@@ -31,8 +31,15 @@ Methods
   bothf   : entf and flipf
   tent_al, flipf_al : prediction and loss on the aligned head input (alignment + backbone adaptation)
   tent_bnstat : TENT with batch statistics in every BN (BatchNorm backbones only)
+  dsbr, dsbr_a99, dsbr_a0 : DSBR (Nielen et al., arXiv 2606.02339, Algorithm 1; no public code, implemented from the paper):
+            entropy of every sample weighted by 1 / (C * P[its predicted class]), P = EMA (decay 0.9 / 0.99 / 0 = the batch
+            alone) of the predicted-class frequencies, started at 1 / C at the beginning of every stream. No filter.
+            Same parameter set, optimiser and lr as tent here (the paper uses Adam with the lr of TENT), so that the only
+            difference from tent is the loss.
+  dsbr_al : dsbr (decay 0.9) on the aligned head input
 --lr_mult k adds _x<k> to the method names (none is not rerun).
-Per stream: acc, ECE, signed ECE, NLL, AUROC (feat_metrics.stream_metrics); for the filter variants the share of samples used.
+Per stream: acc, ECE, signed ECE, NLL, AUROC (feat_metrics.stream_metrics); for the filter variants the share of samples used;
+top_share = share of the most frequent predicted class (prediction bias; written for runs made from 2026-11-19 on).
 
   ~/REOBench/.venv/bin/python -u scripts/tta/cls_tta_fm.py [--models ...] [--datasets aid r45] [--methods ...]   # from repro/, GPU
 Output: experiments/2026-11-17_fm_tta/<ds>/<model>/<method>.json (existing files are skipped)
@@ -147,6 +154,26 @@ class Filtered:
         return logits.detach()
 
 
+class DSBR:
+    """Algorithm 1 of DSBR: L = mean_i H(p_i) / (C * P[yhat_i]); P updated with the batch before the loss; weights are constants."""
+
+    def __init__(self, net, opt, inp, alpha):
+        self.net, self.opt, self.inp, self.alpha = net, opt, inp, alpha
+        C = net.w.shape[1]
+        self.P = torch.full((C,), 1.0 / C, device=net.w.device)
+
+    @torch.enable_grad()
+    def __call__(self, x):
+        z = self.net.z(x)
+        logits = self.net.head(batch_align(z) if self.inp == "al" else z)
+        pred = logits.detach().argmax(1)
+        self.P = self.alpha * self.P + (1 - self.alpha) * torch.bincount(pred, minlength=len(self.P)).float() / len(pred)
+        (tent.softmax_entropy(logits) / (len(self.P) * self.P[pred])).mean().backward()
+        self.opt.step()
+        self.opt.zero_grad()
+        return logits.detach()
+
+
 class Files(Dataset):
     def __init__(self, items, tf):
         self.items, self.tf = items, tf
@@ -237,6 +264,9 @@ def run(name, ds, methods, args):
             if method == "sar":
                 return net, sar.SAR(net, sam.SAM(params, torch.optim.SGD, lr=lr, momentum=0.9), margin_e0=e0)
             inp = "al" if method.endswith("_al") else "raw"
+            if method.startswith("dsbr"):
+                alpha = {"dsbr_a99": 0.99, "dsbr_a0": 0.0}.get(method, 0.9)
+                return net, DSBR(net, torch.optim.SGD(params, lr, momentum=0.9), inp, alpha)
             sel = {"tent_al": "all"}.get(method, method.replace("_al", ""))
             return net, Filtered(net, torch.optim.SGD(params, lr, momentum=0.9), inp, sel, e0)
 
@@ -267,8 +297,10 @@ def run(name, ds, methods, args):
         for k, lg in logits.items():
             res = {"model": name, "dataset": ds, "method": k, "lr": lr, "bs": args.bs, "seed": args.seed, "streams": {}}
             for si, (sname, it) in enumerate(streams):
-                r = fm.stream_metrics(torch.cat(lg[si]), torch.cat(ys[si]))
+                L = torch.cat(lg[si])
+                r = fm.stream_metrics(L, torch.cat(ys[si]))
                 res["streams"][sname] = {q: r[q] for q in ("acc", "ece", "signed_ece", "nll", "auroc")}
+                res["streams"][sname]["top_share"] = torch.bincount(L.argmax(1), minlength=C).max().item() / len(L)
                 if k in ("entf", "flipf", "bothf", "flipf_al", "tent_al"):
                     res["streams"][sname]["used"] = used[si] / len(it)
             mean = lambda q: sum(v[q] for s_, v in res["streams"].items() if s_ != "clean") / 60

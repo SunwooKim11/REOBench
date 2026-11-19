@@ -16,6 +16,9 @@ Loss = mean entropy over the selected samples of the batch:
   entf  : entropy < 0.4 ln C                     (reliability filter of SAR / EATA; no SAM, no weighting)
   flipf : prediction on z equals prediction on the batch-aligned z, both under the current affine (no flip)
   bothf : entf and flipf
+  dsbr, dsbr99 : DSBR (arXiv 2606.02339, Algorithm 1): every sample, entropy weighted by 1 / (C * P[predicted class]),
+          P = EMA (decay 0.9 / 0.99) of the predicted-class frequencies of the stream, started at 1 / C. Not in the default
+          losses; --losses tent dsbr dsbr99 --out <dir> writes to a separate folder.
 Optimiser: Adam, lr in --lrs (all reported; nothing is selected with labels). A batch with no selected sample gives a
 zero gradient. Baselines without learning: none, align_ms.
 
@@ -60,7 +63,10 @@ def adapt(Z, w, b, inp, loss, lr, bs):
     g = torch.ones(S, 1, D, device=Z.device, requires_grad=True)
     be = torch.zeros(S, 1, D, device=Z.device, requires_grad=True)
     opt = torch.optim.Adam([g, be], lr=lr)  # element-wise, and the loss is a sum over streams -> streams are independent
-    e0 = 0.4 * math.log(w.shape[1])
+    C = w.shape[1]
+    e0 = 0.4 * math.log(C)
+    P = torch.full((S, C), 1.0 / C, device=Z.device)
+    alpha = 0.99 if loss == "dsbr99" else 0.9
     out, used = [], torch.zeros(S, device=Z.device)
     for i in range(0, N, bs):
         zb = Z[:, i:i + bs]
@@ -77,7 +83,14 @@ def adapt(Z, w, b, inp, loss, lr, bs):
             if loss in ("flipf", "bothf"):
                 m &= lr_.argmax(-1) == la_.argmax(-1)
             used += m.float().sum(1)
-        L = ((ent * m).sum(1) / m.float().sum(1).clamp_min(1)).sum()
+        if loss.startswith("dsbr"):
+            with torch.no_grad():
+                pred = logits.argmax(-1)
+                P = alpha * P + (1 - alpha) * torch.nn.functional.one_hot(pred, C).float().mean(1)
+                wgt = 1 / (C * P.gather(1, pred))
+            L = (ent * wgt).mean(1).sum()
+        else:
+            L = ((ent * m).sum(1) / m.float().sum(1).clamp_min(1)).sum()
         opt.zero_grad()
         L.backward()
         opt.step()
@@ -92,7 +105,7 @@ def metrics(logits, Y):  # (S, N, C), (S, N)
     return res
 
 
-def run(model, ds, bs, lrs):
+def run(model, ds, bs, lrs, losses=LOSSES):
     h = torch.load(f"{fm.FEATS}/{model}/head_{ds}.pt", map_location="cpu")
     w, b, mu, sd = h["w"], h["b"], h["mu"], h["sd"]
     te_x, te = fm.load(model, f"{ds}_test")
@@ -115,7 +128,7 @@ def run(model, ds, bs, lrs):
         res["methods"]["align_ms"] = {"m": metrics(al @ w + b, Y)}
         del al
     for inp in ("raw", "al"):
-        for loss in LOSSES:
+        for loss in losses:
             for lr in lrs:
                 t0 = time.time()
                 logits, used = adapt(Z, w, b, inp, loss, lr, bs)
@@ -134,20 +147,22 @@ if __name__ == "__main__":
     ap.add_argument("--datasets", nargs="*", default=["aid", "r45"])
     ap.add_argument("--bs", type=int, default=64)
     ap.add_argument("--lrs", nargs="*", type=float, default=[1e-4, 1e-3, 1e-2])
+    ap.add_argument("--losses", nargs="*", default=LOSSES)
+    ap.add_argument("--out", default=None, help="output folder (default experiments/2026-11-17_flip_tta/bs<bs>)")
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--device", default="cpu")
     args = ap.parse_args()
     torch.set_num_threads(args.threads)
     dev = torch.device(args.device)
     fm.dev = dev
-    out = OUT / f"bs{args.bs}"
+    out = paths.EXP / args.out if args.out else OUT / f"bs{args.bs}"
     out.mkdir(parents=True, exist_ok=True)
     for m in args.models:
         for ds in args.datasets:
             f = out / f"{m}_{ds}.json"
             if f.exists():
                 continue
-            r = run(m, ds, args.bs, args.lrs)
+            r = run(m, ds, args.bs, args.lrs, args.losses)
             a = lambda k: sum(x["acc"] for x in r["methods"][k]["m"][1:]) / 60
             print(f"{m} {ds}: none {a('none'):.1f} align_ms {a('align_ms'):.1f}", flush=True)
             json.dump(r, open(f, "w"))

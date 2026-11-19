@@ -279,3 +279,18 @@
 - f 다시 맞추기(val + holdout 21점): 0.000501x² − 0.3417x + 74.14 (논문 0.000356x² − 0.3214x + 75.66), IN-C MAE 5.31.
 - 손상별 WF 오차가 큰 곳: pixelate 11.6, fog 10.1, defocus blur 9.5, contrast 8.7, elastic 8.4.
 - 이것은 논문 방법의 재현이다. 우리 flip(정렬 전후 예측 변화)의 검증은 아니며, 두 flip을 같은 조건에서 비교하는 일은 남아 있음.
+
+### 2026-11-19 DSBR 읽기·구현, feature 단계 결과
+- 논문: Nielen et al., arXiv 2606.02339. 노트 `docs/reading/dsbr.md`. 공개 코드를 찾지 못해 부록 A Algorithm 1대로 구현
+  (`cls_tta_fm.py`의 dsbr / dsbr_a99 / dsbr_a0 / dsbr_al, `flip_filter_tta.py`의 dsbr / dsbr99). 논문 수치와의 대조는
+  `scripts/verify/dsbr_imagenet_c.py`(ViT-B/16, ImageNet-C 강도 5)로 진행 중.
+- feature 단계(head 입력 affine만 학습, Adam, 배치 64), 17개 백본 평균 손상 정확도 (AID-C / RESISC45-C):
+  none 81.8 / 75.2, align_ms 87.3 / 81.2, flipf lr 0.001 82.4 / 76.3,
+  tent lr 0.001 81.7 / 74.0, lr 0.01 78.7 / 63.7,
+  dsbr(α 0.9) lr 0.001 82.2 / 76.3, lr 0.01 83.7 / 78.8 (두 lr 모두 17/17에서 none보다 높음),
+  dsbr(α 0.99) lr 0.001 81.8 / 75.4, lr 0.01 80.5 / 73.7,
+  정렬 입력: tent lr 0.01 86.3 / 74.8, dsbr lr 0.01 87.3 / 81.3, dsbr lr 0.001 87.4 / 81.3.
+- 읽기: (1) TENT가 무너지는 lr 0.01에서 DSBR은 무너지지 않고 none보다 +1.9 / +3.6pt. (2) α 0.99는 우리 stream 길이(31~99 step)에서
+  P가 1/C에서 거의 못 벗어나 TENT에 가까워짐. (3) 정렬(align_ms)에는 못 미침(−3.6 / −2.4pt). (4) 정렬 뒤에는 TENT의 lr 0.01 하락
+  (74.8)을 막아 주지만 정렬만 한 것 대비 이득은 0.1pt.
+- 표: `experiments/2026-11-19_dsbr/RESULTS.md`. 백본 전체 통과 실행은 tmux `dsbr`(`scripts/run_dsbr.sh`, `run.log`).
