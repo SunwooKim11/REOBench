@@ -261,3 +261,10 @@
 - flip 계산의 교차 확인: 따로 짠 두 코드(labelfree_signals.py / flip_filter_tta.py의 lr 1e-4 실행)의 AID-C 평균 flip이 17개 백본에서
   0.2pt 이내로 일치. cls_tta_fm.py의 flipf는 백본이 학습되면서 flip이 줄어들어(예: mae_in 24.4 → 17.7) 같은 값이 아니며 교차 확인으로 쓸 수 없음.
   외부 기준과의 검증은 아직 없음: Weighted Flips(Entropy Enigma)는 구현하지 않았고, 그 논문 수치 재현도 하지 않음.
+
+### 2026-11-19 EATA 재실행 완료 (파라미터 집합 = TENT·SAR과 동일)
+- 17개 백본 평균 손상 정확도 (AID-C / RESISC45-C): eata 81.9 / 71.1 (none 81.8 / 75.2, tent 81.4 / 71.2, sar 80.6 / 71.8, eata_allnorm 58.6 / 48.0).
+  none보다 높은 백본 수 12 / 12. 수치 발산(약 3~6%로 붕괴)은 사라짐.
+- 남은 하락은 발산이 아니라 엔트로피 최소화 자체의 실패: RESISC45에서 moco_in clean 88.0 -> 16.0, sup_in_r50, mae_in 등
+  과신 백본에서 TENT·SAR과 같은 양상(RESISC45-C: moco_in 15.7, sup_in_r50 44.2, mae_in 50.8).
+- 표: `experiments/2026-11-17_fm_tta/RESULTS.md` (eata, eata_allnorm 열 모두 수록).
