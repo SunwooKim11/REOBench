@@ -294,3 +294,16 @@
   P가 1/C에서 거의 못 벗어나 TENT에 가까워짐. (3) 정렬(align_ms)에는 못 미침(−3.6 / −2.4pt). (4) 정렬 뒤에는 TENT의 lr 0.01 하락
   (74.8)을 막아 주지만 정렬만 한 것 대비 이득은 0.1pt.
 - 표: `experiments/2026-11-19_dsbr/RESULTS.md`. 백본 전체 통과 실행은 tmux `dsbr`(`scripts/run_dsbr.sh`, `run.log`).
+
+### 2026-11-19 DSBR: 사용자 메모 검토, 예측 쏠림 측정
+- 사용자 메모(Problem / Solution / 부록 E·F / 실험 / future work)와 질문 5개를 논문과 대조해 `docs/reading/dsbr.md` 4~7절에 정리.
+  고친 점 2개: (1) SAR이 엔트로피를 쓴 이유는 "label이 없어 gradient를 못 구해서"가 아니라 gradient norm 문턱값을 모델·데이터에
+  무관하게 정하기 어려워서, (2) 경계 근처 샘플은 적응 전에 shift로 이미 넘어온 것. Fig. 5·6은 페이지를 이미지로 렌더링해 확인.
+- 예측 쏠림 측정(`scripts/analysis/pred_bias.py`, `experiments/2026-11-19_dsbr/pred_bias.md`), tv = 예측·실제 클래스 비율의 차이:
+  손상 평균 tv none 12.2 / 14.9% → 정렬 후 4.5 / 5.1% (clean 1.3 / 1.6%). 쏠림 상위 1/4 stream에서 none 대비
+  tent −14.1 / −31.9, dsbr +4.5 / +9.8, align +17.9 / +18.7pt. 하위 절반에서는 모든 방법이 ±0.9pt 이내.
+  tv와의 Spearman: tent 이득 −0.28 / −0.62, dsbr 이득 +0.63 / +0.87, align 이득 +0.93 / +0.94.
+- 읽기: 쏠림이 클수록 TENT가 잃는다는 논문 주장은 우리 17개 백본에서도 같은 방향. 우리 쏠림의 약 2/3는 공통 이동(정렬로 제거)이고
+  DSBR은 그 구간에서 정렬의 1/4~1/2만 회복. tv는 오류율과 기계적으로 묶여 있어 인과는 주장 불가.
+- 백본 전체 통과 lr×10 중간 결과(AID-C, 17개 중 10개): none 81.7, tent_x10 74.1, flipf_x10 82.8, dsbr_x10 78.2.
+  moco_in은 dsbr_x10에서도 23.1로 붕괴(tent 15.9, flipf 54.0), sup_in_r50 68.6(tent 53.6, flipf 76.4). 완료 후 갱신.
