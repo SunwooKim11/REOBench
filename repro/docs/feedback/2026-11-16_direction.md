@@ -258,4 +258,6 @@
   17개 백본 × AID-C/RESISC45-C 재실행 중(tmux `eata`, `run_eata.log`).
 - 분산이 거의 0인 채널(중앙값의 1/100 미만): dino_in_b16 5개, dinov3_web 2개, dinov3_sat 5개, sup_in_vitl16 34개, 나머지 0개.
   이 채널을 0으로 두어도 stage-1 정확도 변화는 0.3pt 이하, 평균 이동에서 차지하는 몫 3.6% 이하 → 기존 분석에는 영향 없음.
-- flip 계산의 교차 확인: 서로 다른 세 코드 경로(labelfree_signals.py / flip_filter_tta.py / cls_tta_fm.py)의 AID-C 평균 flip이 일치.
+- flip 계산의 교차 확인: 따로 짠 두 코드(labelfree_signals.py / flip_filter_tta.py의 lr 1e-4 실행)의 AID-C 평균 flip이 17개 백본에서
+  0.2pt 이내로 일치. cls_tta_fm.py의 flipf는 백본이 학습되면서 flip이 줄어들어(예: mae_in 24.4 → 17.7) 같은 값이 아니며 교차 확인으로 쓸 수 없음.
+  외부 기준과의 검증은 아직 없음: Weighted Flips(Entropy Enigma)는 구현하지 않았고, 그 논문 수치 재현도 하지 않음.
