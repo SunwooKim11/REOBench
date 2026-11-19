@@ -268,3 +268,14 @@
 - 남은 하락은 발산이 아니라 엔트로피 최소화 자체의 실패: RESISC45에서 moco_in clean 88.0 -> 16.0, sup_in_r50, mae_in 등
   과신 백본에서 TENT·SAR과 같은 양상(RESISC45-C: moco_in 15.7, sup_in_r50 44.2, mae_in 50.8).
 - 표: `experiments/2026-11-17_fm_tta/RESULTS.md` (eata, eata_allnorm 열 모두 수록).
+
+### 2026-11-19 Weighted Flips 재현 완료 (ImageNet-C, ResNet-50, 공식 코드)
+- 공식 코드(oripress/EntropyEnigma @ 04ac397, `third_party/entropy_enigma/`)의 함수·계수 그대로, seed 42 한 번. 96개 split
+  (val + IN-C 15종×5 + holdout 4종×5). `scripts/verify/weighted_flips_repro.py`, 표 `experiments/2026-11-19_weighted_flips_repro/RESULTS.md`.
+- IN-C 75개 split 추정 오차 MAE (우리 / 논문 Table 1): WF 5.49 / 4.79, AC 10.06 / 10.06, DoC 6.62 / 6.61,
+  ATC(negative entropy) 7.45 / 7.44. 비교 기준 3개가 소수 둘째 자리까지 일치 → 데이터·모델·평가 파이프라인은 논문과 같음.
+  WF는 0.70pt 높음(seed 1개, 처음 1,000장의 표본 차이일 수 있으나 확인하지 않음).
+- 논문에 없는 값: ATC(max-softmax) 3.68, 가중 없는 flip 1차식 5.28 / 2차식 5.51 → 이 실행에서는 confidence 가중의 이득이 보이지 않음.
+- f 다시 맞추기(val + holdout 21점): 0.000501x² − 0.3417x + 74.14 (논문 0.000356x² − 0.3214x + 75.66), IN-C MAE 5.31.
+- 손상별 WF 오차가 큰 곳: pixelate 11.6, fog 10.1, defocus blur 9.5, contrast 8.7, elastic 8.4.
+- 이것은 논문 방법의 재현이다. 우리 flip(정렬 전후 예측 변화)의 검증은 아니며, 두 flip을 같은 조건에서 비교하는 일은 남아 있음.
