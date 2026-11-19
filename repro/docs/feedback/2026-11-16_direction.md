@@ -305,5 +305,7 @@
   tv와의 Spearman: tent 이득 −0.28 / −0.62, dsbr 이득 +0.63 / +0.87, align 이득 +0.93 / +0.94.
 - 읽기: 쏠림이 클수록 TENT가 잃는다는 논문 주장은 우리 17개 백본에서도 같은 방향. 우리 쏠림의 약 2/3는 공통 이동(정렬로 제거)이고
   DSBR은 그 구간에서 정렬의 1/4~1/2만 회복. tv는 오류율과 기계적으로 묶여 있어 인과는 주장 불가.
-- 백본 전체 통과 lr×10 중간 결과(AID-C, 17개 중 10개): none 81.7, tent_x10 74.1, flipf_x10 82.8, dsbr_x10 78.2.
-  moco_in은 dsbr_x10에서도 23.1로 붕괴(tent 15.9, flipf 54.0), sup_in_r50 68.6(tent 53.6, flipf 76.4). 완료 후 갱신.
+- 백본 전체 통과(AID-C, 17개 백본, 2026-11-19 20:57 완료). 프로토콜 lr: none 81.8, none_al 87.3, tent 81.4, flipf 84.3,
+  dsbr 83.6 (none보다 16/17), tent_al 88.1. lr×10: tent_x10 76.1, flipf_x10 83.8, dsbr_x10 80.4 (tent보다 17/17, none보다 13/17),
+  tent_al_x10 88.6. moco_in은 dsbr_x10에서도 23.1로 붕괴(tent 15.9, flipf 54.0), sup_in_r50 68.6, mae_in 71.6.
+  읽기: 백본 전체에서는 dsbr가 tent보다 낫지만 flip 필터보다 낮고, 큰 lr에서 붕괴를 막지 못함. 표는 `experiments/2026-11-19_dsbr/RESULTS.md` 2절.
