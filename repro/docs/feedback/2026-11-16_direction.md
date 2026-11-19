@@ -309,3 +309,6 @@
   dsbr 83.6 (none보다 16/17), tent_al 88.1. lr×10: tent_x10 76.1, flipf_x10 83.8, dsbr_x10 80.4 (tent보다 17/17, none보다 13/17),
   tent_al_x10 88.6. moco_in은 dsbr_x10에서도 23.1로 붕괴(tent 15.9, flipf 54.0), sup_in_r50 68.6, mae_in 71.6.
   읽기: 백본 전체에서는 dsbr가 tent보다 낫지만 flip 필터보다 낮고, 큰 lr에서 붕괴를 막지 못함. 표는 `experiments/2026-11-19_dsbr/RESULTS.md` 2절.
+- ImageNet-C 구현 확인(강도 5, ViT-B/16, 배치 64, 15종 평균, 21:25 완료): 무적응 51.6(augreg) / 55.5(augreg2), 논문 39.8 →
+  체크포인트 불일치로 절대값 비교 불가. augreg에서 Tent(SGD) 59.3, DSBR α 0.9(Adam) 66.2 (논문 51.9 / 64.4). DSBR이 15종 전부에서
+  Tent·무적응보다 높음. 남은 것: DSBR α 0.99, Tent(Adam)는 파이프라인 끝에서 실행.

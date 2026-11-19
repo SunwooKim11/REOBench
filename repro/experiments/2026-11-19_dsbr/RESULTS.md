@@ -343,5 +343,26 @@ top = 가장 많이 예측된 클래스의 비율(%), 예측 쏠림의 크기. n
 
 | 실행 | 우리 | 논문 | 최다 예측 클래스 비율 (%) |
 |---|---:|---:|---:|
-| augreg2_none | 진행 중 (1/15) | – | – |
+| augreg2_none | 55.5 | 39.8 | 3.7 |
+| augreg_dsbr_a0.9_adam_lr0.00025_all | 66.2 | 64.4 | 0.3 |
+| augreg_none | 51.6 | 39.8 | 2.0 |
+| augreg_tent_sgd_lr0.00025_all | 59.3 | 51.9 | 1.3 |
+
+| 손상 | augreg2_none | augreg_dsbr_a0.9_adam_lr0.00025_all | augreg_none | augreg_tent_sgd_lr0.00025_all |
+|---|---:|---:|---:|---:|
+| gaussian_noise | 56.7 | 60.0 | 49.7 | 55.0 |
+| shot_noise | 56.8 | 61.3 | 50.2 | 56.1 |
+| impulse_noise | 57.4 | 61.3 | 50.0 | 55.7 |
+| defocus_blur | 46.8 | 59.4 | 42.7 | 53.7 |
+| glass_blur | 35.6 | 58.6 | 34.4 | 46.8 |
+| motion_blur | 53.1 | 63.7 | 50.6 | 57.1 |
+| zoom_blur | 44.8 | 61.6 | 44.8 | 52.9 |
+| snow | 62.2 | 69.1 | 56.6 | 62.1 |
+| frost | 62.6 | 67.5 | 52.3 | 58.3 |
+| fog | 65.7 | 71.2 | 56.6 | 63.6 |
+| brightness | 77.7 | 79.8 | 75.9 | 77.3 |
+| contrast | 32.5 | 63.2 | 32.0 | 58.0 |
+| elastic_transform | 46.1 | 68.6 | 46.9 | 55.2 |
+| pixelate | 66.9 | 75.0 | 65.5 | 69.5 |
+| jpeg_compression | 67.6 | 73.0 | 66.4 | 67.9 |
 

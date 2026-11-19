@@ -1,0 +1,49 @@
+{
+ "args": {
+  "method": "none",
+  "ckpt": "augreg2",
+  "alpha": 0.9,
+  "opt": "adam",
+  "lr": 0.00025,
+  "params": "all",
+  "sev": 5,
+  "bs": 64,
+  "seed": 0,
+  "workers": 10
+ },
+ "acc": {
+  "gaussian_noise": 56.734,
+  "shot_noise": 56.766,
+  "impulse_noise": 57.438,
+  "defocus_blur": 46.808,
+  "glass_blur": 35.6,
+  "motion_blur": 53.122,
+  "zoom_blur": 44.846,
+  "snow": 62.224,
+  "frost": 62.574,
+  "fog": 65.704,
+  "brightness": 77.66,
+  "contrast": 32.518,
+  "elastic_transform": 46.106,
+  "pixelate": 66.928,
+  "jpeg_compression": 67.59
+ },
+ "top_share": {
+  "gaussian_noise": 0.01702,
+  "shot_noise": 0.01268,
+  "impulse_noise": 0.00776,
+  "defocus_blur": 0.01478,
+  "glass_blur": 0.0305,
+  "motion_blur": 0.01012,
+  "zoom_blur": 0.02946,
+  "snow": 0.0614,
+  "frost": 0.01136,
+  "fog": 0.06604,
+  "brightness": 0.00366,
+  "contrast": 0.24018,
+  "elastic_transform": 0.03962,
+  "pixelate": 0.00468,
+  "jpeg_compression": 0.00474
+ },
+ "mean": 55.507866666666665
+}
