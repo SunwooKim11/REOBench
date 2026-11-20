@@ -3,7 +3,7 @@
 저장된 feature 위에서 head 입력의 채널별 affine(gamma, beta)만 엔트로피 최소화로 학습. head는 고정. stream마다 초기화.
 입력: raw = 그대로, al = 배치마다 source 통계로 정렬한 것. 손실에 쓰는 샘플: tent = 전부, entf = 엔트로피 < 0.4 ln C,
 flipf = 정렬 전후 예측이 같은 샘플, bothf = 둘 다. Adam, 학습률은 전부 보고(라벨로 고르지 않음).
-손상 = 12종 × 5단계 60개 stream 평균. 정의는 `scripts/analysis/flip_filter_tta.py` docstring.
+손상 = 12종 × 5단계 60개 stream 평균. 정의는 `scripts/analysis/feat_tta.py` docstring.
 
 ## AID / AID-C: 백본 17개 평균
 

@@ -103,7 +103,7 @@ Imaging", arXiv 2606.02339 v1 (2026-06-01, 본문 표기는 Preprint). 검색 �
 
 ## 3. 우리 실험 (2026-11-19~)
 
-구현과 결과: `scripts/tta/cls_tta_fm.py`(dsbr, dsbr_a99, dsbr_a0, dsbr_al), `scripts/analysis/flip_filter_tta.py`(dsbr, dsbr99),
+구현과 결과: `scripts/tta/cls_tta_fm.py`(dsbr, dsbr_a99, dsbr_a0, dsbr_al), `scripts/analysis/feat_tta.py`(dsbr, dsbr99),
 ImageNet-C에서의 구현 확인 `scripts/verify/dsbr_imagenet_c.py`. 수치는 `experiments/2026-11-19_dsbr/RESULTS.md`와
 `experiments/2026-11-17_fm_tta/RESULTS.md`, 경과는 `docs/feedback/2026-11-16_direction.md`.
 수치 요약(feature 단계, 17개 백본 평균 손상 정확도, AID-C / RESISC45-C): none 81.8 / 75.2, tent lr 0.01 78.7 / 63.7,

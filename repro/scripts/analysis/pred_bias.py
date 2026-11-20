@@ -1,7 +1,7 @@
 """How large is the prediction bias (DSBR, arXiv 2606.02339) on AID-C / RESISC45-C, how much of it does head-input alignment
 remove, and do the gains of DSBR follow it?
 
-Saved features and stage-1 heads; streams and order as flip_filter_tta.py (seed-0 permutation, batches of 64).
+Saved features and stage-1 heads; streams and order as feat_tta.py (seed-0 permutation, batches of 64).
 Per stream, with q = predicted class distribution and p = true class distribution of the stream:
   tv  = 0.5 * sum_k |q_k - p_k|     prediction bias (0 = the predicted class shares equal the true ones)
   top = max_k q_k                   share of the most frequent predicted class
@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from reobench_tta import common, paths  # noqa: E402
 import feat_metrics as fm  # noqa: E402
-from flip_filter_tta import batch_align  # noqa: E402
+from feat_tta import batch_align  # noqa: E402
 from head_subspace import ORDER, spear  # noqa: E402
 
 D = paths.EXP / "2026-11-19_dsbr"

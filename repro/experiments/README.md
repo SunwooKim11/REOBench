@@ -18,7 +18,7 @@ in `docs/NOTES_tta.md` (2026-10) and `docs/feedback/2026-11-16_direction.md` (20
 | `2026-11-16_backbone_feats` | Stage 1: saved features, linear heads, shift metrics and label-free signals on AID-C / RESISC45-C; seg drift, RRSHID | `scripts/analysis/` (`extract_feats.py`, `feat_metrics.py`, ...) | `RESULTS.md`, `ANALYSIS.md` |
 | `2026-11-17_natural_shift` | Natural shift RESISC45 ↔ UC Merced (EarthShift classes) | `scripts/analysis/natural_shift.py` | `RESULTS.md` |
 | `2026-11-17_shift_oracle` | Oracle removal of the shift direction (feature and pixel level) | `scripts/analysis/shift_direction_oracle.py` | `RESULTS.md` |
-| `2026-11-17_flip_tta` | Feature-level TTA on saved features: alignment, flip filter, tent (bs 16 / 64) | `scripts/analysis/flip_filter_tta.py` | `bs*/`, summary script `summarize_flip_tta.py` |
+| `2026-11-17_flip_tta` | Feature-level TTA on saved features: alignment, flip filter, tent (bs 16 / 64) | `scripts/analysis/feat_tta.py` | `bs*/`, summary script `summarize_flip_tta.py` |
 | `2026-11-17_fm_tta` | Full-backbone TTA on the 17 backbones (tent, sar, eata, flip filter, dsbr, ± alignment) | `scripts/tta/cls_tta_fm.py` | `RESULTS.md` |
 | `2026-11-18_head_subspace` | Which part of the shift the linear head reads (head subspace energy) | `scripts/analysis/head_subspace.py` | per-model JSON |
 | `2026-11-19_weighted_flips_repro` | Reproduction of Weighted Flips (Entropy Enigma, ImageNet-C, ResNet-50) | `scripts/verify/weighted_flips_repro.py` | `RESULTS.md` |

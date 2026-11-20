@@ -74,7 +74,7 @@ arXiv 2405.05012. 코드: github.com/oripress/EntropyEnigma.
 
 **꼭 해야 하는 것**
 1. **WF를 baseline으로 직접 비교.** 우리 설정에 옮기면: head 입력의 affine(마지막 norm에 해당)을 EM으로 학습하고 전후 flip을 센 뒤 같은
-   방식으로 정확도를 추정. `scripts/analysis/flip_filter_tta.py`의 틀을 쓸 수 있다. 리뷰어가 가장 먼저 물을 비교다.
+   방식으로 정확도를 추정. `scripts/analysis/feat_tta.py`의 틀을 쓸 수 있다. 리뷰어가 가장 먼저 물을 비교다.
 2. **confidence 가중을 빌려 시험.** 우리도 "확신하던 예측이 뒤집힘"에 가중치를 줄 수 있다. 오늘 확인한 "confidence × 정렬 후 확률"의
    오류 탐지 AUROC 0.92–0.97과 같은 방향이다.
 3. **COT도 baseline에 추가.** 손상 계열에서는 COT가 WF보다 좋았다.

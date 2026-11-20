@@ -5,7 +5,7 @@ DSBR = 엔트로피를 1 / (C · P[예측 클래스])로 가중, P = 예측 클�
 
 ## 1. feature 단계 (head 입력의 채널별 affine만 학습, Adam)
 
-`scripts/analysis/flip_filter_tta.py`. raw = head 입력 그대로, al = 배치 정렬한 head 입력. flipf는 2026-11-17 실행 값.
+`scripts/analysis/feat_tta.py`. raw = head 입력 그대로, al = 배치 정렬한 head 입력. flipf는 2026-11-17 실행 값.
 
 ### AID / AID-C: 손상 정확도 (%) (백본 17개)
 
@@ -431,6 +431,7 @@ top = 가장 많이 예측된 클래스의 비율(%), 예측 쏠림의 크기. n
 
 `scripts/verify/dsbr_imagenet_c.py`. 논문 값: 무적응 39.8, Tent 51.9, DSBR α=0.9 64.4, α=0.99 64.9.
 논문이 밝히지 않은 것(체크포인트, 학습 파라미터 집합, lr)은 가정이다. docstring 참고. 15종 평균 정확도 (%).
+`_inorm` = ImageNet mean/std 입력(체크포인트는 0.5/0.5로 학습). augreg2 + inorm의 무적응 값이 논문의 39.8과 같다.
 
 | 실행 | 우리 | 논문 | 최다 예측 클래스 비율 (%) |
 |---|---:|---:|---:|

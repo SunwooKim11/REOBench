@@ -205,7 +205,7 @@
 - 사용자 노트 검토 내용은 `docs/STUDY_stage1_metrics.md` §7에 정리.
 
 ### 2026-11-17 flip 필터 TTA 실행 시작, Entropy Enigma 독해
-- `scripts/analysis/flip_filter_tta.py`: 저장 feature 위에서 head 입력 affine만 EM으로 학습(ViT에서는 마지막 LayerNorm만 학습하는 TENT와 같음).
+- `scripts/analysis/feat_tta.py`: 저장 feature 위에서 head 입력 affine만 EM으로 학습(ViT에서는 마지막 LayerNorm만 학습하는 TENT와 같음).
   입력 raw/정렬 × 필터 tent/entf/flipf/bothf × lr 1e-4…1e-1, 17개 백본 × AID-C/RESISC45-C, 배치 64 → 16. CPU, tmux `fliptta`.
   결과: `experiments/2026-11-17_flip_tta/bs{64,16}/`, 표는 `scripts/analysis/summarize_flip_tta.py`.
 - Entropy Enigma(ICML 2024) PDF 텍스트 독해 → `docs/reading/entropy_enigma.md`. Weighted Flips = EM 적응 전후 flip(초기 confidence 가중) → 2차식으로
@@ -220,7 +220,7 @@
 - **BN 백본**: 모든 BN을 배치 통계로 바꾸는 교과서 TENT는 sup_in_r50의 AID clean을 90.8 → 62.1로 떨어뜨림(running 통계가 ImageNet 것이고 head가
   그 feature로 학습됐기 때문). 그래서 BN도 running 통계 유지 + affine만 학습을 기본으로 하고, 배치 통계판은 tent_bnstat으로 따로 남김.
 - **미해결**: dinov3_web_l16에서 EATA가 clean 6.2%로 붕괴(3 stream 시험). 원인 미확인 → DINOv3의 EATA 수치는 확인 전까지 쓰지 말 것.
-- 서버 CPU 제한이 12코어(cgroup cpu.max)라 CPU 작업이 DataLoader를 굶김 → feature 수준 실행(`flip_filter_tta.py`)을 `--device cuda`로 옮김.
+- 서버 CPU 제한이 12코어(cgroup cpu.max)라 CPU 작업이 DataLoader를 굶김 → feature 수준 실행(`feat_tta.py`)을 `--device cuda`로 옮김.
 
 ### 2026-11-17 flip 필터 TTA (feature 수준) 결과 — `experiments/2026-11-17_flip_tta/bs{64,16}/RESULTS.md`
 - 17개 백본 평균 손상 정확도, 배치 64 (AID-C / RESISC45-C): none 81.8 / 75.2, align_ms 87.3 / 81.2,
@@ -258,7 +258,7 @@
   17개 백본 × AID-C/RESISC45-C 재실행 중(tmux `eata`, `run_eata.log`).
 - 분산이 거의 0인 채널(중앙값의 1/100 미만): dino_in_b16 5개, dinov3_web 2개, dinov3_sat 5개, sup_in_vitl16 34개, 나머지 0개.
   이 채널을 0으로 두어도 stage-1 정확도 변화는 0.3pt 이하, 평균 이동에서 차지하는 몫 3.6% 이하 → 기존 분석에는 영향 없음.
-- flip 계산의 교차 확인: 따로 짠 두 코드(labelfree_signals.py / flip_filter_tta.py의 lr 1e-4 실행)의 AID-C 평균 flip이 17개 백본에서
+- flip 계산의 교차 확인: 따로 짠 두 코드(labelfree_signals.py / feat_tta.py의 lr 1e-4 실행)의 AID-C 평균 flip이 17개 백본에서
   0.2pt 이내로 일치. cls_tta_fm.py의 flipf는 백본이 학습되면서 flip이 줄어들어(예: mae_in 24.4 → 17.7) 같은 값이 아니며 교차 확인으로 쓸 수 없음.
   외부 기준과의 검증은 아직 없음: Weighted Flips(Entropy Enigma)는 구현하지 않았고, 그 논문 수치 재현도 하지 않음.
 
@@ -282,7 +282,7 @@
 
 ### 2026-11-19 DSBR 읽기·구현, feature 단계 결과
 - 논문: Nielen et al., arXiv 2606.02339. 노트 `docs/reading/dsbr.md`. 공개 코드를 찾지 못해 부록 A Algorithm 1대로 구현
-  (`cls_tta_fm.py`의 dsbr / dsbr_a99 / dsbr_a0 / dsbr_al, `flip_filter_tta.py`의 dsbr / dsbr99). 논문 수치와의 대조는
+  (`cls_tta_fm.py`의 dsbr / dsbr_a99 / dsbr_a0 / dsbr_al, `feat_tta.py`의 dsbr / dsbr99). 논문 수치와의 대조는
   `scripts/verify/dsbr_imagenet_c.py`(ViT-B/16, ImageNet-C 강도 5)로 진행 중.
 - feature 단계(head 입력 affine만 학습, Adam, 배치 64), 17개 백본 평균 손상 정확도 (AID-C / RESISC45-C):
   none 81.8 / 75.2, align_ms 87.3 / 81.2, flipf lr 0.001 82.4 / 76.3,

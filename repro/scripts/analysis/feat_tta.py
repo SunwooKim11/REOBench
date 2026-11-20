@@ -1,4 +1,4 @@
-"""Does a flip-based sample filter make entropy-minimisation TTA safer than the usual entropy (confidence) filter?
+"""Feature-level TTA on the saved features: which loss / sample filter makes entropy minimisation safe (tent, entropy filter, flip filter, DSBR)?
 
 Everything runs on the saved features and the stage-1 linear heads (feat_metrics.py); no backbone forward pass.
 Adapted parameters: one affine per channel on the head input, z' = gamma * z + beta (gamma = 1, beta = 0 at the start of a
@@ -24,7 +24,7 @@ zero gradient. Baselines without learning: none, align_ms.
 
 Per stream: acc, ECE, signed ECE, NLL, AUROC (feat_metrics.stream_metrics) and the share of samples used for the update.
 
-  ~/REOBench/.venv/bin/python scripts/analysis/flip_filter_tta.py [--models ...] [--datasets aid r45] [--bs 64] [--device cuda]
+  ~/REOBench/.venv/bin/python scripts/analysis/feat_tta.py [--models ...] [--datasets aid r45] [--bs 64] [--device cuda]
 Output: experiments/2026-11-17_flip_tta/bs<bs>/<model>_<ds>.json
 """
 import argparse

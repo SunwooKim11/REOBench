@@ -45,7 +45,7 @@ out = ["# DSBR 결과표 (2026-11-19, 수치만)", "",
 
 # ---- 1. feature level
 out += ["## 1. feature 단계 (head 입력의 채널별 affine만 학습, Adam)", "",
-        "`scripts/analysis/flip_filter_tta.py`. raw = head 입력 그대로, al = 배치 정렬한 head 입력. flipf는 2026-11-17 실행 값.", ""]
+        "`scripts/analysis/feat_tta.py`. raw = head 입력 그대로, al = 배치 정렬한 head 입력. flipf는 2026-11-17 실행 값.", ""]
 for ds in ("aid", "r45"):
     R = {m: json.load(open(D / "feat_bs64" / f"{m}_{ds}.json")) for m in ORDER if (D / "feat_bs64" / f"{m}_{ds}.json").exists()}
     O = {m: json.load(open(FT / f"{m}_{ds}.json")) for m in R if (FT / f"{m}_{ds}.json").exists()}
