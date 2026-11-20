@@ -312,3 +312,14 @@
 - ImageNet-C 구현 확인(강도 5, ViT-B/16, 배치 64, 15종 평균, 21:25 완료): 무적응 51.6(augreg) / 55.5(augreg2), 논문 39.8 →
   체크포인트 불일치로 절대값 비교 불가. augreg에서 Tent(SGD) 59.3, DSBR α 0.9(Adam) 66.2 (논문 51.9 / 64.4). DSBR이 15종 전부에서
   Tent·무적응보다 높음. 남은 것: DSBR α 0.99, Tent(Adam)는 파이프라인 끝에서 실행.
+
+### 2026-11-20 DSBR 파이프라인 종료 (06:22, 실패 없음)
+- AID-C 변형: dsbr_a99 82.4 (lr×10 78.1), dsbr_al 88.1 (lr×10 88.8) vs tent_al 88.1 (88.6).
+- RESISC45-C 프로토콜 lr: none 75.2, none_al 81.1, tent 71.2, flipf 79.1, dsbr 77.7 (none보다 16/17, moco_in 56.7 < 64.1),
+  tent_al 83.0, dsbr_al 83.1.
+- ImageNet-C(augreg): Tent(Adam) 59.9 (snow 27.0, frost 20.4로 붕괴, 나머지 13종 평균 65.5), DSBR α 0.9 66.2 (13종 65.9), α 0.99 66.4.
+  DSBR − Tent(SGD) 차이의 대부분은 optimizer, DSBR 손실의 몫은 2종의 붕괴 방지.
+- 읽기: DSBR은 TENT의 붕괴를 줄이는 안전장치로는 일관되게 작동(전 설정에서 tent 이상)하지만, 우리 설정에서 flip 필터보다 낮고
+  정렬 뒤에는 추가 이득이 없음. 표는 `experiments/2026-11-19_dsbr/RESULTS.md`.
+- 진행 중: 논문의 무적응 39.8이 입력 정규화 차이로 설명되는지 확인(`--norm imagenet`, `scripts/run_dsbr_norm.sh`).
+

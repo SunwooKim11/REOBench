@@ -1,0 +1,49 @@
+{
+ "args": {
+  "method": "dsbr",
+  "ckpt": "augreg",
+  "alpha": 0.99,
+  "opt": "adam",
+  "lr": 0.00025,
+  "params": "all",
+  "sev": 5,
+  "bs": 64,
+  "seed": 0,
+  "workers": 10
+ },
+ "acc": {
+  "gaussian_noise": 60.078,
+  "shot_noise": 61.522,
+  "impulse_noise": 61.374,
+  "defocus_blur": 59.564,
+  "glass_blur": 58.86,
+  "motion_blur": 63.956,
+  "zoom_blur": 61.968,
+  "snow": 69.26,
+  "frost": 67.698,
+  "fog": 71.32,
+  "brightness": 79.914,
+  "contrast": 63.324,
+  "elastic_transform": 68.964,
+  "pixelate": 75.08,
+  "jpeg_compression": 73.01
+ },
+ "top_share": {
+  "gaussian_noise": 0.00222,
+  "shot_noise": 0.0023,
+  "impulse_noise": 0.00206,
+  "defocus_blur": 0.00286,
+  "glass_blur": 0.00366,
+  "motion_blur": 0.00272,
+  "zoom_blur": 0.0056,
+  "snow": 0.00504,
+  "frost": 0.00366,
+  "fog": 0.00272,
+  "brightness": 0.00178,
+  "contrast": 0.00258,
+  "elastic_transform": 0.00364,
+  "pixelate": 0.0018,
+  "jpeg_compression": 0.002
+ },
+ "mean": 66.3928
+}

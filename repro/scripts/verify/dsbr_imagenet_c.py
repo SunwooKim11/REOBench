@@ -57,12 +57,14 @@ def entropy(logits):
 
 def run(args):
     name = f"{args.ckpt}_{args.method}" + (f"_a{args.alpha:g}" if args.method == "dsbr" else "") + \
-           ("" if args.method == "none" else f"_{args.opt}_lr{args.lr:g}_{args.params}")
+           ("" if args.method == "none" else f"_{args.opt}_lr{args.lr:g}_{args.params}") + ("_inorm" if args.norm == "imagenet" else "")
     f = OUT / f"{name}.json"
     res = json.load(open(f)) if f.exists() else {"args": vars(args), "acc": {}, "top_share": {}}
     model0 = timm.create_model(CKPT[args.ckpt], pretrained=True).cuda().eval()
     cfg = model0.pretrained_cfg
-    tf = trn.Compose([trn.ToTensor(), trn.Normalize(cfg["mean"], cfg["std"])])
+    # --norm imagenet: ImageNet mean/std although the checkpoint was trained with 0.5/0.5 (to test whether this explains the paper's baseline)
+    mean, std = ((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)) if args.norm == "imagenet" else (cfg["mean"], cfg["std"])
+    tf = trn.Compose([trn.ToTensor(), trn.Normalize(mean, std)])
     for c in CORR:
         if c in res["acc"]:
             continue
@@ -114,6 +116,7 @@ if __name__ == "__main__":
     ap.add_argument("--opt", default="adam", choices=["adam", "sgd"])
     ap.add_argument("--lr", type=float, default=0.00025)
     ap.add_argument("--params", default="all", choices=["all", "sar"])
+    ap.add_argument("--norm", default="cfg", choices=["cfg", "imagenet"])
     ap.add_argument("--sev", type=int, default=5)
     ap.add_argument("--bs", type=int, default=64)
     ap.add_argument("--seed", type=int, default=0)
