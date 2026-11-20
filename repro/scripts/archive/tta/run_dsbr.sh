@@ -2,7 +2,7 @@
 # DSBR (arXiv 2606.02339): 17 backbones on AID-C / RESISC45-C (scripts/tta/cls_tta_fm.py) and the ImageNet-C check of the
 # implementation (scripts/verify/dsbr_imagenet_c.py). Waits for the Weighted Flips run, stops the DiT dummy load, restarts it after.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 mkdir -p experiments/2026-11-19_dsbr
 LOG=experiments/2026-11-19_dsbr/run.log
 until grep -q "ALL DONE\|FAILED" experiments/2026-11-19_weighted_flips_repro/run.log; do sleep 20; done

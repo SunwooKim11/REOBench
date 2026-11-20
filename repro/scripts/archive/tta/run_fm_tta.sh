@@ -3,7 +3,7 @@
 # variants) -> RESISC45-C protocol lr. Every (dataset, model, method) is saved on its own, so the run can be stopped and
 # resumed at any point. Stops the DiT dummy load first, restarts it after.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 LOG=experiments/2026-11-17_fm_tta/run.log
 mkdir -p "$(dirname "$LOG")"
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1

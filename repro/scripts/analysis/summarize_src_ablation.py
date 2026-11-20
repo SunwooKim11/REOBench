@@ -1,4 +1,4 @@
-"""How much source information do ISA and feature alignment need? (AID, PN heads, scripts/run_src_ablation.sh)
+"""How much source information do ISA and feature alignment need? (AID, PN heads, scripts/archive/tta/run_src_ablation.sh)
 
 Rows per model: no adaptation, then each method with source statistics from 2,000 clean train images (default), from 32
 images (_n32), and source-free ISA whose target is the pretraining Normalize constants shipped with the model (_isapre).

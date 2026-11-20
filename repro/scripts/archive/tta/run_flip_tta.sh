@@ -2,7 +2,7 @@
 # Flip-filter TTA on the saved features: batch 64, then batch 16. Small tensors; runs on the GPU next to other jobs
 # (this machine is limited to 12 CPU cores, so a CPU run starves the data loaders of GPU jobs).
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 LOG=experiments/2026-11-17_flip_tta/run.log
 mkdir -p "$(dirname "$LOG")"
 PY=~/REOBench/.venv/bin/python

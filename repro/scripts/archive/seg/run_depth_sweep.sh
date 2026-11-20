@@ -4,8 +4,8 @@
 #   segmentation (Potsdam, B models): blocks 0,3,7,11,15,19,23, decode-head classifier input; clean + severities 3, 5
 #                                     -> experiments/2026-10-20_seg_tta
 # Input-level (ISA) and decoder-BN (bnadapt) points already exist. Classification and segmentation run in parallel.
-#   setsid nohup scripts/run_depth_sweep.sh > experiments/2026-10-20_seg_tta/logs/run_depth_sweep.log 2>&1 < /dev/null &
-cd "$(dirname "$0")/.."
+#   setsid nohup scripts/archive/seg/run_depth_sweep.sh > experiments/2026-10-20_seg_tta/logs/run_depth_sweep.log 2>&1 < /dev/null &
+cd "$(dirname "$0")/../../.."
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1
 CL=experiments/2026-10-13_cls_tta/logs; SL=experiments/2026-10-20_seg_tta/logs
 cls() {

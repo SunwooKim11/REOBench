@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Weighted Flips reproduction on ImageNet-C (96 splits, ResNet-50). Stops the DiT dummy load first, restarts it after.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 LOG=experiments/2026-11-19_weighted_flips_repro/run.log
 mkdir -p "$(dirname "$LOG")"
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1

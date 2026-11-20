@@ -2,8 +2,8 @@
 # How much source information do ISA and feature alignment need? Classification (AID, PN heads), mild protocol.
 #   _n32   : source statistics from 32 clean train images instead of 2,000 (FOA uses 32)
 #   _isapre: source-free ISA, target = the pretraining Normalize constants shipped with the model (no AID train data)
-#   tmux new -d -s srcabl 'scripts/run_src_ablation.sh > experiments/2026-10-13_cls_tta/logs/run_src_ablation.log 2>&1'
-cd "$(dirname "$0")/.."
+#   tmux new -d -s srcabl 'scripts/archive/tta/run_src_ablation.sh > experiments/2026-10-13_cls_tta/logs/run_src_ablation.log 2>&1'
+cd "$(dirname "$0")/../../.."
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1
 CL=experiments/2026-10-13_cls_tta/logs
 PY="$HOME/REOBench/.venv/bin/python -u scripts/tta/cls_tta.py --head_cfg PN"

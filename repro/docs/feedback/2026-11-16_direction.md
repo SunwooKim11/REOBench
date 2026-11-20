@@ -293,7 +293,7 @@
 - 읽기: (1) TENT가 무너지는 lr 0.01에서 DSBR은 무너지지 않고 none보다 +1.9 / +3.6pt. (2) α 0.99는 우리 stream 길이(31~99 step)에서
   P가 1/C에서 거의 못 벗어나 TENT에 가까워짐. (3) 정렬(align_ms)에는 못 미침(−3.6 / −2.4pt). (4) 정렬 뒤에는 TENT의 lr 0.01 하락
   (74.8)을 막아 주지만 정렬만 한 것 대비 이득은 0.1pt.
-- 표: `experiments/2026-11-19_dsbr/RESULTS.md`. 백본 전체 통과 실행은 tmux `dsbr`(`scripts/run_dsbr.sh`, `run.log`).
+- 표: `experiments/2026-11-19_dsbr/RESULTS.md`. 백본 전체 통과 실행은 tmux `dsbr`(`scripts/archive/tta/run_dsbr.sh`, `run.log`).
 
 ### 2026-11-19 DSBR: 사용자 메모 검토, 예측 쏠림 측정
 - 사용자 메모(Problem / Solution / 부록 E·F / 실험 / future work)와 질문 5개를 논문과 대조해 `docs/reading/dsbr.md` 4~7절에 정리.
@@ -321,5 +321,5 @@
   DSBR − Tent(SGD) 차이의 대부분은 optimizer, DSBR 손실의 몫은 2종의 붕괴 방지.
 - 읽기: DSBR은 TENT의 붕괴를 줄이는 안전장치로는 일관되게 작동(전 설정에서 tent 이상)하지만, 우리 설정에서 flip 필터보다 낮고
   정렬 뒤에는 추가 이득이 없음. 표는 `experiments/2026-11-19_dsbr/RESULTS.md`.
-- 진행 중: 논문의 무적응 39.8이 입력 정규화 차이로 설명되는지 확인(`--norm imagenet`, `scripts/run_dsbr_norm.sh`).
+- 진행 중: 논문의 무적응 39.8이 입력 정규화 차이로 설명되는지 확인(`--norm imagenet`, `scripts/archive/verify/run_dsbr_norm.sh`).
 

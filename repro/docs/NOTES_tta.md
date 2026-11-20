@@ -278,7 +278,7 @@
     → ISA + BN-adapt 조합이 다음 후보.
   - CoTTA ≈ none: mild에서 teacher가 거의 갱신되지 않음(분류 §3.3b와 같은 현상).
 
-### 5.5 정렬 위치 sweep (MIM, 2026-10-22, `scripts/run_depth_sweep.sh`)
+### 5.5 정렬 위치 sweep (MIM, 2026-10-22, `scripts/archive/seg/run_depth_sweep.sh`)
 - 방법 `fsa`(`src/reobench_tta/tta/stat_align.py`): 한 위치의 활성값을 test 배치 통계로 채널별 표준화 후 소스(clean train) 통계로 되돌림. 학습 없음.
   위치: 입력(=ISA), 블록 0/3/7/11/15/19/23 출력, 분류는 최종 norm·head 입력, 분할은 분류기(conv_seg) 입력·디코더 BN(=bnadapt).
 - 분류: AID PN, 강도 1~5. 분할: Potsdam B, 강도 3·5. 결과 `experiments/2026-10-20_seg_tta/summary_depth_sweep.txt`.
@@ -321,7 +321,7 @@
   - → §4.2 가설(affine radiometric = 입력, 비 affine degradation = 특징 수준)을 위치 sweep으로 확인. 최적 깊이는 블록 7~11(24층 중 중간).
   - 다음 후보: 입력 + 중간 블록 동시 정렬(ISA + fsa 블록 7). 위치는 검증 세트로 고정해야 함(지금 표는 test에서 고른 것이라 상한).
 
-### 5.6 입력 + 특징 정렬 조합 (MIM, 2026-10-22, `scripts/run_combo.sh`)
+### 5.6 입력 + 특징 정렬 조합 (MIM, 2026-10-22, `scripts/archive/seg/run_combo.sh`)
 - 입력에 batch ISA를 적용하고, 특징 정렬(fsa) 한 곳 또는 디코더 BN을 함께 켬(`--with_isa`). 특징 정렬의 소스 통계는 clean train 배치에 ISA를 먼저 적용한 뒤 구함.
   프로토콜·강도는 §5.5와 같음. 결과 `experiments/2026-10-20_seg_tta/summary_depth_sweep.txt`.
 - **none 대비 Δ (clean / 평균 / occlusion / radiometric / degradation)**, 비교용 단독 행 포함:
@@ -366,7 +366,7 @@
     분류 ScaleMAE가 블록 정렬로 radiometric이 떨어지는 이유도 이 진단으로는 안 나옴(정렬 회복은 오히려 큼).
     → 배치 8 통계의 잡음(이 진단은 400장 통계) 또는 head(CLS 하나)가 소수 채널에 의존하는 정도가 후보.
 
-### 5.8 소스 통계 의존도 (AID 분류, 2026-10-28, `scripts/run_src_ablation.sh`, `summary_src_ablation.txt`)
+### 5.8 소스 통계 의존도 (AID 분류, 2026-10-28, `scripts/archive/tta/run_src_ablation.sh`, `summary_src_ablation.txt`)
 "TTA는 소스 데이터 접근 불가인데 소스 통계를 쓰는 건 반칙 아닌가?"에 대한 점검. 쓰는 정보는 이미지가 아니라 집계 통계
 (ISA 6개 숫자, 블록 정렬 층당 2×1,024개) = BN running stat, EATA Fisher(2,000장), FOA CLS 통계(32장)와 같은 수준.
 

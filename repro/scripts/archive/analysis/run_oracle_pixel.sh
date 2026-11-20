@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shift-direction oracle (all backbones, AID + RESISC45) then PSNR / MS-SSIM / LPIPS. Stops the DiT dummy load first, restarts it after.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 LOG=experiments/2026-11-17_shift_oracle/run.log
 mkdir -p "$(dirname "$LOG")"
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1

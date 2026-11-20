@@ -4,8 +4,8 @@
 #   segmentation (Potsdam, B models): ISA + fsa at blocks 3, 7, 11; ISA + decoder BN (bnadapt); clean + severities 3, 5
 #                                     -> experiments/2026-10-20_seg_tta
 # Feature source statistics are taken after ISA on clean train batches. Classification and segmentation run in parallel.
-#   tmux new -d -s combo 'scripts/run_combo.sh > experiments/2026-10-20_seg_tta/logs/run_combo.log 2>&1'
-cd "$(dirname "$0")/.."
+#   tmux new -d -s combo 'scripts/archive/seg/run_combo.sh > experiments/2026-10-20_seg_tta/logs/run_combo.log 2>&1'
+cd "$(dirname "$0")/../../.."
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1
 CL=experiments/2026-10-13_cls_tta/logs; SL=experiments/2026-10-20_seg_tta/logs
 cls() {

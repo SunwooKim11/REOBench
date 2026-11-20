@@ -2,7 +2,7 @@
 
 Classification (AID, PN heads, severities 1-5): input = isa_batch, blocks.k = fsa at block k, norm / head:in.
 Segmentation (Potsdam B models, severities 3 and 5): input = isa, blocks.k, classifier input, decoder BN = bnadapt.
-Combination rows (scripts/run_combo.sh): batch ISA on the input + one feature alignment (`--with_isa`).
+Combination rows (scripts/archive/seg/run_combo.sh): batch ISA on the input + one feature alignment (`--with_isa`).
 Groups (NOTES_tta.md §4.2): geometry, occlusion, radiometric, degradation.
 
   ~/REOBench/.venv/bin/python scripts/analysis/summarize_depth_sweep.py

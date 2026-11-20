@@ -2,7 +2,7 @@
 # Rerun of EATA with the SAR / DeYO parameter set (final norm and top blocks excluded) on AID-C and RESISC45-C.
 # Stops the DiT dummy load first, restarts it after.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 LOG=experiments/2026-11-17_fm_tta/run_eata.log
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1
 PY=~/REOBench/.venv/bin/python

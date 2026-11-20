@@ -2,7 +2,7 @@
 # RESISC45 <-> UC Merced natural shift: features for the EarthShift 19-class splits, then natural_shift.py.
 # Run from anywhere; logs to experiments/2026-11-17_natural_shift/run.log. Stops the DiT dummy load first, restarts it after.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 LOG=experiments/2026-11-17_natural_shift/run.log
 mkdir -p "$(dirname "$LOG")"
 (cd /home/irteam/dit_dummy && ./ditload kill) >/dev/null 2>&1
