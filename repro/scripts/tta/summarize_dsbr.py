@@ -127,7 +127,8 @@ if I.exists():
     F = sorted(I.glob("*.json"))
     out += ["## 3. 구현 확인: ImageNet-C 강도 5, ViT-B/16, 배치 64 (논문 Table 3 Default 열)", "",
             "`scripts/verify/dsbr_imagenet_c.py`. 논문 값: 무적응 39.8, Tent 51.9, DSBR α=0.9 64.4, α=0.99 64.9.",
-            "논문이 밝히지 않은 것(체크포인트, 학습 파라미터 집합, lr)은 가정이다. docstring 참고. 15종 평균 정확도 (%).", ""]
+            "논문이 밝히지 않은 것(체크포인트, 학습 파라미터 집합, lr)은 가정이다. docstring 참고. 15종 평균 정확도 (%).",
+            "`_inorm` = ImageNet mean/std 입력(체크포인트는 0.5/0.5로 학습). augreg2 + inorm의 무적응 값이 논문의 39.8과 같다.", ""]
     rows = []
     for f in F:
         r = json.load(open(f))

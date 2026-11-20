@@ -321,5 +321,8 @@
   DSBR − Tent(SGD) 차이의 대부분은 optimizer, DSBR 손실의 몫은 2종의 붕괴 방지.
 - 읽기: DSBR은 TENT의 붕괴를 줄이는 안전장치로는 일관되게 작동(전 설정에서 tent 이상)하지만, 우리 설정에서 flip 필터보다 낮고
   정렬 뒤에는 추가 이득이 없음. 표는 `experiments/2026-11-19_dsbr/RESULTS.md`.
-- 진행 중: 논문의 무적응 39.8이 입력 정규화 차이로 설명되는지 확인(`--norm imagenet`, `scripts/archive/verify/run_dsbr_norm.sh`).
+- 논문의 무적응 39.8 = timm augreg2 ViT-B/16 + ImageNet mean/std 입력(체크포인트는 0.5/0.5로 학습; 우리 39.8). 이 설정에서
+  Tent(SGD) 49.7, Tent(Adam) 47.0(snow 3.2, frost 7.2로 붕괴), DSBR α 0.9 61.2, α 0.99 61.8 (논문 51.9 / – / 64.4 / 64.9).
+  이득의 크기는 논문과 비슷(DSBR − Tent +11.5 vs +12.5), 절대값은 2~3pt 낮음. seed 1개. 구현 확인으로 충분하다고 판단.
+  `scripts/archive/verify/run_dsbr_norm.sh`, `run_dsbr_match.sh`.
 
