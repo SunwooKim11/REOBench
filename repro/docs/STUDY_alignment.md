@@ -119,6 +119,21 @@ d. (z, 라벨)로 로지스틱 회귀(= Linear + softmax + cross-entropy인 선�
 - 이유: 백본마다 feature 크기가 달라서, 표준화해야 같은 λ(L2 규제) 격자와 같은 절차를 17개 백본에 쓸 수 있다.
 - L-BFGS는 head를 학습하는 optimizer일 뿐이다(전체 데이터를 한 번에 놓고 푸는 볼록 문제라 lr·epoch 선택이 필요 없음). 정렬의 근거가 아니다.
 - 1단계는 상수로 하는 선형 변환이라 학습 뒤 W′ = W / σ_src, b′ = b − (μ_src / σ_src)W로 Linear에 합칠 수 있다.
+- 선행 연구의 linear probe 코드는 어떻게 하나 (2026-11-23, 공식 repo의 해당 파일을 읽어 확인; 백본 안의 final norm은 별개):
+
+  | 코드 | head 앞의 feature 정규화 | optimizer |
+  |---|---|---|
+  | MAE `main_linprobe.py` | 있음: `BatchNorm1d(affine=False, eps=1e-6)` + Linear | LARS |
+  | Scale-MAE `mae/main_linprobe.py` | 있음: 같은 BatchNorm1d(affine=False) | AdamW |
+  | DINO `eval_linear.py`, DINOv2 / DINOv3 `eval/linear.py` | 없음 (CLS 등을 그대로 Linear에) | SGD |
+  | MoCo v3 `main_lincls.py` | 없음 | SGD |
+  | SatDINO `satdino/eval_linear.py` | 없음 | AdamW |
+  | CLIP README의 linear-probe 예시 | 없음 (feature를 그대로 sklearn LogisticRegression에) | sklearn 기본 solver |
+  | SatMAE, MoCo v1 | 확인 못 함 (해당 파일 404) | – |
+
+  즉 관행은 갈린다. MIM 계열(MAE, Scale-MAE)은 affine 없는 BatchNorm으로 표준화하고, DINO·MoCo v3·CLIP 계열은 하지 않는다.
+  affine 없는 BatchNorm은 eval 때 저장된 train 통계로 (h − μ) / σ를 하므로 우리 1단계와 같은 계산이다. 우리는 이 MAE식 표준화를
+  17개 백본 전부에 똑같이 적용한 것이고(10월의 `scripts/cls/train_official.py`도 같은 BN head), DINO류의 공식 head는 (5)의 raw head에 해당한다.
 
 **(4) 정렬 = 2단계.** 1단계를 지난 z를 배치 통계로 다시 표준화한다. 학습 없음.
 
