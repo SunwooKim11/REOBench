@@ -23,6 +23,7 @@ in `docs/NOTES_tta.md` (2026-10) and `docs/feedback/2026-11-16_direction.md` (20
 | `2026-11-18_head_subspace` | Which part of the shift the linear head reads (head subspace energy) | `scripts/analysis/head_subspace.py` | per-model JSON |
 | `2026-11-19_weighted_flips_repro` | Reproduction of Weighted Flips (Entropy Enigma, ImageNet-C, ResNet-50) | `scripts/verify/weighted_flips_repro.py` | `RESULTS.md` |
 | `2026-11-19_dsbr` | DSBR: feature level, prediction bias, ImageNet-C check (full-backbone runs in `2026-11-17_fm_tta`) | `scripts/tta/cls_tta_fm.py`, `scripts/verify/dsbr_imagenet_c.py` | `RESULTS.md`, `pred_bias.md` |
+| `2026-11-23_head_nostd` | Head-input alignment with a head trained on unstandardized features (head-recipe control) | `scripts/analysis/head_nostd.py` | `RESULTS.md` |
 
 The segmentation-TTA check on Cityscapes→ACDC and the official CoTTA run keep their logs inside `third_party/`.
 Their numbers are recorded in NOTES_tta.md §2.

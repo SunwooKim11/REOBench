@@ -327,3 +327,12 @@
   이득의 크기는 논문과 비슷(DSBR − Tent +11.5 vs +12.5), 절대값은 2~3pt 낮음. seed 1개. 구현 확인으로 충분하다고 판단.
   `scripts/archive/verify/run_dsbr_norm.sh`, `run_dsbr_match.sh`.
 
+### 2026-11-23 head 학습 방식 caveat 확인: 표준화 없이 학습한 head에서의 정렬
+- 질문: 정렬(head 입력을 test 배치 통계로 표준화)의 이득이 "clean train 통계로 표준화한 입력으로 head를 학습"한 우리 방식 덕인가?
+- 실험(`scripts/analysis/head_nostd.py`, `experiments/2026-11-23_head_nostd/RESULTS.md`): 같은 절차(로지스틱 회귀, L-BFGS, 검증 NLL로 λ)로
+  표준화 없이 h로 head를 학습하고, 일반식 h′ = (h − μ_test) / σ_test · σ_src + μ_src로 정렬. 17개 백본, 배치 64, 학습 없음.
+- 결과(손상 평균 정확도, none → 정렬): AID-C std head 81.8 → 87.3 (+5.5), raw head 81.6 → 86.9 (+5.4);
+  RESISC45-C std 75.2 → 81.2 (+5.9), raw 74.9 → 80.7 (+5.8). raw head에서도 17/17 백본에서 이득. clean은 94.8 / 94.6, 90.6 / 90.4.
+- 읽기: 정렬의 이득은 head 학습 방식에 거의 의존하지 않음(평균 차이 0.1pt). 백본별로는 moco_in, moco_fmow에서 raw head의 none이
+  2.5 / 1.4pt 높아 이득이 작지만 정렬 후 정확도는 같은 수준. 필요한 것은 head 입력 위치의 src 통계(μ_src, σ_src)뿐.
+
