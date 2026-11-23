@@ -17,7 +17,15 @@ Methods (losses are per pixel, averaged over valid pixels):
   cotta  : CoTTA ACDC code (G_seg_verify single_gpu_cotta) ported: EMA teacher 0.999, anchor model, 7 scales x flip
            teacher views, anchor confidence > --cotta_thr uses the single-scale teacher label, all parameters,
            Adam 6e-5/8, stochastic restore 0.01; prediction = the teacher pseudo-label
-Outputs: experiments/2026-10-20_seg_tta/outputs/<model>_<set>/<method><tag>.json
+  flipf  : Tent on the pixels whose prediction does not flip between the BN-running-statistics forward and the
+           BN-test-batch-statistics forward of the current model (the segmentation analogue of the flip filter of
+           scripts/tta/cls_tta_fm.py; the decode head's BN layers play the role of the head-input alignment).
+           --bn fixed: loss on the running-statistics forward; --bn batch: loss on the batch-statistics forward
+  dsbr   : DSBR (arXiv 2606.02339, Algorithm 1) per pixel: entropy / (C * P[predicted class]), P = EMA (--alpha) of the
+           predicted-class pixel shares, started at 1 / C. dsbr_src: weights prior[k] / P[k] with prior = predicted-class
+           shares of the source model on 500 train patches (our variant for imbalanced classes), P started at the prior.
+           --bn as for flipf. Same parameters / optimizer / lr as tent.
+Outputs: experiments/2026-10-20_seg_tta/outputs/<model>_<set>/<method><tag>.json (or --out_dir)
 
   TIMM_FUSED_ATTN=0 /opt/conda/envs/segtta/bin/python scripts/seg/seg_tta.py --model scalemae --method tent   # from repro/
 """
@@ -58,7 +66,9 @@ IGNORE = 5
 p = argparse.ArgumentParser()
 p.add_argument("--model", required=True, choices=["scalemae", "satmae"])
 p.add_argument("--set", default="B")
-p.add_argument("--method", required=True, choices=["none", "bnadapt", "tent", "sar", "isa", "cotta", "fsa"])
+p.add_argument("--method", required=True, choices=["none", "bnadapt", "tent", "sar", "isa", "cotta", "fsa", "flipf", "dsbr", "dsbr_src"])
+p.add_argument("--alpha", type=float, default=0.9, help="dsbr: EMA decay of the predicted-class shares")
+p.add_argument("--out_dir", default=None, help="folder name under experiments/ (default: 2026-10-20_seg_tta)")
 p.add_argument("--bn", default="fixed", choices=["fixed", "batch"])
 p.add_argument("--bs", type=int, default=8)
 p.add_argument("--lr", type=float, default=0.00006 / 8)
@@ -85,7 +95,8 @@ cfg = mmcv.Config.fromfile(f"configs/repro/{args.model}_{args.set}_12ep.py")
 CKPT = f"{paths.SEG_BASELINE}/work_dirs/{args.model}_{args.set}_12ep/latest.pth"
 MEAN = torch.tensor(cfg.img_norm_cfg["mean"]).view(1, 3, 1, 1).to(dev)    # 0-255 scale (pipeline Normalize)
 STD = torch.tensor(cfg.img_norm_cfg["std"]).view(1, 3, 1, 1).to(dev)
-tag = args.tag + (f"_bn{args.bn}" if args.method in ("tent", "sar") and args.bn != "fixed" else "")
+NEW = ("flipf", "dsbr", "dsbr_src")
+tag = args.tag + (f"_bn{args.bn}" if args.method in ("tent", "sar") + NEW and args.bn != "fixed" else "")
 if args.method == "fsa":
     assert args.fsa_layer, "--fsa_layer is required for fsa"
     tag += "_" + args.fsa_layer.replace("backbone.", "").replace("decode_head.", "dh.").replace(":", "")
@@ -94,7 +105,7 @@ if args.with_isa:
     tag += "_isa"
 if args.method not in ("none", "isa", "fsa", "bnadapt") and args.lr != 0.00006 / 8:
     tag += f"_lr{args.lr:g}"
-OUT = f"{paths.SEG_TTA}/outputs/{args.model}_{args.set}"
+OUT = f"{paths.EXP / args.out_dir if args.out_dir else paths.SEG_TTA}/outputs/{args.model}_{args.set}"
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -162,13 +173,20 @@ def configure_norm(model):
     return model
 
 
+def set_bn(model, batch):   # batch=True: BN layers normalise with the statistics of the current batch; the running
+    for m in model.modules():   # statistics stay untouched (momentum 0), so the mode can be switched back and forth
+        if isinstance(m, nn.modules.batchnorm._BatchNorm):
+            m.momentum = 0.0
+            m.train(batch)
+
+
 def isa_batch(x):       # batch-level input statistics alignment to the train pixel statistics (0-255 space)
     mu = x.mean((0, 2, 3), keepdim=True); sd = x.std((0, 2, 3), keepdim=True).clamp_min(1e-6)
     return (x - mu) / sd * SRC_STD + SRC_MEAN
 
 
 # source-side quantities (train split, never test): ISA pixel statistics, CoTTA anchor-confidence threshold
-if args.method in ("isa", "cotta", "fsa") or args.with_isa:
+if args.method in ("isa", "cotta", "fsa", "dsbr_src") or args.with_isa:
     tr = sorted(os.listdir(TRAIN))
     sub = random.Random(0).sample(tr, 500)
     s1 = torch.zeros(3, dtype=torch.float64); s2 = torch.zeros(3, dtype=torch.float64); npx = 0; confs = []
@@ -179,6 +197,8 @@ if args.method in ("isa", "cotta", "fsa") or args.with_isa:
             s1 += x.double().sum((0, 2, 3)).cpu(); s2 += (x.double() ** 2).sum((0, 2, 3)).cpu(); npx += x.numel() // 3
             if args.method == "cotta":
                 confs.append(logits_of(source, x).softmax(1).max(1)[0].flatten()[::97].float().cpu())
+            if args.method == "dsbr_src":
+                confs.append(torch.bincount(logits_of(source, x).argmax(1).flatten(), minlength=C).cpu())
     if args.method == "fsa":  # source statistics of the aligned position on the same 500 train patches
         def _train_batches():
             for i in range(0, len(sub), args.bs):
@@ -192,6 +212,10 @@ if args.method in ("isa", "cotta", "fsa") or args.with_isa:
                                             lambda m, x: logits_of(m, pre(x)))
         print(f"FSA at {args.fsa_layer}: {FSA_STATS[args.fsa_layer][0].numel()} channels")
     print(f"train pixel mean {SRC_MEAN.flatten().tolist()} std {SRC_STD.flatten().tolist()}")
+    if args.method == "dsbr_src":
+        PRIOR = torch.stack(confs).sum(0).float()
+        PRIOR = (PRIOR / PRIOR.sum()).to(dev)
+        print(f"source predicted-class shares (train) {[round(v, 4) for v in PRIOR.tolist()]}")
     if args.method == "cotta":
         q5 = torch.quantile(torch.cat(confs), 0.05).item()
         COTTA_THR = args.cotta_thr if args.cotta_thr is not None else q5 - 0.05   # CoTTA: 0.74 (5% q.) -> 0.69
@@ -203,6 +227,7 @@ class Adapter:
     def __init__(self):
         self.model = deepcopy(source)
         self.n_reset = 0
+        self.kept, self.nb = 0.0, 0
         if args.method == "fsa":
             self.model.eval(); stat_align.StatAlign(self.model, FSA_STATS)
         if args.method == "bnadapt":
@@ -217,6 +242,14 @@ class Adapter:
                 self.state0 = deepcopy(self.model.state_dict()); self.opt_state0 = deepcopy(self.opt.state_dict())
                 self.ema = None
             print(f"{args.method}: adapting {sum(q.numel() for q in ps) / 1e6:.2f}M params, BN {args.bn}")
+        if args.method in NEW:
+            self.al = args.bn == "batch"
+            self.model.eval(); self.model.requires_grad_(False)
+            ps = norm_params(self.model)
+            for q in ps:
+                q.requires_grad_(True)
+            self.opt = torch.optim.Adam(ps, lr=args.lr, betas=(0.9, 0.999))
+            self.P = PRIOR.clone() if args.method == "dsbr_src" else torch.full((C,), 1.0 / C, device=dev)
         if args.method == "cotta":
             self.model.requires_grad_(True)
             self.anchor_state = deepcopy(self.model.state_dict())
@@ -256,6 +289,27 @@ class Adapter:
                     self.model.load_state_dict(self.state0); self.opt.load_state_dict(self.opt_state0)
                     self.ema = None; self.n_reset += 1
             return lg.detach().argmax(1)
+        if m in NEW:
+            set_bn(self.model, self.al)
+            lg = logits_of(self.model, x)                   # the forward the prediction and the loss come from
+            pred = lg.detach().argmax(1)
+            ent = entropy(lg)
+            if m == "flipf":
+                with torch.no_grad():
+                    set_bn(self.model, not self.al)
+                    keep = logits_of(self.model, x).argmax(1) == pred
+                    set_bn(self.model, self.al)
+                self.kept += keep.float().mean().item(); self.nb += 1
+                loss = ent[keep].mean() if keep.any() else None
+            else:
+                self.P = args.alpha * self.P + (1 - args.alpha) * torch.bincount(pred.flatten(), minlength=C).float() / pred.numel()
+                w = (PRIOR[pred] if m == "dsbr_src" else 1.0 / C) / self.P[pred]
+                loss = (ent * w).mean()
+            if loss is not None:
+                loss.backward()
+                self.opt.step()
+            self.opt.zero_grad()
+            return pred
         if m == "cotta":
             return self.cotta(x)
 
@@ -313,7 +367,9 @@ for si, (cond, sev, d) in enumerate(streams):
     r = miou(conf)
     key = "clean" if cond == "clean" else f"{cond}_s{sev}"
     res["streams"][key] = r
-    extra = f" resets {adapt.n_reset}" if args.method == "sar" else ""
+    extra = f" resets {adapt.n_reset}" if args.method == "sar" else f" kept {100 * adapt.kept / max(1, adapt.nb):.1f}%" if args.method == "flipf" else ""
+    if args.method == "flipf":
+        res.setdefault("kept", {})[key] = adapt.kept / max(1, adapt.nb)
     print(f"[{si + 1}/{len(streams)}] {key}: mIoU {r:.2f}{extra} ({time.time() - t0:.0f}s)", flush=True)
     del adapt; torch.cuda.empty_cache()
 
