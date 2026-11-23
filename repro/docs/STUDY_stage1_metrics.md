@@ -142,6 +142,7 @@ rel_drift, frac_common, CKA, cos, PR ratio, 정렬 후 acc를 비교해 4.1–4.
   이것이 "source 통계로 되돌리기"다. align m은 평균만 뺀다.
 - 학습도 라벨도 없다. BatchNorm의 통계를 test 배치로 바꾸는 것(AdaBN)을 head 입력 한 곳에 적용한 셈.
 - 4.2의 공통 이동을 제거하는 연산이다.
+- 단계별 설명(1단계 표준화, 2단계 정렬, LayerNorm과의 축 차이, raw / std head에 따른 식)은 `STUDY_alignment.md` §2.4.
 
 ### 5.2 flip
 - 계산: 정렬 전 예측과 정렬 후 예측이 다른 샘플의 비율(%).

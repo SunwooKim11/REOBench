@@ -87,6 +87,85 @@ h' = (h − μ_test) / σ_test · σ_src + μ_src
 - `stat_align.py` 전체(110줄)를 읽고, `_apply`의 식이 위 공통 식과 같은지.
 - 아무 블록이나 하나 골라 `python -c`로 hook 전후 평균/표준편차를 찍어 보기.
 
+### 2.4 head 입력 정렬을 처음부터 다시 (2026-11-23 문답 정리)
+
+11월의 17개 백본 실험(`scripts/analysis/feat_metrics.py`, `feat_tta.py`의 `align_ms`, `_al`; 배치 64) 기준이다.
+
+**(1) 어디에 넣나.** 백본과 Linear 사이다.
+
+```
+이미지 → ViT 블록들 → final LayerNorm → h          ← 여기까지 백본 (고정). h = CLS 벡터 (DINOv3는 [CLS, patch 평균], ResNet은 GAP)
+       → 1단계: z = (h − μ_src) / σ_src            ← head를 학습할 때 우리가 넣은 표준화 (고정)
+       → Linear: z W + b
+```
+- final LayerNorm은 실제로 있다. 블록 안의 LayerNorm은 attention / MLP의 **입력**을 정규화하고(pre-norm), 잔차를 더한 블록 출력은
+  정규화되지 않으므로 마지막 블록 뒤에 norm을 하나 더 둔다(timm `model.norm`, lucidrains `Transformer.norm`).
+- 블록 안의 MLP(FFN)와 분류 head(Linear 하나)는 다른 것이다.
+
+**(2) 통계량의 축.** μ, σ는 모두 h의 통계이고, **채널마다 따로, 여러 장의 h에 걸쳐** 낸다. LayerNorm과 축이 다르다.
+
+| | 무엇의 평균·표준편차 | 크기 |
+|---|---|---|
+| LayerNorm | 이미지 한 장의 h 안 D개 원소 | 이미지마다 숫자 2개 |
+| μ_src, σ_src | 채널 c마다, clean train 이미지 전체의 h[c] | D차원 벡터 2개, 한 번 계산 |
+| μ_test, σ_test | 채널 c마다, test 배치 64장의 h[c] | D차원 벡터 2개, 배치마다 계산 |
+
+여기서 src는 head를 학습한 clean train(AID / RESISC45 train)이고, 백본의 사전학습 데이터(ImageNet, fMoW)가 아니다.
+LayerNorm을 지나도 "채널 c의 값이 배치 안에서 어떤 분포인가"는 정해지지 않으며, 손상이 바꾸는 것이 이 채널별 분포다.
+
+**(3) 1단계는 우리가 정한 head 학습 방식이다** (ViT에도 TTA 방법에도 없음).
+a. clean train 이미지를 동결한 백본에 통과시켜 h를 얻는다. b. 채널별 μ_src, σ_src를 낸다. c. z = (h − μ_src) / σ_src.
+d. (z, 라벨)로 로지스틱 회귀(= Linear + softmax + cross-entropy인 선형 분류기)를 L-BFGS로 학습해 W, b를 얻는다. e. W, b, μ_src, σ_src를 함께 저장한다.
+- 이유: 백본마다 feature 크기가 달라서, 표준화해야 같은 λ(L2 규제) 격자와 같은 절차를 17개 백본에 쓸 수 있다.
+- L-BFGS는 head를 학습하는 optimizer일 뿐이다(전체 데이터를 한 번에 놓고 푸는 볼록 문제라 lr·epoch 선택이 필요 없음). 정렬의 근거가 아니다.
+- 1단계는 상수로 하는 선형 변환이라 학습 뒤 W′ = W / σ_src, b′ = b − (μ_src / σ_src)W로 Linear에 합칠 수 있다.
+
+**(4) 정렬 = 2단계.** 1단계를 지난 z를 배치 통계로 다시 표준화한다. 학습 없음.
+
+```
+z_al = (z − mean_batch(z)) / std_batch(z) = (h − μ_test) / σ_test        (μ_src, σ_src는 약분되어 사라짐)
+```
+- 직관: W, b는 채널마다 평균 0·표준편차 1인 입력으로 학습됐다. 손상이 오면 z가 그 분포를 벗어나고, 정렬은 head 입력을 다시 평균 0·표준편차 1로 만든다.
+- BatchNorm으로 말하면 1단계 = eval 모드(저장된 통계), 정렬 = train 모드(지금 배치의 통계). 이것이 AdaBN이고, Tent가 하는 두 가지
+  (test 배치 통계로 정규화 + γ, β 학습) 중 앞의 것만 한 것이다. Tent는 백본 안의 BN에, 우리는 백본 뒤의 이 단계에 한다.
+- 2단계는 Linear에 합칠 수 **없다**. μ_test, σ_test가 배치마다 바뀌므로, 합치면 배치마다 다른 W″, b″가 된다. 즉 정렬은
+  "학습 없이 test 배치를 보고 head를 배치마다 다시 계산하는 것"이고, 이것이 TTA인 이유다.
+- 대가: 한 이미지의 예측이 같은 배치의 다른 이미지에 의존한다(작은 배치에서 불안정, 한 클래스로 몰린 배치에서 위험).
+
+**(5) 일반 규칙: head 입력의 채널별 통계를, head가 학습 때 본 입력의 통계에 맞춘다.**
+test 통계로 표준화하는 것((h − μ_test) / σ_test)은 어떤 head든 항상 한다. 그 뒤 src 통계를 식에 넣을지는 head가 무엇을 보고 학습됐는지에 달렸다.
+
+| head | 학습 때 본 입력의 통계 | 정렬 식 |
+|---|---|---|
+| raw (h 그대로 학습) | μ_src, σ_src | (h − μ_test) / σ_test · σ_src + μ_src |
+| std (표준화한 z로 학습, 우리 방식) | 0, 1 | (h − μ_test) / σ_test |
+
+- 맨 위의 공통 식 h′는 raw head용 일반식이고, std head에서는 σ_src = 1, μ_src = 0이 되어 뒷부분이 사라진다.
+- 블록 사이에 넣는 fsa가 항상 일반식을 쓰는 이유도 같다. 다음 블록은 원래 크기의 값을 기대한다.
+- 따라서 필요한 정보는 "h의 src 통계"가 아니라 **head 학습 입력의 통계**이고, head와 함께 저장돼 있어야 한다(BN이 running 통계를 들고 다니는 것과 같음).
+  식을 잘못 고르면(raw head에 z_al을 그대로 넣기 등) head가 학습 때와 다른 크기의 입력을 받는다.
+
+**(6) 식을 맞게 쓰면 이득은 head 학습 방식에 거의 무관하다** (`scripts/analysis/head_nostd.py`, `experiments/2026-11-23_head_nostd/RESULTS.md`).
+
+| 17개 백본 평균 손상 정확도 (%) | head | clean | 정렬 전 | 정렬 후 | 이득 |
+|---|---|---:|---:|---:|---:|
+| AID-C | std | 94.8 | 81.8 | 87.3 | +5.5 |
+| | raw | 94.6 | 81.6 | 86.9 | +5.4 |
+| RESISC45-C | std | 90.6 | 75.2 | 81.2 | +5.9 |
+| | raw | 90.4 | 74.9 | 80.7 | +5.8 |
+
+raw head에서도 17/17 백본에서 이득. moco_in, moco_fmow만 raw head의 정렬 전 정확도가 1.4~2.5pt 높아 이득이 조금 작다.
+
+**(7) src 통계를 모를 때** (`NOTES_tta.md` §5.8, 10월 SatMAE / ScaleMAE, AID): 라벨 없는 clean 이미지 32장으로 낸 통계면 head 입력 정렬의 이득이
++3.71 / +7.22로, 2,000장(+5.24 / +7.97)보다 0.7~1.5pt만 낮다. 다운스트림 통계가 전혀 없는 경우는 head 입력에서 시험하지 않았다
+(픽셀 정렬에서는 사전학습 Normalize 상수로 대신하면 clean −2.6~−3.5).
+
+**(8) 근거와 구분.**
+- 2단계의 근거: AdaBN / BN adaptation(정규화 통계를 test 배치 것으로 교체). 평균만 맞추는 `align_m`은 FOA의 activation shifting과 같은 위치·같은 종류
+  (FOA는 EMA로 test 평균을 추적, 우리는 배치마다 계산). 연산 자체는 새롭지 않다.
+- 정렬과 **feature 단계 TTA**는 다른 실험이다. `feat_tta.py`의 tent / flipf / dsbr는 head 입력에 z′ = γ ⊙ z + β를 붙이고 γ, β를 엔트로피 손실로
+  **학습**한다(ViT에서는 final norm의 γ, β만 학습하는 TENT와 같음). `_al`은 정렬한 z_al 위에서 그 학습을 한 것.
+
 ---
 
 ## 3. 실험 설계 결정과 그 이유
