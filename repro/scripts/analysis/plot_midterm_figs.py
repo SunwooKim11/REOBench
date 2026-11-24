@@ -9,6 +9,7 @@
   fig7_blur_aug.png       : drop under Gaussian blur, backbones with / without blur augmentation (T7)
   fig8_corruptions.png    : one AID image under the 12 REOBench corruptions, grouped by acquisition stage (T6)
   fig9_seg.png            : Potsdam mIoU per corruption for none / BN / input / input + BN alignment (T5)
+  fig10_alignment.png     : what head-input alignment does: pipeline, one feature channel, prediction share per class
 Labels are in English (no Korean font on the server). Colours: dataviz reference palette, light surface.
 
   /opt/conda/envs/segtta/bin/python scripts/analysis/plot_midterm_figs.py [--only fig1 fig5 ...]     # from repro/
@@ -183,13 +184,13 @@ def fig5():
             ax.scatter([ft], [y], s=36, color=BLUE, edgecolors=SURF, linewidths=0.6, zorder=3)
             ax.text(101.5, y, f"+{ft - al:.0f}", va="center", ha="left", fontsize=10, color=INK, clip_on=False)
         ax.axvline(clean, color=INK, lw=1, ls=(0, (3, 3))); ax.text(clean, len(order) - 0.35, f"clean {clean:.1f}", ha="center", fontsize=10)
-        ax.text(101.5, len(order) - 0.35, "gain", ha="left", fontsize=10, color=INK2, clip_on=False)
+        ax.text(101.5, len(order) - 0.35, "headroom", ha="left", fontsize=10, color=INK2, clip_on=False)
         ax.set_yticks(range(len(order))); ax.set_yticklabels([SHORT[c] for c in order]); ax.tick_params(axis="y", length=0)
         ax.set_xlim(28, 100); ax.set_xlabel("accuracy (%), mean of 17 backbones, severity 3 and 5"); ax.set_title(title, loc="left")
         ax.grid(axis="x", color=GRID, lw=0.8); ax.set_axisbelow(True)
     hs = [plt.Line2D([], [], marker="o", ls="", ms=7, mfc=GREY, mec=SURF, label="as is"),
-          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=AQUA, mec=SURF, label="after alignment (no labels)"),
-          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=BLUE, mec=SURF, label="head re-fitted with labels of the corrupted stream (upper bound); gain = over alignment")]
+          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=AQUA, mec=SURF, label="alignment (what we use; no labels)"),
+          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=BLUE, mec=SURF, label="upper bound, not a method: head re-fitted WITH labels of the corrupted stream")]
     fig.legend(handles=hs, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.03), fontsize=10)
     save(fig, "fig5_headroom.png")
 
@@ -286,13 +287,90 @@ def fig9():
     save(fig, "fig9_seg.png")
 
 
+def fig10(model="mae_in", ds="aid"):
+    """What head-input alignment does: schematic + one real stream (the severity-3 corruption with the largest gain)."""
+    import torch
+    from matplotlib.patches import FancyBboxPatch
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from cluster_cot import FEATS, align
+    h = torch.load(f"{FEATS}/{model}/head_{ds}.pt"); te = torch.load(f"{FEATS}/{model}/{ds}_test.pt"); cd = torch.load(f"{FEATS}/{model}/{ds}_c.pt")
+    z = lambda a: (a.float() - h["mu"]) / h["sd"]
+    w, b = h["w"], h["b"]
+    pred = lambda x: (x @ w + b).argmax(1)
+    zc, yc = z(te["feats"]), te["y"]
+    best = None
+    for k, c in enumerate(common.NOISES):
+        sel = (cd["corr"] == k) & (cd["sev"] == 3)
+        zk, yk = z(cd["feats"][sel]), cd["y"][sel]
+        za = align(zk)
+        a0, a1 = 100 * (pred(zk) == yk).float().mean().item(), 100 * (pred(za) == yk).float().mean().item()
+        if best is None or a1 - a0 > best[0]:
+            best = (a1 - a0, c, zk, za, yk, a0, a1)
+    _, cname, zk, za, yk, a0, a1 = best
+    ac = 100 * (pred(zc) == yc).float().mean().item()
+    nc = w.shape[1]
+    fig = plt.figure(figsize=(13.5, 8.2))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.25], hspace=0.32, wspace=0.2)
+    ax = fig.add_subplot(gs[0, :]); ax.set_xlim(-1, 101); ax.set_ylim(0, 42); ax.axis("off")
+
+    def box(x, y, wd, text, fc, ec=INK2, bold=False, tc=INK):
+        ax.add_patch(FancyBboxPatch((x, y), wd, 7.5, boxstyle="round,pad=0.25,rounding_size=1.2", fc=fc, ec=ec, lw=1.1))
+        ax.text(x + wd / 2, y + 3.75, text, ha="center", va="center", fontsize=10.5, color=tc, fontweight="bold" if bold else "normal")
+
+    def arrow(x0, x1, y):
+        ax.annotate("", xy=(x1, y + 3.75), xytext=(x0, y + 3.75), arrowprops=dict(arrowstyle="-|>", color=INK2, lw=1.1))
+
+    for y, tag, mid, fc, ec in ((28, "as trained and used without adaptation", "z = (h - mean_src) / std_src", "#eceae5", INK2),
+                                (9, "test time, aligned (ours)", "z = (h - mean_batch) / std_batch", "#dbe9fb", BLUE)):
+        ax.text(0, y + 10.2, tag, fontsize=11, fontweight="bold", color=INK, va="bottom")
+        box(0, y, 13, "image", SURF); arrow(13.8, 17.2, y)
+        box(18, y, 19, "frozen backbone", "#eceae5"); arrow(37.8, 41.2, y)
+        ax.text(39.5, y + 6.2, "h", ha="center", fontsize=10.5, style="italic")
+        box(42, y, 30, mid, fc, ec=ec, bold=True); arrow(72.8, 76.2, y)
+        box(77, y, 13, "linear head", "#eceae5"); arrow(90.8, 94.2, y)
+        ax.text(95, y + 3.75, "class", ha="left", va="center", fontsize=10.5)
+    ax.text(57, 25.6, "mean / std of the clean training set, per channel (fixed)", ha="center", va="top", fontsize=9.5, color=INK2)
+    ax.text(57, 6.2, "mean / std of the current test batch (64 images), per channel", ha="center", va="top", fontsize=9.5, color=BLUE)
+    ax.text(57, 2.6, "no labels, no gradient step, nothing stored between batches", ha="center", va="top", fontsize=9.5, color=BLUE)
+
+    # one channel: the largest mean shift among channels with an ordinary source spread
+    ok = h["sd"] >= 0.5 * h["sd"].median()
+    j = int((zk.mean(0).abs() * ok).argmax())
+    ax1 = fig.add_subplot(gs[1, 0])
+    lo, hi = np.percentile(torch.cat([zc[:, j], zk[:, j], za[:, j]]).numpy(), [0.5, 99.5])
+    bins = np.linspace(lo, hi, 60)
+    ax1.hist(zc[:, j].numpy(), bins=bins, color=GREY, alpha=0.55, label=f"clean (accuracy {ac:.1f}%)")
+    ax1.hist(zk[:, j].numpy(), bins=bins, histtype="step", color=ORANGE, lw=2, label=f"{SHORT[cname]}, severity 3 ({a0:.1f}%)")
+    ax1.hist(za[:, j].numpy(), bins=bins, histtype="step", color=BLUE, lw=2, label=f"same stream, aligned ({a1:.1f}%)")
+    ax1.axvline(0, color=INK2, lw=0.8, ls=(0, (3, 3)))
+    ax1.set_xlabel("value of one feature channel (source std units; 0 = source mean)"); ax1.set_ylabel("images")
+    ax1.set_title(f"{model}, {ds.upper()}: the channel with the largest shift", loc="left", fontsize=11)
+    ax1.legend(loc="upper right", fontsize=9.5)
+    # prediction share per class
+    ax2 = fig.add_subplot(gs[1, 1])
+    share = lambda p: np.bincount(p.numpy(), minlength=nc) / len(p) * 100
+    sk, sa, st = share(pred(zk)), share(pred(za)), share(yk)
+    o = np.argsort(-sk); x = np.arange(nc)
+    ax2.bar(x, st[o], width=0.8, color=GREY, alpha=0.55, label="true share")
+    ax2.plot(x, sk[o], color=ORANGE, lw=2, marker="o", ms=4, label="predicted, corrupted")
+    ax2.plot(x, sa[o], color=BLUE, lw=2, marker="o", ms=4, label="predicted, aligned")
+    names = sorted(os.listdir(common.TRAIN_DIR))
+    ax2.annotate(f"{names[o[0]]}: {sk[o[0]]:.0f}% of predictions", xy=(0, sk[o[0]]), xytext=(4, sk[o[0]] * 0.92), fontsize=10,
+                 arrowprops=dict(arrowstyle="-", color=INK2, lw=0.8))
+    ax2.set_xlabel("classes, sorted by predicted share on the corrupted stream"); ax2.set_ylabel("share of images (%)")
+    ax2.set_xticks([]); ax2.set_title("predictions collapse to a few classes; alignment spreads them again", loc="left", fontsize=11)
+    ax2.legend(loc="upper right", fontsize=9.5)
+    save(fig, "fig10_alignment.png")
+    print(f"fig10: {model} {ds} {cname}_s3 clean {ac:.1f} corrupted {a0:.1f} aligned {a1:.1f} channel {j}")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", default=None)
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     for name, f in (("fig1", fig1), ("fig2", fig2), ("fig3", fig3), ("fig4", fig4), ("fig5", fig5), ("fig6", fig6), ("fig7", fig7),
-                    ("fig8", fig8), ("fig9", fig9)):
+                    ("fig8", fig8), ("fig9", fig9), ("fig10", fig10)):
         if args.only is None or name in args.only:
             try:
                 f()

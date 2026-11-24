@@ -103,7 +103,7 @@ PPT skill에는 **3절(슬라이드 구성)과 4절(표)** 을 그대로 주면 
 | S4 | 데이터와 벤치마크 (F3) | T11 | 합성 손상 3개, 자연 shift 1개 |
 | S5 | 기존 TTA는 평균적으로 손해 | **fig1**, T1 | 엔트로피 기반은 손해, 정렬이 가장 큼 |
 | S6 | 왜 실패하나: 과신과 예측 쏠림 | **fig4**, T2, T9 | 과신은 3종 손상에 몰려 있고 예측 클래스가 합쳐진다 |
-| S7 | 통계 정렬이 하는 일 | 식 한 줄, head 통제 결과 | head 입력을 test 배치 통계로 다시 표준화 |
+| S7 | 통계 정렬이 하는 일 | **fig10**, 식 한 줄, head 통제 결과 | head 입력을 test 배치 통계로 다시 표준화 |
 | S8 | flip 신호와 정확도 추정 | **fig3**, **fig2**, T3 | flip은 정확도를 따르고, 추정 오차는 COT와 같은 수준 |
 | S9 | 자연 shift | T4 | 신호는 유지, 정렬은 약함 |
 | S10 | 분할 (Potsdam) | **fig9**, T5 | 분류와 같은 현상 |
@@ -125,11 +125,12 @@ PPT skill에는 **3절(슬라이드 구성)과 4절(표)** 을 그대로 주면 
 | `fig2_estimation.png` | 추정 정확도 대 실제 정확도, stream 2,040개. ATC / COT / flip 추정 | ATC는 대각선 위로 크게 벗어난다(과신). COT와 flip 추정은 대각선을 따른다 |
 | `fig3_signals.png` | RESISC45-C에서 confidence 대 정확도, flip 대 정확도. 백본 3개 | 과신 백본(moco_in, sup_in_r50)에서 confidence는 정확도를 못 따르고 flip은 따른다 |
 | `fig4_em_phases.png` | 2,000 step 동안의 정확도와 예측 클래스 수. tent 대 DSBR | tent는 클래스가 합쳐지며 떨어지고 DSBR은 30개를 유지하며 오른다 |
-| `fig5_headroom.png` | 손상별로 그대로 → 정렬 → head 상한 → clean | 남은 여지는 motion blur, data gaps, scale에 몰려 있다 |
+| `fig5_headroom.png` | 손상별로 그대로(회색) → 정렬(초록, 우리가 실제로 쓰는 것, 라벨 없음) → head 상한(파랑, 손상 stream의 라벨로 head를 다시 맞춘 가상의 값, 방법이 아님) → clean(점선) | 남은 여지는 motion blur, data gaps, scale에 몰려 있다 |
 | `fig6_pairs.png` | 쌍 7개의 위성 − 일반 차이. clean, 손상, 자연 shift 양방향 | 위성 사전학습의 효과는 방식마다 반대다 |
 | `fig7_blur_aug.png` | Gaussian blur 손상에서의 하락. blur augmentation 유무로 묶음 | 두 묶음의 범위가 겹치지 않는다 |
 | `fig8_corruptions.png` | AID 이미지 한 장에 12종 손상(3단계), 단계별 표기 | 굵은 이름이 RS 고유 유형 |
 | `fig9_seg.png` | Potsdam 손상별 mIoU. none / BN 정렬 / 입력 정렬 / 둘 다 | 밝기·haze는 입력 정렬, 노이즈·JPEG는 BN 정렬이 듣고, blur와 구름은 아무것도 안 듣는다 |
+| `fig10_alignment.png` | 정렬이 하는 일: 흐름도(학습 때의 표준화 대 test 배치 통계로 표준화), feature 채널 하나의 분포, 클래스별 예측 비율. mae_in, AID, scale 3단계 | 손상이 feature를 한쪽으로 통째로 밀고(주황) 정렬이 제자리로 되돌린다(파랑). 예측이 한 클래스에 58% 쏠리던 것이 다시 퍼진다. 정확도 23.0 → 64.5 (clean 94.3) |
 
 fig6에는 MAE → Scale-MAE 쌍을 넣어 7개다. DINOv3의 AID-C 값은 반올림 전 계산이라 −14.4로 찍힌다(표 T10은 −14.3).
 
@@ -365,5 +366,5 @@ Geometry에서 이해해야 할 것은 세 문장이다.
 
 ## 8. 로컬로 가져갈 것
 - 이 파일과 그림은 모두 저장소에 commit돼 있다. `repro` 브랜치를 push한 뒤 로컬에서 받으면 된다.
-- 그림: `docs/figs/midterm_2026-11-26/` 9장(발표용), `docs/figs/2026-11-24_feature_dist/` 2장, `docs/figs/meeting_2026-10/` 7장.
+- 그림: `docs/figs/midterm_2026-11-26/` 10장(발표용), `docs/figs/2026-11-24_feature_dist/` 2장, `docs/figs/meeting_2026-10/` 7장.
 - PPT skill에 줄 입력: 3절(슬라이드 구성) + 4절의 표 중 해당 번호 + 7절의 한계. 슬라이드마다 "한 줄 메시지"를 제목 아래 문장으로 쓰면 된다.
