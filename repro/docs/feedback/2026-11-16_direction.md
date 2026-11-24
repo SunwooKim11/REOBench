@@ -174,7 +174,7 @@
 - 겹치는 선행 연구 발견: arXiv 2611.13849 (GeoCV@WACV 2027), 같은 대응 쌍 설계로 clean 장면 분류 비교. 메모 `docs/reading/matched_pair_study.md`.
 
 ### 2026-11-17 백본·데이터셋 정리
-- 지금까지 돌린 백본 17개, 데이터셋, 실험별 범위, 빈 곳을 `docs/WRAPUP_backbones_datasets_2026-11-17.md`에 정리.
+- 지금까지 돌린 백본 17개, 데이터셋, 실험별 범위, 빈 곳을 `docs/SETTINGS.md`에 정리.
 - MoCo-v3 ImageNet ResNet50/ViT-B 추가는 하지 않기로 함(사용자 판단: 지금 범위로 충분).
 
 ### 2026-11-17 과신의 원인 확인 (AID-C, 저장 feature, scratch 스크립트)
@@ -398,7 +398,7 @@ tmux `segnov` 종료(16:46, 실패 없음). 추가된 것: dsbr_bnbatch +2.84 / 
   → 우리 설정에서 실패를 가르는 것은 source 클래스 평균까지의 거리가 아니라 예측 클래스 수. k-means Silhouette 변화는 둘 다 +0.001.
   논문의 두 상관은 방향은 같고 작다(1단계 Δsil–Δacc +0.38 대 논문 +0.70, 2단계 Δshift–Δacc −0.59 대 −0.79).
   주의: tent의 1단계 상승 +1.2pt는 checkpoint 9개 중 최고점을 고른 값이라 부풀려져 있다. 거리 증가에는 γ 확대가 섞여 있다. online 한 번 통과가 아니다.
-- **사전학습 augmentation 표** (`docs/WRAPUP_backbones_datasets_2026-11-17.md` §1): Gaussian blur augmentation이 있는 11개 백본은 Gaussian blur 손상 하락이
+- **사전학습 augmentation 표** (`docs/SETTINGS.md` §1): Gaussian blur augmentation이 있는 11개 백본은 Gaussian blur 손상 하락이
   AID 0.4~3.9 / RESISC45 1.0~6.2pt, 없는 6개(MAE 3, supervised 3)는 4.5~25.1 / 6.5~33.2pt. motion blur로는 넘어가지 않는다. scale 손상은 crop 범위가 같은
   쌍 안에서 fMoW 쪽이 5쌍 모두 높다(DINOv3만 반대). DINOv3 web / sat은 논문상 hyper-parameter가 같아 차이는 데이터에서 온다.
 - 읽기: (1) Entropy Enigma의 군집 설명("정확도가 높으면 잘 군집")은 end-to-end 분류기의 것이고 frozen 백본에서는 군집형 feature를 내는 계열에만 맞는다.
@@ -413,3 +413,11 @@ tmux `segnov` 종료(16:46, 실패 없음). 추가된 것: dsbr_bnbatch +2.84 / 
 - "열화를 알아보고 대처를 고른다"의 상한을 기존 분할 결과로 계산: 고정 isa_bn 55.81 / 57.41, 손상별 최선 56.52 / 58.05 mIoU (+0.7 / +0.6, 손상 10종).
   이득은 정렬이 필요 없는 손상과 clean에서 건드리지 않는 데서 온다.
 - 제안(미실행): 복합 stream, 전송·보정 단계 열화 소수(band attenuation, band switch, stripe, tile missing)를 통제 세트로.
+
+### 2026-11-24 설정 문서 통합, F3 판단
+- `WRAPUP_backbones_datasets_2026-11-17.md` + `DATASETS_2026-11.md` → `docs/SETTINGS.md` 하나로 합침(사용자 요청: 설정은 한 파일에서 관리).
+  §2.5에 REOBench 12종의 단계별 배치 표(SenseBench 분류 기준)와 손상 생성 방법을 모음.
+- F3 판단(사용자와 합의): 지금 가진 것(AID-C, RESISC45-C, Potsdam-C, RESISC45 ↔ UCM)으로 충족. RSPDBench·SenseBench 방식의 새 벤치마크는 만들지 않고
+  motivation·related work에서 인용한다. REOBench의 가치가 떨어진 것은 아니다.
+- 복합 stream과 통제 2종(band attenuation, band switch)은 차선. 사용자 의견: 성능을 올리는 방법이 아직 없는데 더 어려운 설정을 먼저 돌리는 것은 순서가 맞지 않다.
+  통계 정렬은 source 통계를 쓰고 novelty가 약하다는 것이 사용자의 평가.

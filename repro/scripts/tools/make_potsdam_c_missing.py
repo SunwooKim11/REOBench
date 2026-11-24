@@ -1,5 +1,5 @@
 """The four Potsdam-C corruptions whose images are missing from the REOBench release: rotate, scale_image, translate_image,
-data_gaps (the release has the labels of all four but only 9 image sets; see docs/DATASETS_2026-11.md §4).
+data_gaps (the release has the labels of all four but only 9 image sets; see docs/SETTINGS.md §2.5).
 
 What the release tells us (checked 2026-11-24):
   - the released Potsdam-C images of motion blur / JPEG / gaussian blur equal the output of the released generation code

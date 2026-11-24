@@ -100,4 +100,4 @@ distributional robustness tells a different story of model applicability in real
 - **합성 shift만으로는 부족** ("robustness to synthetic dataset shifts is not representative of robustness to natural distribution
   shifts") → 합성(AID-C, RESISC45-C) + 실제(RESISC45↔UCM, Potsdam→Vaihingen) 둘 다 필요. Beyond Accuracy도 EarthShift를 보완재로 인용.
 - 보고 형식: ID / OOD / Δ를 같이 제시. TTA는 "ID–OOD 격차 중 회복한 비율"로 보고하면 이 논문과 바로 비교됨.
-- 주의: 논문 표의 UCM split(420/420/1,260)은 torchgeo 필터 결과(1,142/379/379)와 안 맞음 (DATASETS_2026-11.md §3).
+- 주의: 논문 표의 UCM split(420/420/1,260)은 torchgeo 필터 결과(1,142/379/379)와 안 맞음 (SETTINGS.md §2.7).

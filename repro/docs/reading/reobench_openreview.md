@@ -75,7 +75,7 @@ Chrome에서 포럼을 열고 리뷰, rebuttal, 후속 코멘트, decision까지
 
 ## Claude 보충 (2026-11-16)
 - 7번 재현성: 손상 생성 코드는 공개됐지만 **공개 코드와 AID-C 데이터의 파라미터가 4개 다름**(motion blur, JPEG, data gaps, scale;
-  DATASETS_2026-11.md §2), Potsdam 기하 손상 4종은 이미지가 빠지고 라벨은 선형 보간됨(§4), issue #4 data.pth 누락. 재현 어려움의 직접 원인.
+  SETTINGS.md §2.5), Potsdam 기하 손상 4종은 이미지가 빠지고 라벨은 선형 보간됨(§4), issue #4 data.pth 누락. 재현 어려움의 직접 원인.
 - 6번 "MIM 열세 = 사전학습 규모": 우리 백본 짝(MAE vs SatMAE, 둘 다 ViT-L, 데이터 규모 ImageNet 1.28M vs fMoW 0.36M; DINOv3 web vs sat는
   둘 다 수억 장)으로 규모·도메인·목적함수를 나눠 볼 수 있음.
 - 1번 실제 haze: 리뷰 답변에 쓰인 **RRSHID(실제 haze/clear 짝 영상)가 서버에 있음** (`/data/rs/RRSHID`, thin/moderate/thick fog, train/val/test,

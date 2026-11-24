@@ -1,4 +1,7 @@
-# 백본·데이터셋 정리 (2026-11-17 기준)
+# 실험 설정: 백본·데이터셋·손상 (단일 관리 파일, 마지막 갱신 2026-11-24)
+
+백본, 데이터셋, 손상, 실험 범위에 관한 설정은 이 파일 하나에서 관리합니다. 2026-11-24에 `WRAPUP_backbones_datasets_2026-11-17.md`와
+`DATASETS_2026-11.md`를 합쳤습니다. 개념 설명은 `NOTES_concepts.md`, `STUDY_*.md`에 있습니다.
 
 지금까지 실제로 돌린 것만 적었습니다. 준비만 하고 돌리지 않은 것은 §4에 따로 모았습니다.
 수치 출처: `experiments/2026-11-16_backbone_feats/RESULTS.md`, `experiments/2026-11-17_natural_shift/RESULTS.md`.
@@ -131,10 +134,10 @@ torchgeo 표에 없는 데이터(AID, RRSHID, ImageNet)는 원 논문 값이며,
   - REOBench Potsdam test: 타일 14장(2_13, 2_14, 3_13, 3_14, 4_13, 4_14, 4_15, 5_13, 5_14, 5_15, 6_13, 6_14, 6_15, 7_13) ×
     타일당 144장(512x512, 512 간격, 마지막 칸은 가장자리에 맞춤 → 가로 12 × 세로 12) = 2,016 패치. 파일 이름
     `3_13_4608_5488_5120_6000.png` = 타일 3_13의 x 4,608–5,120, y 5,488–6,000 구간입니다.
-  - Vaihingen mmseg 패치: train 344 / val 398 (512x512, `docs/DATASETS_2026-11.md` §5).
+  - Vaihingen mmseg 패치: train 344 / val 398 (512x512, §2.8).
 - torchgeo에 없는 것은 AID와 fMoW입니다. UC Merced는 torchgeo에 "UC Merced"라는 이름으로 있습니다.
 - Vaihingen 파일은 근적외·적·녹(IRRG) 3채널입니다. torchgeo 표에는 RGB로 적혀 있지만 실제 채널 구성은 IRRG라 RGB 모델에는
-  센서 shift가 같이 들어갑니다(`docs/DATASETS_2026-11.md` §5).
+  센서 shift가 같이 들어갑니다(§2.8).
 - RRSHID: Zhu et al. 2025, "Real-World Remote Sensing Image Dehazing: Benchmark and Baseline"
   ([arXiv 2503.17966](https://arxiv.org/abs/2503.17966), [github.com/lwCVer/RRSHID](https://github.com/lwCVer/RRSHID)).
   가시거리로 thin(>10 km) 763 / moderate(5–10 km) 1,526 / thick(<5 km) 764쌍으로 나뉘며, 우리 서버 파일 수와 일치합니다.
@@ -150,7 +153,7 @@ torchgeo 표에 없는 데이터(AID, RRSHID, ImageNet)는 원 논문 값이며,
 | RESISC45-C | C | 378,000 (test 6,300 × 12종 × 5단계) | 45 | 256x256 | **우리가 생성** (REOBench 코드, 파라미터 4개를 AID-C에 맞춤) | 위와 같음 |
 | EarthShift R45 | C | train 7,915 / val 2,726 / test 2,659 | 19 | 256x256 | RESISC45에서 거름 (EarthShift 표 1과 일치) | 자연 shift |
 | EarthShift UCM | C | train 1,142 / val 379 / test 379 (전체 1,900) | 19 | 256x256 | UC Merced에서 우리가 split | 자연 shift |
-| Potsdam-C | S | test 2,016 패치 × 8종 × 5단계 | 5 (+clutter 무시) | 512x512 | REOBench 배포본 | 분할 drift (2개 모델만) |
+| Potsdam-C | S | test 2,016 패치 × 12종 × 5단계 (8종 배포 + 4종 우리가 생성) | 5 (+clutter 무시) | 512x512 | REOBench 배포본 | 분할 drift (2개 모델만) |
 | RRSHID | 쌍 | thin 763 / moderate 1,526 / thick 764 쌍 | – | 256x256 | 공개 데이터 그대로 | 실제 vs 합성 haze |
 | natural_vs_rs | C | ImageNet val 5,000 / AID test 2,000 / R45 test 1,996 × 7종 × 5단계 | 1,000 / 30 / 45 | 224x224 | ImageNet-C 함수·파라미터로 우리가 생성 (ImageNet은 공개 ImageNet-C 파일) | 자연 vs RS 손상 비교, 픽셀 지표 |
 
@@ -213,6 +216,93 @@ Task는 데이터에 붙은 라벨 종류입니다. self-supervised 백본(MAE, 
 UC Merced(0.3 m)는 약 77 m 범위를, RESISC45의 30 m 이미지는 약 7.7 km 범위를 담습니다. EarthShift가 R45↔UCM을 "scale shift"라고
 부르는 이유가 이 GSD 차이입니다.
 
+### 2.5 손상: 종류, 단계별 배치, 생성 방법
+
+**REOBench 12종을 SenseBench의 단계 분류에 놓은 표** (2026-11-24). SenseBench는 열화를 촬영–전송–지상 처리 단계와 품질 표준(ISO 19157-1 등)에
+맞춰 6개 대분류 22종으로 나눈다(`docs/reading/sensebench.md`). "RS 고유인가" 열은 Claude의 판단이다.
+
+| 단계 | REOBench 손상 | SenseBench 대응 | RS 고유인가 |
+|---|---|---|---|
+| 센서 | gaussian noise | Gaussian noise | 일반 |
+| 센서, 전송 | salt & pepper | impulse noise | 일반 |
+| 센서 (검출기 고장) | data gaps | deadline, linear blindness | 고유 (push-broom 주사 방식) |
+| 광학, 대기 | gaussian blur | Gaussian blur | 일반 |
+| 플랫폼 운동 | motion blur | motion blur | 일반 (원인은 궤도 속도·자세 흔들림) |
+| 대기 | clouds | cloud | 고유 (위에서 내려다보는 시점) |
+| 대기 | haze | haze | 일부 고유 |
+| 방사 보정 | brightness / contrast | 없음 (가까운 것: band attenuation) | 일반 |
+| 전송, 저장 | JPEG | JPEG | 일반 (위성은 JPEG2000, SPIHT도 사용) |
+| 기하 | scale | 없음 (가까운 것: 기하 압축·늘림) | 고유 (GSD 변화) |
+| 기하 | rotate | 없음 | 고유이지만 열화가 아님 (정해진 방향이 없음) |
+| 기하 | translate | 없음 | 일반 |
+
+- 12종 중 7종은 ImageNet-C와 같은 일반 영상 열화다(REOBench OpenReview의 "RS 고유성" 지적과 같은 지점).
+- 고유한 쪽(data gaps, clouds, scale, rotate)에서 백본 간 차이가 가장 크다: AID scale은 fMoW 쪽이 5쌍 모두 높고(mae_in 25.7, satmae 78.9),
+  AID data gaps 정확도는 백본에 따라 33.0–96.9%로 퍼진다(`2026-11-16_backbone_feats/signals/`).
+- SenseBench에는 있고 REOBench에는 없는 것: 전송·보정 단계(JPEG2000, WebP, SPIHT, band attenuation, band switch, tile missing), stripe noise.
+  후보 실험(미실행, 차선): 복합 stream 6쌍, 통제 2종(band attenuation, band switch). 방법이 정해진 뒤에 판단하기로 함(2026-11-24).
+
+**AID-C**: REOBench 배포본 그대로.
+
+**RESISC45-C** (`scripts/tools/make_corrupted_cls.py`, 우리가 생성)
+- REOBench 손상 코드(`~/REOBench/Corrupt Image Generation/`)를 그대로 실행하되, **AID-C 실제 파일과 맞춰 본 결과 공개 코드와 다른
+  파라미터 4개를 AID-C 쪽으로 고침** (AID 테스트 이미지 8~10장, JPEG 재저장 후 MAE 비교):
+
+| 손상 | 공개 코드 | AID-C에서 역추정 (= 사용값) | MAE (공개값 → 사용값) |
+|---|---|---|---|
+| motion_blur 커널 길이 | 2, 4, 6, 8, 10 | 10, 15, 20, 25, 30 | 7.4~8.4 → 1.4~1.9 |
+| compression JPEG quality | 30, 25, 20, 15, 10 | 50, 40, 30, 20, 10 | 5.2 → 1.1 (s1) |
+| data_gaps 줄무늬 폭 | 3~7 | 5~9 (줄 수 2~6은 같음) | 검은 면적 0.117 → 0.150 (AID-C 0.157, s5) |
+| scale_image | 검은 캔버스 | 축소 후 reflect 패딩 (AID-C엔 검은 픽셀 없음) | 7.7 → 4.5 (s5) |
+
+- 공개값과 일치: gaussian blur, haze, brightness/contrast, rotate, translate(4방향 중 최적), gaussian noise σ
+  (AID-C noise std 0.028/0.056은 JPEG 저장 효과로 재현됨).
+- **clouds는 미일치**: AID-C 구름 면적(추정 0.013~0.129)이 공개 density(추정 0.04~0.22)보다 작음. 원인 못 찾아 공개값 유지.
+- 모든 출력은 AID-C처럼 PIL 기본 JPEG(q75). (이미지, 손상, 강도)마다 고정 seed → 재현 가능 (공개 코드는 seed 없음).
+- 출력 구조는 AID-C와 같음: `<Class>/<corruption>/severity_<s>/<class idx>/<file>.jpg`.
+- 환경: `~/REOBench/.venv-corrupt` (segtta + scikit-image 0.21 + conda-forge `noise`; 서버에 gcc 없음).
+
+**Potsdam-C**
+- REOBench 배포본에는 8종의 이미지만 있다. rotate, scale, translate, data gaps는 **라벨만 있고 이미지가 없다**(`anns/…`, 2,016장 × 5강도).
+  배포된 기하 손상 라벨은 선형 보간돼 있어(0~4가 아닌 값이 섞인 3채널 PNG) 그대로 쓰면 평가가 오염된다.
+- 2026-11-24에 4종을 직접 생성(`scripts/tools/make_potsdam_c_missing.py`): 각 10,080장(2,016 × 5단계).
+  기존 8종 이미지가 공개 생성 코드와 정확히 같음(MAE 0.00)을 확인하고 공개 코드의 severity 표를 그대로 사용(data gaps 줄 2~6개, 폭 3~7).
+  라벨은 nearest 보간·reflect 경계로 새로 만듦. translate는 배포 라벨에서 방향을 역추정해 전부 일치. data gaps는 clean 라벨 사용.
+  위치: `/data/rs/reobench/Potsdam_extracted/test/<corr>/severity_<s>/`, 라벨 `<corr>_ann/severity_<s>/`.
+
+**natural_vs_rs**: ImageNet-C 7종의 함수·파라미터로 AID / RESISC45 test에 생성(§2.2 표).
+
+### 2.6 준비 상태와 위치
+
+선정 기준: (i) 선행 RS 강건성 연구(REOBench, Beyond Accuracy, EarthShift)에서 쓴 데이터, (ii) 평가 백본과 같은 고해상도 RGB,
+(iii) 합성 손상과 실제 shift를 둘 다 포함, (iv) 사전학습 데이터(fMoW)는 테스트에서 제외.
+
+| 단계 | 데이터 | 용도 | 상태 | 위치 |
+|---|---|---|---|---|
+| 1 | AID-C | 분류 합성 손상 | 있음 (REOBench) | `/data/rs/reobench/AID` |
+| 1 | RESISC45-C | 분류 합성 손상 | **생성** (test 6,300장 × 12종 × 5강도) | `/data/rs/resisc45/RESISC45-C` |
+| 1 | Potsdam-C | 분할 합성 손상 | 8종 있음(REOBench) + 4종 **생성** (2026-11-24, §2.5) | `/data/rs/reobench/Potsdam_extracted` |
+| 2 | RESISC45 ↔ UCM | 분류 scale shift | **split 생성** (EarthShift 19클래스) | `/data/rs/{resisc45,ucmerced}/earthshift19` |
+| 2 | Potsdam → Vaihingen | 분할 센서·도시 shift | 있음 (mmseg 패치) | `/data/rs/seg/isprs/Vaihingen/derived/mmseg` |
+| 3 | LoveDA Urban → Rural | 분할 UDA | 있음 | `/data/rs/loveda_uda`, `/data/rs/seg/loveda` |
+| 3 | DeepGlobe → DFC2022 | 분할 data source shift | DeepGlobe만 (비공식 HF parquet, 803장) | `/data/rs/seg/deepglobe_landcover` |
+
+다운로드: `scripts/tools/download_extra_rs.sh` (torchgeo HF 미러).
+
+### 2.7 RESISC45 ↔ UCM split (`scripts/tools/make_rs_splits.py`)
+- 클래스 매핑 = EarthShift 공식 코드 `configs/scale-shift-exp.json` (github.com/kerner-lab/earthshift). 19개 1:1, 병합 없음.
+  논문은 "highway"라고 썼지만 코드는 양쪽 모두 freeway. 라벨 = 알파벳 순서(양쪽 같음).
+- RESISC45 (torchgeo split을 19클래스로 거름): train 7,915 / val 2,726 / test 2,659 = **EarthShift 표 1과 정확히 일치**.
+- UCM: train 1,142 / val 379 / test 379 / 전체 1,900. 논문 표의 UCM 숫자(420/420/1,260)는 어떤 필터 split과도 안 맞음
+  → OOD 평가는 전체 1,900장(또는 test 379장)으로 두 가지 다 제공.
+- 해상도: RESISC45 0.2~30m, UCM 0.3m. 둘 다 256px (UCM 일부 tif는 크기 확인 필요).
+
+### 2.8 Potsdam → Vaihingen
+- Vaihingen은 IRRG(근적외-적-녹)만 있음. 우리 Potsdam 모델은 RGB로 학습 → RGB→IRRG 센서 shift가 같이 들어감
+  (RS UDA 문헌의 P(RGB)→V(IRRG) 설정). Potsdam 5cm vs Vaihingen 9cm.
+- mmseg 패치: train 344 / val 398 (512px). 라벨 1~6 (0 = 경계 무시, reduce_zero_label 형식) → Potsdam REOBench 라벨
+  (0~4, 5 = clutter 무시, 255 무시)과 매핑 필요.
+
 ## 3. 실험별 범위
 
 | 실험 | 백본 | 데이터 | 측정한 것 | 결과 위치 |
@@ -239,7 +329,7 @@ UC Merced(0.3 m)는 약 77 m 범위를, RESISC45의 30 m 이미지는 약 7.7 km
 **준비했지만 아직 안 돌린 것**
 - Potsdam → Vaihingen (분할 자연 shift). 데이터는 있으나 Vaihingen은 IRRG뿐이고 라벨 매핑이 필요합니다.
 - LoveDA Urban → Rural, DeepGlobe (DeepGlobe는 비공식 803장만 있음).
-- Potsdam-C 나머지 4종(rotate, scale, translate, data gaps). 배포 라벨이 보간돼 있어 직접 만들어야 합니다.
+- Potsdam-C 나머지 4종(rotate, scale, translate, data gaps): 2026-11-24에 생성 완료(§2.5), 실행은 `experiments/2026-11-23_seg_signals/`에서 진행 중.
 
 **설계상 빠진 것**
 - contrastive ViT의 fMoW 쌍. 공개 체크포인트가 없어 contrastive 쌍은 ResNet-50(MoCo-v2)뿐입니다.

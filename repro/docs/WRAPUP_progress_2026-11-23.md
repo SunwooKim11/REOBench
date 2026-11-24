@@ -48,7 +48,7 @@ LSCD-TTA 발표 뒤 교수님 피드백(`docs/feedback/2026-11-W1_LSCD-TTA.md`):
 
 ### 3.1 실험 기반
 - 백본 17개: 같은 구조·같은 사전학습 방식의 ImageNet 모델과 위성 모델을 쌍으로 구성(MAE ↔ SatMAE·ScaleMAE, MoCo ↔ MoCo-fMoW·GASSL,
-  DINO ↔ SatDINO, DINOv3 web ↔ sat). 지도학습 ImageNet 3개는 기준점. 상세는 `docs/WRAPUP_backbones_datasets_2026-11-17.md`.
+  DINO ↔ SatDINO, DINOv3 web ↔ sat). 지도학습 ImageNet 3개는 기준점. 상세는 `docs/SETTINGS.md`.
 - 데이터: AID-C, RESISC45-C(우리가 생성), 자연 shift RESISC45 ↔ UC Merced.
 - feature를 저장해 두고 선형 head를 학습했다(stage 1).
 

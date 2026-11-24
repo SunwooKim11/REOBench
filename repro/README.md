@@ -38,8 +38,7 @@ paper PDFs under `~/REOBench/papers/`.
 |---|---|
 | `NOTES_tta.md` | all results of the TTA phase (2026-10) by topic; start here for that phase |
 | `NOTES_concepts.md` | concepts explained along the way |
-| `WRAPUP_backbones_datasets_2026-11-17.md` | backbones and datasets of the 2026-11 study, and why they were chosen |
-| `DATASETS_2026-11.md` | dataset details |
+| `SETTINGS.md` | the single file for settings: backbones (pretraining data, augmentation), datasets, corruptions and how they were generated, scope of each experiment |
 | `STUDY_*.md` | study notes (alignment, stage-1 metrics) |
 | `PRIOR_ART_*.md` | prior-art surveys (statistics alignment, feature signals, CLIP segmentation TTA, SAE pruning) |
 | `PAPERS_tta_2026-10.md`, `PPT_prompt_2026-10.md` | paper list and slide prompt of the TTA phase |

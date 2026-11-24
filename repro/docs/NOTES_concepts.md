@@ -1,5 +1,7 @@
 # 실험 중 나온 개념 정리 (REOBench 재현)
 
+> 백본·데이터셋·손상 설정은 `SETTINGS.md`에서 관리합니다. 이 파일은 개념 설명만 담습니다.
+
 ## 1. epoch / iteration / step / scheduler
 
 | 용어 | 뜻 | AID (7,999장, batch 16) |
