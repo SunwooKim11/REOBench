@@ -113,6 +113,9 @@ os.makedirs(OUT, exist_ok=True)
 class Files(Dataset):
     def __init__(self, img_dir, names):
         self.img_dir, self.names = img_dir, names
+        # geometric corruptions have their own labels (<corruption>_ann/severity_<s>); everything else uses the clean ones
+        ann = f"{T}/{os.path.basename(os.path.dirname(img_dir))}_ann/{os.path.basename(img_dir)}"
+        self.ann_dir = ann if os.path.isdir(ann) else f"{T}/clean_ann"
 
     def __len__(self):
         return len(self.names)
@@ -120,7 +123,7 @@ class Files(Dataset):
     def __getitem__(self, i):
         n = self.names[i]
         img = np.asarray(Image.open(f"{self.img_dir}/{n}").convert("RGB"), dtype=np.float32)   # RGB 0-255
-        lab = np.asarray(Image.open(f"{T}/clean_ann/{n}").convert("L")).astype(np.int64)
+        lab = np.asarray(Image.open(f"{self.ann_dir}/{n}").convert("L")).astype(np.int64)
         lab[lab == 255] = IGNORE                                                              # as in eval
         return torch.from_numpy(img).permute(2, 0, 1), torch.from_numpy(lab)
 
