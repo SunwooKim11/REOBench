@@ -371,3 +371,36 @@ SatMAE B / ScaleMAE B, clean + 손상 8종 × 5단계, 배치 8, stream마다 �
   이득은 못 낸다(분류와 다름). (3) source 비율을 목표로 한 DSBR 변형은 균등 목표보다 나쁘다. (4) 이득은 여전히 통계 정렬에서 온다
   (flipf_bnbatch ≈ tent_bnbatch ≈ bnadapt + 0.7~0.9). seed 1개, lr은 10월과 같은 값(7.5e-6) 하나.
 
+
+### 2026-11-24 Potsdam 분할: 손상 8종 실행 완료 (`experiments/2026-11-23_seg_signals/RESULTS.md`)
+tmux `segnov` 종료(16:46, 실패 없음). 추가된 것: dsbr_bnbatch +2.84 / +3.88, dsbr_src_bnbatch +2.80 / +3.90 (none 대비 손상 평균 mIoU, SatMAE / ScaleMAE).
+- BN 정렬 위에서는 손실 종류가 거의 차이를 만들지 않는다: tent / flipf / dsbr / dsbr_src가 +2.60 ~ +2.84 / +3.67 ~ +3.90에 모인다.
+  정렬만(bnadapt) +1.87 / +3.08이므로 학습이 더하는 몫은 1pt 미만.
+- DSBR의 효과는 BN을 고정했을 때만 뚜렷하다(tent −1.96 / −1.19, dsbr +0.85 / +0.56). 분류(AID-C 정렬 위 tent 88.1, dsbr 88.1)와 같은 모양.
+- 빠진 손상 4종(rotate, scale, translate, data gaps)은 2026-11-24 12:42에 생성 완료(각 10,080장, 기하 3종은 라벨도 생성, translate 방향은 배포 라벨과 전부 일치).
+  이 4종의 실행은 tmux `seggeo`에서 진행 중.
+
+### 2026-11-24 Entropy Enigma를 우리 백본에서 확인: COT, 군집 지표, EM 두 단계 (`experiments/2026-11-24_cluster_cot/`)
+사용자가 Entropy Enigma를 읽고 낸 질문(WF 대신 COT, Silhouette / Shift distance를 우리도 재야 하나, AID처럼 비슷한 클래스가 많은 데서도 성립하나)에 대한 측정.
+스크립트: `scripts/analysis/cluster_cot.py`, `cluster_subspace.py`, `em_phases.py`, `plot_feature_dist.py`. 17개 백본, head 입력 z, 학습 없음(EM 추적 제외).
+- **COT baseline** (공식 코드 확인: exact OT, 비용 1 − p[label], source 라벨 비율): 2,040개 stream 평균 절대 오차 AC 7.6, DoC 7.0, ATC 5.2,
+  COT 3.0, COT + temperature 2.3, flip 추정 2.4pt. 10pt 넘는 오차는 COT 0.7%, COT_ts 0.4%, flip 추정 4.6%, ATC 12.8%. 최대 13.1 / 13.5 / 26.1 / 84.4.
+  중앙값은 flip 추정이 낮다(1.2 대 2.0~2.6). → "정확도 추정기로서 flip이 가장 좋다"는 주장은 할 수 없다. COT가 평균은 같고 꼬리는 짧다.
+  COT에 유리한 조건: 손상 stream의 클래스 비율이 source와 정확히 같고 stream 전체(2,000 / 6,300장)를 쓴다. 배치 단위·치우친 stream은 미검증.
+- **Silhouette(k-means, 논문 정의)은 정확도를 따르지 않는다**: 60개 stream에서의 Spearman 평균 AID +0.21 (−0.83 ~ +0.87), RESISC45 +0.28 (−0.87 ~ +0.84).
+  군집이 원래 뚜렷한 백본(SatDINO, DINOv3 web)에서만 +0.6 이상. satmae, moco_in은 손상될수록 Silhouette이 오른다(feature가 몇 덩어리로 몰림).
+  예측 기준 Silhouette +0.83 / +0.87, Shift distance −0.90 / −0.93, flip −0.96 / −0.97, confidence +0.96 / +0.91.
+- **클래스는 갈라지지만 덩어리는 아니다** (clean test, 17개 평균 AID / RESISC45): 선형 head 94.8 / 90.6, 5-NN 88.5 / 83.3, k-means 59.1 / 51.3,
+  k-means(PCA C−1차원) 58.6 / 50.4, k-means(클래스 평균 부분공간) 72.0 / 62.8. 전체 분산 중 클래스 간 분산 0.27 / 0.27.
+  MAE 계열이 가장 낮고(k-means 30~56) SatDINO, DINOv3 web이 가장 높다(68~81). 그림: `docs/figs/2026-11-24_feature_dist/`.
+- **EM 두 단계** (AID-C, head 입력 affine만 Adam lr 1e-3으로 2,000 step, stream 반복): tent 81.8 → 최고 83.0(중앙값 약 230 step) → 70.5, 끝에서 예측되는
+  클래스 수 30 → 23.5 (satmae 16.5). DSBR 81.8 → 88.0, 예측 클래스 29.8, 실패 단계 없음. Shift distance 증가는 tent +5.8, DSBR +5.3으로 비슷하다
+  → 우리 설정에서 실패를 가르는 것은 source 클래스 평균까지의 거리가 아니라 예측 클래스 수. k-means Silhouette 변화는 둘 다 +0.001.
+  논문의 두 상관은 방향은 같고 작다(1단계 Δsil–Δacc +0.38 대 논문 +0.70, 2단계 Δshift–Δacc −0.59 대 −0.79).
+  주의: tent의 1단계 상승 +1.2pt는 checkpoint 9개 중 최고점을 고른 값이라 부풀려져 있다. 거리 증가에는 γ 확대가 섞여 있다. online 한 번 통과가 아니다.
+- **사전학습 augmentation 표** (`docs/WRAPUP_backbones_datasets_2026-11-17.md` §1): Gaussian blur augmentation이 있는 11개 백본은 Gaussian blur 손상 하락이
+  AID 0.4~3.9 / RESISC45 1.0~6.2pt, 없는 6개(MAE 3, supervised 3)는 4.5~25.1 / 6.5~33.2pt. motion blur로는 넘어가지 않는다. scale 손상은 crop 범위가 같은
+  쌍 안에서 fMoW 쪽이 5쌍 모두 높다(DINOv3만 반대). DINOv3 web / sat은 논문상 hyper-parameter가 같아 차이는 데이터에서 온다.
+- 읽기: (1) Entropy Enigma의 군집 설명("정확도가 높으면 잘 군집")은 end-to-end 분류기의 것이고 frozen 백본에서는 군집형 feature를 내는 계열에만 맞는다.
+  원인 설명은 군집보다 source 통계에서의 이동·예측 쏠림으로 쓰는 편이 안전하다. (2) 분할에는 현상(EM이 해롭다, 쏠림을 누르면 낫다, flip이 정확도를 따른다)만
+  주장하고 geometry 설명은 분류에 한정한다(사용자 지적: neural collapse류 구조는 분할에서 약하다). (3) 추정기 비교에는 COT를 baseline으로 넣어야 한다.

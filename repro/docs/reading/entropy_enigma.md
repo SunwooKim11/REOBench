@@ -91,3 +91,18 @@ arXiv 2405.05012. 코드: github.com/oripress/EntropyEnigma.
 - "frac_common이 이 논문 그림과 비슷한가": 같은 것은 아니다. Figure 1은 **EM을 오래 돌렸을 때** embedding이 학습 데이터 위치에서
   떠나는 모습이고, frac_common은 **손상이** feature를 한 방향으로 미는 정도다. 공통점은 "source embedding 위치에서의 거리가
   정확도를 좌우한다"는 관점이다.
+
+## 5. 우리 백본에서 확인한 것 (2026-11-24)
+수치: `experiments/2026-11-24_cluster_cot/RESULTS.md`, `RESULTS_subspace.md`, `RESULTS_em_phases.md`. 그림: `docs/figs/2026-11-24_feature_dist/`.
+
+- **부록에서 꼭 볼 것**: B(가중·차수 비교: 가중 없음 1차 6.14, 가중 2차 5.75, 가중 1차 6.47 → 가중의 효과는 작고 일관되지 않다),
+  F(ViT-B/16에서 COT 16.44, WF 6.61 / 재적합 4.15), I(CIFAR-10 실패), D.1(500 iteration이면 4.08 → 2.98).
+- **Table 1을 묶음별로 보면** (Claude 계산): Noises 4행 COT 2.6 / WF 4.7, Domain shifts 11행 6.2 / 4.2, Adversarial 6행 13.0 / 7.9, OOD 2행 15.3 / 10.4.
+  합성 손상에서는 네 행 모두 COT가 이긴다.
+- **COT를 우리 설정에 붙이면** (17개 백본, 2,040개 stream): 평균 절대 오차 COT 3.0, COT + temperature 2.3, 우리 flip 추정 2.4, ATC 5.2.
+  10pt 넘는 오차는 COT 0.7%, flip 추정 4.6%. → §3 "꼭 해야 하는 것" 3번 완료. flip 추정은 COT보다 낫다고 할 수 없다.
+- **"정확도가 높으면 잘 군집돼 있다"(§4.1의 전제)는 우리 백본에서 일반적으로 성립하지 않는다.** k-means Silhouette과 정확도의 순위상관 평균
+  AID +0.21, RESISC45 +0.28 (백본에 따라 −0.87 ~ +0.87). clean에서 선형 head 94.8%인데 k-means는 59.1%(AID).
+- **두 단계(§3)**: feature 단계 tent에서 정확도가 오른 뒤 떨어지는 것은 재현(81.8 → 83.0 → 70.5). 그러나 DSBR도 Shift distance가 tent만큼 늘면서
+  정확도는 오른다(88.0). 우리 설정에서 실패를 가르는 것은 예측 클래스 수(tent 23.5 / 30, DSBR 29.8 / 30).
+- 남은 것: §3 "꼭 해야 하는 것" 1번(WF를 같은 조건에서 직접 비교)은 아직 하지 않았다.

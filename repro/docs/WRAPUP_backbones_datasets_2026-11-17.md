@@ -57,6 +57,51 @@ DINOv3 web↔sat. 각 쌍은 구조와 방법이 같고 사전학습 데이터�
 | sup_in_vitb16 | 92.7 | 81.7 | 85.0 | 88.7 | 76.1 | 79.0 | 79.4 | 63.5 |
 | sup_in_vitl16 | 94.9 | 86.1 | 88.9 | 91.1 | 80.7 | 84.0 | 74.9 | 67.1 |
 
+### 백본별 사전학습 데이터와 augmentation (2026-11-24 추가)
+
+출처: 각 방법의 공식 코드·README·논문을 2026-11-24에 확인(하위 agent가 읽고 Claude가 정리). "미확인"은 공식 자료에서 찾지 못한 것.
+공통: 모두 좌우 flip(p 0.5)을 쓴다. 단 DINOv3는 학습 config에서 flip이 꺼져 있다. 노이즈·motion blur·JPEG augmentation을 쓰는 백본은 없다.
+
+| model | 데이터 (규모) | epoch | crop | 색 변형 | Gaussian blur | 그 밖 |
+|---|---|---:|---|---|---|---|
+| mae_in | ImageNet-1k (128만) | 800 | RandomResizedCrop 224, scale 0.2–1 | 없음 | 없음 | mask 75% |
+| satmae | fMoW-RGB (train 약 36만) | 800 | 위와 같음 | 없음 | 없음 | mask 75%, fMoW 정규화 상수 |
+| scalemae | fMoW-RGB | 800 | RandomCrop 448 뒤 정사각 RandomResizedCrop scale 0.2–1, encoder 입력 224 | 없음 | 없음 (코드에 정의는 있으나 호출 미확인) | GSD positional encoding, 복원 목표 448 |
+| moco_in | ImageNet-1k | 200 | RandomResizedCrop 224, scale 0.2–1 | jitter (0.4, 0.4, 0.4, 0.1) p 0.8, grayscale p 0.2 | σ 0.1–2, p 0.5 | 공식 파일은 404로 읽지 못함. GASSL 저장소가 복사한 MoCo-v2 블록 기준 |
+| moco_fmow | fMoW | 200 | 위와 같음 (추정) | 위와 같음 | 위와 같음 | 공개 스크립트에 이 baseline의 학습 명령이 없어 정확한 설정 미확인 |
+| gassl_fmow | fMoW | 200 | Resize 448, CenterCrop 448, RandomResizedCrop 224 (scale 기본값) | 위와 같음 | 위와 같음 | positive = 같은 장소의 다른 시점 이미지, 위치 100개 군집 분류 과제 추가 |
+| dino_in_s16 | ImageNet-1k | 800 | global 2 × 224 (0.25–1), local 10 × 96 (0.05–0.25) | jitter (0.4, 0.4, 0.2, 0.1) p 0.8, grayscale p 0.2, solarize p 0.2 (global 2) | global 1 p 1.0, global 2 p 0.1, local p 0.5 | |
+| dino_in_s8 | ImageNet-1k | 800 | global 0.4–1, local 0.05–0.4, 10개 | 위와 같음 | 위와 같음 | |
+| dino_in_b16 | ImageNet-1k | 400 | global 0.25–1, local 0.05–0.25, 10개 | 위와 같음 | 위와 같음 | |
+| satdino_s16 | fMoW-RGB (train 360,105) | 200 | global 0.25–1, local 0.05–0.25, 10개. local scale 구간을 균등 분할(uniform view sampling) | DINO와 같음 | DINO와 같음 | GSD 예측 head(MSE, 가중 0.1), 시점 augmentation 없음, fMoW 정규화 상수 |
+| satdino_s8 | fMoW-RGB | 100 | S/16과 같음 (README 명령은 S/16만 있음) | DINO와 같음 | DINO와 같음 | 위와 같음 |
+| satdino_b16 | fMoW-RGB | 미확인 | 위와 같음 | DINO와 같음 | DINO와 같음 | 위와 같음 |
+| dinov3_web_l16 | LVD-1689M: Instagram 공개 게시물 170억 장에서 고른 16.89억 장 + ImageNet-1k/22k, Mapillary | iteration 단위 | global 2 × 256 (0.32–1), local 8 × 112 (0.05–0.32) | DINO와 같음 | DINO와 같음 | ViT-7B를 distill. flip 꺼짐. distill에 쓴 데이터는 미확인 |
+| dinov3_sat_l16 | SAT-493M: Maxar RGB 정사영상 0.6 m, 512 × 512, 4.93억 장 | iteration 단위 | web과 같음 (논문: 정규화 상수와 학습 길이만 다름) | DINO와 같음 | DINO와 같음 | 위성 ViT-7B를 distill |
+| sup_in_r50 | ImageNet-1k (라벨 사용) | 90 | RandomResizedCrop 224 (scale 기본값) | 없음 | 없음 | |
+| sup_in_vitb16 | ImageNet-1k (라벨 사용) | 300 | 위와 같음 | RandAugment (밝기·대비·색·solarize 등 포함) | 없음 | mixup 0.2, cutmix 1.0, label smoothing 0.11 |
+| sup_in_vitl16 | ImageNet-1k (라벨 사용) | 600 | 위와 같음 | TrivialAugmentWide | 없음 | mixup 0.2, cutmix 1.0, random erase 0.1 |
+
+**blur augmentation 유무와 Gaussian blur 손상에서의 하락** (clean − Gaussian blur 5단계 평균 정확도, pt)
+
+| 묶음 | 백본 | AID 하락 | RESISC45 하락 |
+|---|---|---:|---:|
+| blur augmentation 있음 (11개) | MoCo 3, DINO 3, SatDINO 3, DINOv3 2 | 0.4–3.9 (평균 1.3) | 1.0–6.2 (평균 2.6) |
+| 없음 (6개) | MAE 3, supervised 3 | 4.5–25.1 (평균 14.1) | 6.5–33.2 (평균 16.3) |
+
+motion blur에서는 이 구분이 성립하지 않는다(AID 하락: MoCo 60–76, MAE 53–61, DINO 27–36, DINOv3 web 16, DINOv3 sat 60).
+
+**데이터만 다른 쌍의 scale 손상 정확도** (AID, augmentation의 crop 범위는 쌍 안에서 같음)
+
+| 쌍 | 일반 이미지 | fMoW / 위성 |
+|---|---:|---:|
+| mae_in / satmae | 25.7 | 78.9 |
+| moco_in / moco_fmow | 46.3 | 77.7 |
+| dino_in_s16 / satdino_s16 | 75.8 | 89.6 |
+| dino_in_s8 / satdino_s8 | 70.8 | 91.3 |
+| dino_in_b16 / satdino_b16 | 67.1 | 89.4 |
+| dinov3_web_l16 / dinov3_sat_l16 | 92.1 | 80.5 |
+
 ## 2. 데이터셋
 
 ### 2.1 원본 데이터 (torchgeo 표 형식, License 제외)

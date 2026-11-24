@@ -26,4 +26,5 @@ These still work: each one does `cd "$(dirname "$0")/../../.."`, i.e. to `repro/
 | `tta/run_fm_tta.sh`, `tta/run_fm_tta_eata.sh` | `experiments/2026-11-17_fm_tta/` |
 | `verify/run_wf_repro.sh` | `experiments/2026-11-19_weighted_flips_repro/` |
 | `tta/run_dsbr.sh`, `verify/run_dsbr_norm.sh`, `verify/run_dsbr_match.sh` | `experiments/2026-11-19_dsbr/` (+ `2026-11-17_fm_tta/` for the full-backbone DSBR runs) |
-
+| `seg/run_seg_nov.sh` | `experiments/2026-11-23_seg_signals/` |
+| `analysis/run_cluster_cot.sh`, `analysis/run_em_phases.sh` | `experiments/2026-11-24_cluster_cot/` |
