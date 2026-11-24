@@ -447,3 +447,12 @@ tmux `segnov` 종료(16:46, 실패 없음). 추가된 것: dsbr_bnbatch +2.84 / 
 - 차이는 작은 인공 구조물 클래스에 몰리고 GSD와의 관련을 추측, 배율 통제 실험을 future work로 남김 → 방법 후보 1(배율 탐색)의 외부 근거.
 - DINOv3-SAT: CLS가 약하고 patch 평균이 낫지만(UCM 선형 72.7 → 84.9) 가장 좋은 feature로도 web에 10.6pt 뒤짐.
 - 그쪽의 Silhouette–k-NN 상관(ρ 0.96–0.98)은 encoder 간·라벨 기준이라 우리의 stream 간·k-means 기준 결과(+0.21)와 모순이 아니다.
+
+### 2026-11-24 F5: 선행 연구 저자들의 백본 선택 방식 정리 (`docs/SETTINGS.md` §5)
+REOBench §3, Beyond Accuracy §III-C·§V, EarthShift §4.1을 PDF에서 직접 확인.
+- REOBench: RS 최신 모델 12개(MIM 4, CLIP 계열 2, MLLM 6), 공개 가중치 기준, 일반 영상 모델 없음.
+- Beyond Accuracy: GeoFM 8 + 일반 7 + RCF. 일반 모델은 의도적으로 포함. 한계로 "구조·크기·recipe가 함께 달라 도메인만 볼 수 없다,
+  구조와 용량을 고정하고 데이터만 바꾸는 통제 연구가 필요하다"를 적음 → 우리 쌍 설계가 그 통제 연구에 해당.
+  배제하지 못한 설명(augmentation 노출)은 우리 augmentation 표가 직접 본다.
+- EarthShift: GFM 8 + 일반 3 + 무작위 초기화 2. 모델 구성에 대한 한계 언급 없음.
+- 중간 발표 정리본의 F5를 완료로 바꾸고 선택 방식 표를 넣음. 피드백 파일의 F4, F5 체크.

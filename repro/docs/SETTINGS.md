@@ -385,6 +385,26 @@ UC Merced(0.3 m)는 약 77 m 범위를, RESISC45의 30 m 이미지는 약 7.7 km
 - REOBench의 clouds, haze, data gaps, rotate, scale, translate는 ImageNet-C에 같은 함수가 없어 이 비교에서 빠졌습니다
   (haze↔fog는 함수가 달라 짝으로 두지 않음).
 
+### 선행 연구 저자들은 백본을 어떻게 골랐나 (F5, 2026-11-24)
+
+출처: 각 논문 PDF의 모델 선택 절을 Claude가 직접 읽음(REOBench §3, Beyond Accuracy §III-C와 §V 논의, EarthShift §4.1과 표 4, matched-pair 연구 §1·§3).
+
+| 논문 | 고른 모델 | 저자가 밝힌 기준 | 일반 영상 모델 | 스스로 적은 한계 |
+|---|---|---|---|---|
+| REOBench | MIM 4 (SatMAE, RVSA, ScaleMAE, SatMAE++), CLIP 계열 2 (RemoteCLIP, GeoRSCLIP, 각각 ViT-B/32와 ViT-L/14), MLLM 6 (GeoChat, LHRS-Bot, RS-LLaVA, VHM, SkySenseGPT, Falcon) | "RS의 현재 state-of-the-art"를 세 유형으로 분류. 코드와 가중치가 공개된 것. 두 크기는 크기에 따른 강건성을 보려고 | 없음 | 고해상도 광학만 다룸. 모델 구성에 대한 한계 언급은 없음 |
+| Beyond Accuracy | frozen 16개: GeoFM 8 (Clay V1.5, Prithvi V2, DOFA, OLMo-Earth base·tiny, TerraMind, Panopticon, DINOv3-Sat ViT-L), 일반 7 (ConvNeXt-L DINOv3, ResNet-18·50, Swin-T, ViT-B·L, MobileNetV3), 무학습 RCF 1 | 사전학습 도메인으로 묶음. 일반 encoder는 "EO 모델이 더 잘 calibrate되는지 보려고 의도적으로" 포함 | 있음 (구조가 다름) | 두 묶음이 구조, 파라미터 수, recipe도 달라 도메인만 따로 변하지 않는다. "구조와 용량을 고정하고 사전학습 데이터만 바꾸는 통제 연구가 필요하다". augmentation 노출 차이를 배제하지 못함. self-distillation encoder가 2개뿐 |
+| EarthShift | GFM 8 (DOFA, CROMA, Clay, Prithvi V2.0, TerraFM, DINOv3 위성, Galileo, TerraMind), 일반 3 (ImageNet 지도학습 ResNet50·ViT-B/16, CLIP), 무작위 초기화 2 (ResNet50, ViT-B/16) | "전 지구 RS archive로 사전학습한 open-source 모델". 일반 모델은 GFM과 강건성을 비교하려고, 무작위 초기화는 transfer의 이득을 보려고 | 있음 (구조가 다름) | 한계 절은 데이터와 shift 범위만 다룸. 모델 구성에 대한 언급은 없음 |
+| matched-pair 연구 (arXiv 2611.13849) | 14개, 그중 쌍 5개 | objective와 구조가 같은 쌍. 기존 비교는 여러 요인이 한꺼번에 달라 원인을 말할 수 없기 때문 | 있음 (쌍) | 데이터 규모와 recipe 세부는 통제하지 못함 |
+
+- 세 가지 방식으로 나뉜다. (1) RS 최신 모델 목록(REOBench): 일반 모델이 없어 "RS 모델이라서 약한가"를 말할 기준이 없다.
+  (2) 일반 모델을 함께 넣기(Beyond Accuracy, EarthShift): 비교는 되지만 구조가 달라 원인을 가르지 못한다. Beyond Accuracy가 이를 스스로 적고 통제 연구를 요청했다.
+  (3) 쌍(matched-pair 연구, 우리): 구조와 방법을 고정하고 데이터만 바꾼다.
+- Beyond Accuracy가 배제하지 못한 설명("일반 영상 pipeline은 Gaussian blur와 색 변형 augmentation이 많고 EO masked 모델은 crop·flip·masking뿐")은
+  §1의 augmentation 표가 직접 본다: blur augmentation이 있는 11개 백본은 Gaussian blur 손상 하락이 평균 1.3 / 2.6pt, 없는 6개는 14.1 / 16.3pt.
+- Beyond Accuracy와 EarthShift의 GFM은 대부분 Sentinel 다중분광 모델이다(EarthShift는 1 × 1 conv 채널 어댑터로 입력을 맞춤). 우리는 RGB 모델만 쓴다.
+  겹치는 모델: SatMAE·ScaleMAE(REOBench), DINOv3-Sat(Beyond Accuracy, EarthShift, matched-pair), SatDINO·MAE·DINO·DINOv3(matched-pair).
+- EarthShift는 본문에서 DINOv3를 SAT-493M 사전학습이라고 쓰고 표 4에는 "LVD-142M + Aerial"이라고 적어 표기가 엇갈린다.
+
 ### contrastive ViT 쌍은 왜 없나
 - fMoW-RGB로 처음부터 contrastive 학습한 ViT의 공개 체크포인트가 없습니다. SatMAE 논문의 MoCo-v3 baseline은 ViT-B, fMoW-Sentinel
   (10 band, 96 px)이고 공개되지 않았습니다. RemoteCLIP 등 CLIP 계열은 모두 OpenAI CLIP이나 LAION 가중치에서 이어 학습했습니다.
