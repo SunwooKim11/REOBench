@@ -103,12 +103,12 @@ PPT skill에는 **3절(슬라이드 구성)과 4절(표)** 을 그대로 주면 
 | S4 | 데이터와 벤치마크 (F3) | T11 | 합성 손상 3개, 자연 shift 1개 |
 | S5 | 기존 TTA는 평균적으로 손해 | **fig1**, T1 | 엔트로피 기반은 손해, 정렬이 가장 큼 |
 | S6 | 왜 실패하나: 과신과 예측 쏠림 | **fig4**, T2, T9 | 과신은 3종 손상에 몰려 있고 예측 클래스가 합쳐진다 |
-| S7 | 통계 정렬이 하는 일 | **fig10**, 식 한 줄, head 통제 결과 | head 입력을 test 배치 통계로 다시 표준화 |
+| S7 | 통계 정렬이 하는 일 | **fig10**, **fig12**, 식 한 줄, head 통제 결과 | head 입력을 test 배치 통계로 다시 표준화 |
 | S8 | flip 신호와 정확도 추정 | **fig3**, **fig2**, T3 | flip은 정확도를 따르고, 추정 오차는 COT와 같은 수준 |
 | S9 | 자연 shift | T4 | 신호는 유지, 정렬은 약함 |
 | S10 | 분할 (Potsdam) | **fig9**, T5 | 분류와 같은 현상 |
 | S11 | RS 손상의 고유성 (F2) | **fig8**, **fig7**, T6, T7, LSCD-TTA 주장 대조표(2절 F2 상세) | 고유성은 손상 종류에 있다. RS 성질과 TTA 실패의 연결은 손상에서 시험된 적이 없다 |
-| S12 | feature의 모양 (선택) | feature 그림 `fig1_clean_geometry.png`, T8 | 갈라지지만 덩어리는 아니다 |
+| S12 | feature의 모양 (선택) | **fig11**, T8 | 갈라지지만 덩어리는 아니다 |
 | S13 | 남은 여지 | **fig5**, T12 | head 쪽에 5–6pt, 자연 shift는 거의 전부 head |
 | S14 | 방법 후보와 계획 | 6절 | 촬영 조건 되돌리기 + 라벨 없는 head 적응 |
 | S15 | 한계 | 7절 | seed 1개, 자연 shift 쌍 1개 |
@@ -131,6 +131,8 @@ PPT skill에는 **3절(슬라이드 구성)과 4절(표)** 을 그대로 주면 
 | `fig8_corruptions.png` | AID 이미지 한 장에 12종 손상(3단계), 단계별 표기 | 굵은 이름이 RS 고유 유형 |
 | `fig9_seg.png` | Potsdam 손상별 mIoU. none / BN 정렬 / 입력 정렬 / 둘 다 | 밝기·haze는 입력 정렬, 노이즈·JPEG는 BN 정렬이 듣고, blur와 구름은 아무것도 안 듣는다 |
 | `fig10_alignment.png` | 정렬이 하는 일: 흐름도(학습 때의 표준화 대 test 배치 통계로 표준화), feature 채널 하나의 분포, 클래스별 예측 비율. mae_in, AID, scale 3단계 | 손상이 feature를 한쪽으로 통째로 밀고(주황) 정렬이 제자리로 되돌린다(파랑). 예측이 한 클래스에 58% 쏠리던 것이 다시 퍼진다. 정확도 23.0 → 64.5 (clean 94.3) |
+| `fig11_feature_geometry.png` | clean feature의 모양, 백본 2개(satmae, satdino_s8). 왼쪽 막대는 선형 head / 5-NN / k-means 정확도, 오른쪽은 같은 feature의 2차원 보기 세 가지 | 선형 head는 둘 다 90%대인데 k-means는 44% 대 81%. satmae는 한 클래스가 여러 섬으로 쪼개지고, satdino_s8은 섬이 뚜렷하지만 비슷한 세 클래스가 붙어 있다 |
+| `fig12_shift_alignment.png` | clean / 손상(motion blur 3단계) / 정렬 후를 같은 축에. 백본 2개(mae_in, dinov3_web_l16). 삼각형 = stream 평균 | 손상이 전체를 한 방향으로 민다. 정렬은 평균을 되돌리지만 퍼진 모양은 남는다(mae_in 36.8 → 70.8, clean 94.3). dinov3_web은 밀려도 클래스 배치가 유지된다(83.0) |
 
 fig6에는 MAE → Scale-MAE 쌍을 넣어 7개다. DINOv3의 AID-C 값은 반올림 전 계산이라 −14.4로 찍힌다(표 T10은 −14.3).
 
@@ -310,7 +312,7 @@ source 클래스 평균에서 멀어지는 정도는 둘이 비슷하다(+5.8 �
 | 1 | 이 문서 전체 | – | 20분 |
 | 2 | 정렬이 하는 일 (식과 두 단계) | `docs/STUDY_alignment.md` §2.4 | 15분 |
 | 3 | 백본 표, augmentation 표, 손상 배치 표 | `docs/SETTINGS.md` §1, §2.5 | 15분 |
-| 4 | feature 그림 두 장 | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`, `fig2_shift_align_motion_blur_s3.png` | 10분 |
+| 4 | feature 그림 두 장 | `docs/figs/midterm_2026-11-26/fig11_feature_geometry.png`, `fig12_shift_alignment.png` | 10분 |
 | 5 | Geometry 세 가지 (T8, Silhouette 상관, T9) | 이 문서 4절 | 15분 |
 | 6 | 10월 결과가 필요하면 | `docs/WRAPUP_progress_2026-11-23.md` §1 | 10분 |
 | 7 | F2 선행 연구 조사 | `docs/PRIOR_ART_rs_tta_corruption.md` §1, §3 | 10분 |
@@ -366,5 +368,5 @@ Geometry에서 이해해야 할 것은 세 문장이다.
 
 ## 8. 로컬로 가져갈 것
 - 이 파일과 그림은 모두 저장소에 commit돼 있다. `repro` 브랜치를 push한 뒤 로컬에서 받으면 된다.
-- 그림: `docs/figs/midterm_2026-11-26/` 10장(발표용), `docs/figs/2026-11-24_feature_dist/` 2장, `docs/figs/meeting_2026-10/` 7장.
+- 그림: `docs/figs/midterm_2026-11-26/` 12장(발표용), `docs/figs/2026-11-24_feature_dist/` 2장, `docs/figs/meeting_2026-10/` 7장.
 - PPT skill에 줄 입력: 3절(슬라이드 구성) + 4절의 표 중 해당 번호 + 7절의 한계. 슬라이드마다 "한 줄 메시지"를 제목 아래 문장으로 쓰면 된다.

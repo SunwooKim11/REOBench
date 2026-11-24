@@ -10,6 +10,8 @@
   fig8_corruptions.png    : one AID image under the 12 REOBench corruptions, grouped by acquisition stage (T6)
   fig9_seg.png            : Potsdam mIoU per corruption for none / BN / input / input + BN alignment (T5)
   fig10_alignment.png     : what head-input alignment does: pipeline, one feature channel, prediction share per class
+  fig11_feature_geometry.png : clean features of two backbones: accuracy by read-out and three 2-D views
+  fig12_shift_alignment.png  : clean / corrupted / aligned features along the common shift, two backbones
 Labels are in English (no Korean font on the server). Colours: dataviz reference palette, light surface.
 
   /opt/conda/envs/segtta/bin/python scripts/analysis/plot_midterm_figs.py [--only fig1 fig5 ...]     # from repro/
@@ -34,10 +36,11 @@ OUT = paths.REPO / "docs" / "figs" / "midterm_2026-11-26"
 E = paths.EXP
 BLUE, ORANGE, AQUA, YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
 INK, INK2, GRID, SURF, GREY = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb", "#a9a8a2"
-plt.rcParams.update({"font.size": 11, "axes.edgecolor": INK2, "axes.labelcolor": INK, "xtick.color": INK2, "ytick.color": INK2,
+RC = {"font.size": 11, "axes.edgecolor": INK2, "axes.labelcolor": INK, "xtick.color": INK2, "ytick.color": INK2,
                      "text.color": INK, "axes.spines.top": False, "axes.spines.right": False, "figure.facecolor": SURF,
                      "axes.facecolor": SURF, "savefig.facecolor": SURF, "axes.titleweight": "bold", "axes.titlesize": 12,
-                     "legend.frameon": False, "axes.grid": False})
+      "legend.frameon": False, "axes.grid": False}
+plt.rcParams.update(RC)
 ORDER = ["mae_in", "satmae", "scalemae", "moco_in", "moco_fmow", "gassl_fmow", "dino_in_s16", "satdino_s16", "dino_in_s8",
          "satdino_s8", "dino_in_b16", "satdino_b16", "dinov3_web_l16", "dinov3_sat_l16", "sup_in_r50", "sup_in_vitb16",
          "sup_in_vitl16"]
@@ -364,13 +367,133 @@ def fig10(model="mae_in", ds="aid"):
     print(f"fig10: {model} {ds} {cname}_s3 clean {ac:.1f} corrupted {a0:.1f} aligned {a1:.1f} channel {j}")
 
 
+HL3 = {8: ("DenseResidential", BLUE), 14: ("MediumResidential", ORANGE), 25: ("SparseResidential", AQUA)}
+
+
+def _feat(model, ds="aid"):
+    import torch
+    from cluster_cot import FEATS
+    dev = torch.device("cuda")
+    h = torch.load(f"{FEATS}/{model}/head_{ds}.pt"); tr = torch.load(f"{FEATS}/{model}/{ds}_train.pt")
+    te = torch.load(f"{FEATS}/{model}/{ds}_test.pt"); cd = torch.load(f"{FEATS}/{model}/{ds}_c.pt")
+    z = lambda a: ((a.float() - h["mu"]) / h["sd"]).to(dev).double()
+    return h, z, tr, te, cd, dev
+
+
+def _scatter3(ax, p, y, s=16):
+    p = p.cpu().numpy(); y = y.cpu().numpy()
+    oth = ~np.isin(y, list(HL3))
+    ax.scatter(p[oth, 0], p[oth, 1], s=s * 0.45, c="#c4c3bd", alpha=0.5, linewidths=0, rasterized=True)
+    for k, (_, col) in HL3.items():
+        ax.scatter(p[y == k, 0], p[y == k, 1], s=s * 1.5, c=col, edgecolors=SURF, linewidths=0.5, rasterized=True)
+
+
+def _legend3(fig, y=0.98):
+    hs = [plt.Line2D([], [], marker="o", ls="", ms=9, mfc=c, mec=SURF, label=n) for n, c in HL3.values()]
+    hs.append(plt.Line2D([], [], marker="o", ls="", ms=6, mfc="#c4c3bd", mec="#c4c3bd", label="other 27 classes"))
+    fig.legend(handles=hs, loc="upper center", ncol=4, bbox_to_anchor=(0.5, y), fontsize=13)
+
+
+def fig11(models=("satmae", "satdino_s8")):
+    """Clean features: linearly separable, locally consistent, not one blob per class (two backbones, three 2-D views)."""
+    import torch
+    import torch.nn.functional as F
+    from scipy.optimize import linear_sum_assignment as lsa
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from cluster_cot import kmeans
+    from plot_feature_dist import tsne
+    plt.rcParams.update(RC); plt.rcParams.update({"font.size": 13})
+    fig, axes = plt.subplots(len(models), 4, figsize=(16, 4.3 * len(models)), gridspec_kw={"width_ratios": [0.72, 1, 1, 1]})
+    for r, m in enumerate(models):
+        h, z, tr, te, cd, dev = _feat(m)
+        ztr, ytr, x, y = z(tr["feats"]), tr["y"].to(dev), z(te["feats"]), te["y"].to(dev)
+        w, b = h["w"].to(dev).double(), h["b"].to(dev).double(); nc = w.shape[1]
+        lin = 100 * ((x @ w + b).argmax(1) == y).float().mean().item()
+        knn = 100 * (F.one_hot(ytr[torch.cdist(x, ztr).topk(5, largest=False).indices], nc).sum(1).argmax(1) == y).float().mean().item()
+        lab, _, _ = min((kmeans(x, nc, s_) for s_ in range(3)), key=lambda t: t[2])
+        cont = (F.one_hot(lab, nc).double().T @ F.one_hot(y, nc).double()).cpu().numpy()
+        i, j = lsa(-cont); km = 100 * cont[i, j].sum() / len(y)
+        ax = axes[r, 0]
+        vals = [("linear head", lin), ("5 nearest\nneighbours", knn), ("k-means\nclusters", km)]
+        ax.barh([2, 1, 0], [v for _, v in vals], height=0.55, color=[INK2, INK2, ORANGE])
+        for yy, (n, v) in zip([2, 1, 0], vals):
+            ax.text(v + 2, yy, f"{v:.0f}%", va="center", fontsize=13, fontweight="bold")
+        ax.set_yticks([2, 1, 0]); ax.set_yticklabels([n for n, _ in vals]); ax.tick_params(axis="y", length=0)
+        ax.set_xlim(0, 118); ax.set_xticks([0, 50, 100]); ax.set_title(m, loc="left", fontsize=15)
+        if r == len(models) - 1:
+            ax.set_xlabel("accuracy on clean AID test (%)")
+        xc = x - x.mean(0)
+        V = torch.linalg.svd(xc, full_matrices=False)[2]
+        cm = torch.stack([ztr[ytr == k].mean(0) for k in HL3])
+        Q = torch.linalg.qr((cm[1:] - cm[0]).T)[0]
+        views = [("directions of largest variance (PCA)", xc @ V[:2].T), ("plane through the 3 class means", (x - cm.mean(0)) @ Q),
+                 ("t-SNE: who is near whom", tsne(xc @ V[:50].T))]
+        for c, (title, pts) in enumerate(views):
+            a = axes[r, c + 1]
+            _scatter3(a, pts, y)
+            a.set_xticks([]); a.set_yticks([])
+            for sp in a.spines.values():
+                sp.set_visible(True); sp.set_color("#b9b8b2")
+            if r == 0:
+                a.set_title(title, fontsize=13, color=INK2, fontweight="normal")
+        print(f"fig11 {m}: lin {lin:.1f} knn {knn:.1f} km {km:.1f}", flush=True)
+    _legend3(fig, 1.0)
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    save(fig, "fig11_feature_geometry.png")
+
+
+def fig12(models=("mae_in", "dinov3_web_l16"), corr="motion_blur", sev=3):
+    """A corruption moves the whole stream in one direction; alignment moves the mean back (two backbones)."""
+    import torch
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from cluster_cot import align
+    plt.rcParams.update(RC); plt.rcParams.update({"font.size": 13})
+    fig, axes = plt.subplots(len(models), 3, figsize=(15, 4.4 * len(models)))
+    for r, m in enumerate(models):
+        h, z, tr, te, cd, dev = _feat(m)
+        x, y = z(te["feats"]), te["y"].to(dev)
+        w, b = h["w"].to(dev).double(), h["b"].to(dev).double()
+        acc = lambda a, yy: 100 * ((a @ w + b).argmax(1) == yy).float().mean().item()
+        sel = (cd["corr"] == common.NOISES.index(corr)) & (cd["sev"] == sev)
+        xk, yk = z(cd["feats"][sel]), cd["y"][sel].to(dev)
+        xa = align(xk)
+        d = xk.mean(0) - x.mean(0); u1 = d / d.norm()
+        xc = x - x.mean(0)
+        u2 = torch.linalg.svd(xc - (xc @ u1)[:, None] * u1, full_matrices=False)[2][0]
+        B = torch.stack([u1, u2]).T
+        pts = [("clean", xc @ B, y, acc(x, y)), (f"{SHORT[corr]}, severity {sev}", (xk - x.mean(0)) @ B, yk, acc(xk, yk)),
+               ("same stream, aligned", (xa - x.mean(0)) @ B, yk, acc(xa, yk))]
+        allp = torch.cat([p for _, p, _, _ in pts])
+        lim = [(allp[:, k].quantile(0.003).item(), allp[:, k].quantile(0.997).item()) for k in (0, 1)]
+        for c, (title, p, yy, a) in enumerate(pts):
+            ax = axes[r, c]
+            _scatter3(ax, p, yy)
+            ax.axvline(0, color=INK2, lw=1, ls=(0, (3, 3)), zorder=0)
+            mx = p[:, 0].mean().item()
+            ax.plot([mx], [lim[1][0]], marker="^", ms=13, color=INK, clip_on=False, zorder=5)
+            if c == 1:
+                ax.annotate("", xy=(mx, lim[1][1] * 0.93), xytext=(0, lim[1][1] * 0.93), arrowprops=dict(arrowstyle="-|>", color=INK, lw=1.6))
+                ax.text(mx / 2, lim[1][1] * 0.97, "shift", ha="center", va="bottom", fontsize=12)
+            ax.set_xlim(*lim[0]); ax.set_ylim(lim[1][0], lim[1][1] * 1.12)
+            ax.set_title(f"{title}\naccuracy {a:.1f}%", loc="left", fontsize=13)
+            ax.set_yticks([])
+            if c == 0:
+                ax.set_ylabel(m, fontsize=15, fontweight="bold")
+            if r == len(models) - 1:
+                ax.set_xlabel("direction of the common shift (source std units)")
+        print(f"fig12 {m}: clean {pts[0][3]:.1f} {corr}_s{sev} {pts[1][3]:.1f} aligned {pts[2][3]:.1f} shift {d.norm().item():.1f}", flush=True)
+    _legend3(fig, 1.0)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    save(fig, "fig12_shift_alignment.png")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", default=None)
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     for name, f in (("fig1", fig1), ("fig2", fig2), ("fig3", fig3), ("fig4", fig4), ("fig5", fig5), ("fig6", fig6), ("fig7", fig7),
-                    ("fig8", fig8), ("fig9", fig9), ("fig10", fig10)):
+                    ("fig8", fig8), ("fig9", fig9), ("fig10", fig10), ("fig11", fig11), ("fig12", fig12)):
         if args.only is None or name in args.only:
             try:
                 f()
