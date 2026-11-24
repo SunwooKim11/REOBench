@@ -1,0 +1,300 @@
+"""Figures for the 2026-11-26 mid-term presentation (static PNGs for slides), from results already on disk.
+
+  fig1_methods.png        : corrupted accuracy by method, 17 backbones as dots, mean as bar (T1)
+  fig2_estimation.png     : label-free accuracy estimates vs true accuracy on the 2,040 corrupted streams (T3)
+  fig3_signals.png        : confidence vs accuracy and flip vs accuracy, three backbones on RESISC45-C
+  fig4_em_phases.png      : entropy minimisation over 2,000 steps, tent vs DSBR: accuracy and predicted classes (T9)
+  fig5_headroom.png       : per corruption: as is -> aligned -> head re-fitted with labels -> clean (T12)
+  fig6_pairs.png          : satellite minus generic pretraining for the six matched pairs (T10)
+  fig7_blur_aug.png       : drop under Gaussian blur, backbones with / without blur augmentation (T7)
+  fig8_corruptions.png    : one AID image under the 12 REOBench corruptions, grouped by acquisition stage (T6)
+  fig9_seg.png            : Potsdam mIoU per corruption for none / BN / input / input + BN alignment (T5)
+Labels are in English (no Korean font on the server). Colours: dataviz reference palette, light surface.
+
+  /opt/conda/envs/segtta/bin/python scripts/analysis/plot_midterm_figs.py [--only fig1 fig5 ...]     # from repro/
+Output: docs/figs/midterm_2026-11-26/
+"""
+import argparse
+import glob
+import json
+import os
+import sys
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+from PIL import Image  # noqa: E402
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))  # repro/src
+from reobench_tta import common, paths  # noqa: E402
+
+OUT = paths.REPO / "docs" / "figs" / "midterm_2026-11-26"
+E = paths.EXP
+BLUE, ORANGE, AQUA, YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+INK, INK2, GRID, SURF, GREY = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb", "#a9a8a2"
+plt.rcParams.update({"font.size": 11, "axes.edgecolor": INK2, "axes.labelcolor": INK, "xtick.color": INK2, "ytick.color": INK2,
+                     "text.color": INK, "axes.spines.top": False, "axes.spines.right": False, "figure.facecolor": SURF,
+                     "axes.facecolor": SURF, "savefig.facecolor": SURF, "axes.titleweight": "bold", "axes.titlesize": 12,
+                     "legend.frameon": False, "axes.grid": False})
+ORDER = ["mae_in", "satmae", "scalemae", "moco_in", "moco_fmow", "gassl_fmow", "dino_in_s16", "satdino_s16", "dino_in_s8",
+         "satdino_s8", "dino_in_b16", "satdino_b16", "dinov3_web_l16", "dinov3_sat_l16", "sup_in_r50", "sup_in_vitb16",
+         "sup_in_vitl16"]
+DS = (("aid", "AID-C"), ("r45", "RESISC45-C"))
+SHORT = {"rotate_new": "rotate", "scale_image": "scale", "translate_image_new": "translate", "clouds": "clouds", "data_gaps": "data gaps",
+         "brightness_contrast": "brightness / contrast", "haze_update_new": "haze", "gaussian_noise_new": "Gaussian noise",
+         "salt_and_pepper_noise": "salt & pepper", "gaussian_blur": "Gaussian blur", "motion_blur": "motion blur",
+         "compression_artifacts": "JPEG"}
+sig = lambda m, ds: json.load(open(E / "2026-11-16_backbone_feats" / "signals" / f"{m}_{ds}.json"))["streams"]
+
+
+def rank(a):
+    a = np.asarray(a, float); o = a.argsort(); r = np.empty(len(a)); r[o] = np.arange(len(a))
+    return r
+
+
+def spear(a, b):
+    return float(np.corrcoef(rank(a), rank(b))[0, 1])
+
+
+def save(fig, name):
+    fig.savefig(OUT / name, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    print("saved", OUT / name)
+
+
+def fig1():
+    M = [("none", "no adaptation", GREY), ("tent", "Tent", ORANGE), ("sar", "SAR", ORANGE), ("eata", "EATA", ORANGE),
+         ("dsbr", "DSBR", BLUE), ("flipf", "flip filter", BLUE), ("none_al", "alignment only (no learning)", AQUA),
+         ("tent_al", "alignment + Tent", AQUA), ("dsbr_al", "alignment + DSBR", AQUA)]
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True)
+    for ax, (ds, title) in zip(axes, DS):
+        V = np.array([[json.load(open(E / "2026-11-17_fm_tta" / ds / m / f"{k}.json"))["avg"] for m in ORDER] for k, _, _ in M])
+        y = np.arange(len(M))[::-1]
+        ax.barh(y, V.mean(1), height=0.5, color=[c for _, _, c in M], alpha=0.35, zorder=1)
+        for i, (_, _, c) in enumerate(M):
+            ax.scatter(V[i], np.full(len(ORDER), y[i]), s=14, color=c, edgecolors=SURF, linewidths=0.4, zorder=3)
+            ax.text(101, y[i], f"{V[i].mean():.1f}", va="center", ha="left", color=INK, fontsize=10)
+        ax.axvline(V[0].mean(), color=INK2, lw=0.8, ls=(0, (3, 3)), zorder=2)
+        ax.set_xlim(10, 100); ax.set_yticks(y); ax.set_yticklabels([n for _, n, _ in M])
+        ax.set_xlabel("accuracy on corrupted streams (%), dots = 17 backbones"); ax.set_title(title, loc="left")
+        ax.tick_params(axis="y", length=0)
+    hs = [plt.Rectangle((0, 0), 1, 1, color=c, alpha=0.6, label=n) for n, c in (("entropy-based", ORANGE), ("no confidence used", BLUE),
+                                                                              ("statistics alignment", AQUA))]
+    fig.legend(handles=hs, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.04))
+    save(fig, "fig1_methods.png")
+
+
+def estimates():
+    """per stream: true acc, atc, cot_ts, flip estimate (leave-one-backbone-out slope, as cluster_cot.summary)."""
+    rows = []
+    for ds, _ in DS:
+        for m in ORDER:
+            G = sig(m, ds); C = json.load(open(E / "2026-11-24_cluster_cot" / f"{m}_{ds}.json"))["streams"]
+            for k in G:
+                if k != "clean":
+                    rows.append((m, ds, k, G[k]["acc"], G[k]["acc_al"], max(G[k]["flip"] - G["clean"]["flip"], 0), G[k]["atc_al"],
+                                 G[k]["atc"], C[k]["cot_ts"], G[k]["ac"], G[k]["flip"]))
+    ms = np.array([r[0] for r in rows]); A = np.array([r[3:] for r in rows], float)
+    acc, al, fl, atc_al = A[:, 0], A[:, 1], A[:, 2], A[:, 3]
+    est = np.empty(len(rows))
+    for m in ORDER:
+        te = ms == m
+        est[te] = atc_al[te] - np.linalg.lstsq(fl[~te, None], (al - acc)[~te], rcond=None)[0][0] * fl[te]
+    return rows, acc, A[:, 4], A[:, 5], est
+
+
+def fig2():
+    rows, acc, atc, cot, est = estimates()
+    fig, axes = plt.subplots(1, 3, figsize=(12.5, 4.4), sharey=True)
+    for ax, (name, e) in zip(axes, (("ATC (confidence threshold)", atc), ("COT + temperature", cot), ("flip estimate (ours)", est))):
+        bad = np.abs(e - acc) > 10
+        ax.plot([0, 100], [0, 100], color=INK2, lw=0.8, zorder=1)
+        ax.scatter(acc[~bad], e[~bad], s=7, color=BLUE, alpha=0.45, linewidths=0, zorder=2, rasterized=True)
+        ax.scatter(acc[bad], e[bad], s=9, color=ORANGE, alpha=0.8, linewidths=0, zorder=3, rasterized=True)
+        ax.set_xlim(0, 100); ax.set_ylim(0, 100); ax.set_aspect("equal")
+        ax.set_title(name, loc="left", pad=36); ax.set_xlabel("true accuracy (%)")
+        ax.text(0, 1.02, f"mean abs. error {np.abs(e - acc).mean():.1f} pt\nabove 10 pt: {100 * bad.mean():.1f}% of streams, max {np.abs(e - acc).max():.0f} pt",
+                transform=ax.transAxes, ha="left", va="bottom", fontsize=9.5, color=INK2)
+    axes[0].set_ylabel("estimated accuracy (%)")
+    hs = [plt.Line2D([], [], marker="o", ls="", ms=6, mfc=BLUE, mec=BLUE, label="error within 10 pt"),
+          plt.Line2D([], [], marker="o", ls="", ms=6, mfc=ORANGE, mec=ORANGE, label="error above 10 pt")]
+    fig.legend(handles=hs, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.12))
+    save(fig, "fig2_estimation.png")
+
+
+def fig3():
+    models = ["moco_in", "sup_in_r50", "satdino_s16"]
+    fig, axes = plt.subplots(2, 3, figsize=(12, 6.6), sharey=True)
+    for c, m in enumerate(models):
+        G = sig(m, "r45"); K = [k for k in G if k != "clean"]
+        acc = np.array([G[k]["acc"] for k in K])
+        for r, (key, lab, col) in enumerate((("ac", "mean confidence (%)", ORANGE), ("flip", "flip rate after alignment (%)", BLUE))):
+            x = np.array([G[k][key] for k in K]); ax = axes[r, c]
+            ax.scatter(x, acc, s=22, color=col, edgecolors=SURF, linewidths=0.4)
+            ax.set_xlabel(lab); ax.set_ylim(0, 100)
+            if r == 0:
+                ax.plot([0, 100], [0, 100], color=INK2, lw=0.8, zorder=0); ax.set_xlim(0, 100); ax.set_title(m, loc="left")
+            ax.text(0.04 if r == 0 else 0.96, 0.92 if r == 0 else 0.92, f"Spearman {spear(x, acc):+.2f}", transform=ax.transAxes,
+                    ha="left" if r == 0 else "right", va="top", fontsize=10)
+        axes[0, 0].set_ylabel("accuracy (%)"); axes[1, 0].set_ylabel("accuracy (%)")
+    fig.suptitle("RESISC45-C, one dot = one corrupted stream (12 corruptions x 5 severities)", x=0.01, ha="left", fontsize=11, color=INK2, fontweight="normal")
+    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    save(fig, "fig3_signals.png")
+
+
+def fig4():
+    R = [json.load(open(E / "2026-11-24_cluster_cot" / "em_phases" / f"{m}_aid.json")) for m in ORDER]
+    ck = R[0]["ckpts"]; x = np.arange(len(ck))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.3))
+    for ax, key, ylab in ((axes[0], "acc", "accuracy on corrupted streams (%)"), (axes[1], "n_pred", "classes still predicted (of 30)")):
+        for loss, col, name in (("tent", ORANGE, "Tent (entropy)"), ("dsbr", BLUE, "DSBR (class-balanced entropy)")):
+            V = np.array([np.mean(r["losses"][loss][key][1:], 0) for r in R])   # backbone x ckpt (mean over 60 corrupted streams)
+            for v in V:
+                ax.plot(x, v, color=col, lw=0.7, alpha=0.3)
+            ax.plot(x, V.mean(0), color=col, lw=2.4, marker="o", ms=4)
+            ax.text(x[-1] + 0.12, V.mean(0)[-1], f"{name}\n{V.mean(0)[-1]:.1f}", color=INK, va="center", fontsize=10)
+        ax.set_xticks(x); ax.set_xticklabels([f"{c // 1000}k" if c >= 1000 else str(c) for c in ck]); ax.set_xlabel("adaptation steps"); ax.set_ylabel(ylab); ax.set_xlim(-0.2, len(ck) + 2.2)
+        ax.grid(axis="y", color=GRID, lw=0.8); ax.set_axisbelow(True)
+    axes[0].set_title("AID-C, head-input affine only; thin lines = 17 backbones", loc="left", fontsize=11, color=INK2, fontweight="normal")
+    fig.tight_layout()
+    save(fig, "fig4_em_phases.png")
+
+
+def fig5():
+    fig, axes = plt.subplots(1, 2, figsize=(12.5, 5), sharey=True)
+    order = None
+    for ax, (ds, title) in zip(axes, DS):
+        R = [json.load(open(E / "2026-11-24_cluster_cot" / "head_oracle" / f"{m}_{ds}.json")) for m in ORDER]
+        names = R[0]["streams"]
+        V = {}
+        for c in common.NOISES:
+            ix = [i for i, n in enumerate(names) if n.rsplit("_s", 1)[0] == c]
+            V[c] = [np.mean([[r[k][i] for i in ix] for r in R]) for k in ("raw", "align", "ft_raw")]
+        clean = np.mean([r["raw"][0] for r in R])
+        if order is None:
+            order = sorted(common.NOISES, key=lambda c: V[c][2] - V[c][1])
+        for y, c in enumerate(order):
+            raw, al, ft = V[c]
+            ax.plot([raw, al], [y, y], color=AQUA, lw=5, alpha=0.55, solid_capstyle="butt", zorder=1)
+            ax.plot([al, ft], [y, y], color=BLUE, lw=5, alpha=0.55, solid_capstyle="butt", zorder=1)
+            ax.scatter([raw], [y], s=36, color=GREY, edgecolors=SURF, linewidths=0.6, zorder=3)
+            ax.scatter([al], [y], s=36, color=AQUA, edgecolors=SURF, linewidths=0.6, zorder=3)
+            ax.scatter([ft], [y], s=36, color=BLUE, edgecolors=SURF, linewidths=0.6, zorder=3)
+            ax.text(101.5, y, f"+{ft - al:.0f}", va="center", ha="left", fontsize=10, color=INK, clip_on=False)
+        ax.axvline(clean, color=INK, lw=1, ls=(0, (3, 3))); ax.text(clean, len(order) - 0.35, f"clean {clean:.1f}", ha="center", fontsize=10)
+        ax.text(101.5, len(order) - 0.35, "gain", ha="left", fontsize=10, color=INK2, clip_on=False)
+        ax.set_yticks(range(len(order))); ax.set_yticklabels([SHORT[c] for c in order]); ax.tick_params(axis="y", length=0)
+        ax.set_xlim(28, 100); ax.set_xlabel("accuracy (%), mean of 17 backbones, severity 3 and 5"); ax.set_title(title, loc="left")
+        ax.grid(axis="x", color=GRID, lw=0.8); ax.set_axisbelow(True)
+    hs = [plt.Line2D([], [], marker="o", ls="", ms=7, mfc=GREY, mec=SURF, label="as is"),
+          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=AQUA, mec=SURF, label="after alignment (no labels)"),
+          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=BLUE, mec=SURF, label="head re-fitted with labels of the corrupted stream (upper bound); gain = over alignment")]
+    fig.legend(handles=hs, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.03), fontsize=10)
+    save(fig, "fig5_headroom.png")
+
+
+def fig6():
+    pairs = [("MAE -> SatMAE", "mae_in", "satmae"), ("MAE -> Scale-MAE", "mae_in", "scalemae"), ("MoCo -> MoCo-fMoW", "moco_in", "moco_fmow"),
+             ("DINO-S/16 -> SatDINO", "dino_in_s16", "satdino_s16"), ("DINO-S/8 -> SatDINO", "dino_in_s8", "satdino_s8"),
+             ("DINO-B/16 -> SatDINO", "dino_in_b16", "satdino_b16"), ("DINOv3 web -> sat", "dinov3_web_l16", "dinov3_sat_l16")]
+    cor = lambda m, ds: np.mean([v["acc"] for k, v in sig(m, ds).items() if k != "clean"])
+    nat = lambda m, d: json.load(open(E / "2026-11-17_natural_shift" / f"{m}.json"))["directions"][d]["streams"]["ood_all"]["acc"]
+    conds = [("AID clean", lambda m: sig(m, "aid")["clean"]["acc"]), ("AID-C (12 corruptions)", lambda m: cor(m, "aid")),
+             ("RESISC45 -> UC Merced", lambda m: nat(m, "r45_to_ucm")), ("UC Merced -> RESISC45", lambda m: nat(m, "ucm_to_r45"))]
+    fig, axes = plt.subplots(1, 4, figsize=(13.5, 3.9), sharey=True)
+    y = np.arange(len(pairs))[::-1]
+    for ax, (title, f) in zip(axes, conds):
+        d = np.array([f(s) - f(g) for _, g, s in pairs])
+        ax.barh(y, d, height=0.55, color=[BLUE if v >= 0 else ORANGE for v in d])
+        ax.axvline(0, color=INK2, lw=0.8)
+        for yi, v in zip(y, d):
+            ax.text(v + (1.2 if v >= 0 else -1.2), yi, f"{v:+.1f}", va="center", ha="left" if v >= 0 else "right", fontsize=10)
+        ax.set_xlim(-44, 22); ax.set_title(title, loc="left", fontsize=11); ax.set_xlabel("satellite - generic (pt)")
+        ax.set_yticks(y); ax.set_yticklabels([p[0] for p in pairs]); ax.tick_params(axis="y", length=0)
+    hs = [plt.Rectangle((0, 0), 1, 1, color=BLUE, label="satellite pretraining better"), plt.Rectangle((0, 0), 1, 1, color=ORANGE, label="generic pretraining better")]
+    fig.legend(handles=hs, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.07))
+    save(fig, "fig6_pairs.png")
+
+
+def fig7():
+    blur = {"moco_in", "moco_fmow", "gassl_fmow", "dino_in_s16", "satdino_s16", "dino_in_s8", "satdino_s8", "dino_in_b16", "satdino_b16",
+            "dinov3_web_l16", "dinov3_sat_l16"}
+    fig, axes = plt.subplots(1, 2, figsize=(11, 3.6), sharex=True)
+    rng = np.random.RandomState(0)
+    for ax, (ds, title) in zip(axes, (("aid", "AID"), ("r45", "RESISC45"))):
+        for yi, (grp, col, lab) in enumerate(((True, BLUE, "with Gaussian-blur\naugmentation (11)"), (False, ORANGE, "without (6)"))):
+            ms = [m for m in ORDER if (m in blur) == grp]
+            d = np.array([sig(m, ds)["clean"]["acc"] - np.mean([sig(m, ds)[f"gaussian_blur_s{s}"]["acc"] for s in range(1, 6)]) for m in ms])
+            ax.scatter(d, yi + rng.uniform(-0.12, 0.12, len(d)), s=46, color=col, edgecolors=SURF, linewidths=0.6, zorder=3)
+            ax.plot([d.mean()] * 2, [yi - 0.28, yi + 0.28], color=INK, lw=1.6, zorder=4)
+            ax.text(d.mean(), yi + 0.36, f"mean {d.mean():.1f}", ha="center", fontsize=10)
+            for m, v in zip(ms, d):
+                if v == d.max():
+                    ax.text(v + 0.6, yi - 0.02, m, va="center", fontsize=9, color=INK2)
+        ax.set_yticks([0, 1]); ax.set_yticklabels(["with Gaussian-blur\naugmentation (11)", "without (6)"]); ax.set_ylim(-0.6, 1.7)
+        ax.tick_params(axis="y", length=0); ax.set_title(title, loc="left"); ax.set_xlabel("accuracy drop under Gaussian blur (pt)")
+        ax.grid(axis="x", color=GRID, lw=0.8); ax.set_axisbelow(True); ax.set_xlim(-1, 40)
+    fig.tight_layout()
+    save(fig, "fig7_blur_aug.png")
+
+
+def fig8(cls="Port", sev=3):
+    stages = [("sensor", ["gaussian_noise_new", "salt_and_pepper_noise", "data_gaps"]), ("optics / platform", ["gaussian_blur", "motion_blur"]),
+              ("atmosphere", ["clouds", "haze_update_new"]), ("radiometric", ["brightness_contrast"]), ("transmission", ["compression_artifacts"]),
+              ("geometry", ["scale_image", "rotate_new", "translate_image_new"])]
+    rs = {"data_gaps", "clouds", "haze_update_new", "scale_image", "rotate_new"}
+    d0 = sorted(glob.glob(f"{common.CORRUPT_DIR}/{cls}/gaussian_blur/severity_{sev}/*/*"))
+    f0 = d0[len(d0) // 2]; ci = os.path.basename(os.path.dirname(f0)); name = os.path.basename(f0)
+    clean = glob.glob(f"{common.TEST_DIR}/*/{name}") + glob.glob(f"{common.TEST_DIR}/*/{os.path.splitext(name)[0]}.*")
+    items = [("clean", clean[0] if clean else None, False, "")]
+    for st, cs in stages:
+        for c in cs:
+            items.append((SHORT[c], f"{common.CORRUPT_DIR}/{cls}/{c}/severity_{sev}/{ci}/{name}", c in rs, st))
+    fig, axes = plt.subplots(2, 7, figsize=(14, 4.9))
+    for ax in axes.ravel():
+        ax.axis("off")
+    for ax, (lab, f, is_rs, st) in zip(axes.ravel(), items):
+        if f and os.path.exists(f):
+            ax.imshow(Image.open(f).convert("RGB"))
+        ax.set_title(lab, fontsize=10.5, color=INK, fontweight="bold" if is_rs else "normal", pad=3)
+        tag = "" if not is_rs else ("  |  partly RS-specific" if lab == "haze" else "  |  RS-specific")
+        ax.text(0.5, -0.07, st + tag, transform=ax.transAxes, ha="center", va="top", fontsize=9,
+                color=BLUE if is_rs else INK2)
+    fig.subplots_adjust(wspace=0.05, hspace=0.32)
+    save(fig, "fig8_corruptions.png")
+
+
+def fig9():
+    cor = ["brightness_contrast", "haze", "gaussian_noise", "salt_and_pepper_noise", "compression_artifacts", "gaussian_blur", "motion_blur", "clouds"]
+    lab = ["brightness /\ncontrast", "haze", "Gaussian\nnoise", "salt &\npepper", "JPEG", "Gaussian\nblur", "motion\nblur", "clouds"]
+    V = (("none", "no adaptation", GREY), ("bn", "BN alignment", BLUE), ("isa", "input alignment", ORANGE), ("isa_bn", "input + BN alignment", AQUA))
+    fig, axes = plt.subplots(2, 1, figsize=(12, 6.4), sharex=True)
+    for ax, (m, title) in zip(axes, (("satmae_B", "SatMAE"), ("scalemae_B", "Scale-MAE"))):
+        d = json.load(open(E / "2026-11-23_seg_signals" / "signals" / f"{m}.json"))
+        S = d["streams"] if "streams" in d else d
+        x = np.arange(len(cor)); w = 0.2
+        for i, (k, name, col) in enumerate(V):
+            v = [np.mean([S[f"{c}_s{s}"][k]["miou"] for s in range(1, 6)]) for c in cor]
+            ax.bar(x + (i - 1.5) * w, v, width=w - 0.02, color=col, label=name)
+        ax.axhline(S["clean"]["none"]["miou"], color=INK, lw=1, ls=(0, (3, 3)))
+        ax.text(len(cor) - 0.45, S["clean"]["none"]["miou"] + 0.6, f"clean {S['clean']['none']['miou']:.1f}", ha="right", fontsize=10)
+        ax.set_ylim(0, 72); ax.set_ylabel("mIoU (%)"); ax.set_title(title, loc="left"); ax.grid(axis="y", color=GRID, lw=0.8); ax.set_axisbelow(True)
+    axes[1].set_xticks(np.arange(len(cor))); axes[1].set_xticklabels(lab)
+    axes[0].legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.32))
+    fig.tight_layout()
+    save(fig, "fig9_seg.png")
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", nargs="*", default=None)
+    args = ap.parse_args()
+    OUT.mkdir(parents=True, exist_ok=True)
+    for name, f in (("fig1", fig1), ("fig2", fig2), ("fig3", fig3), ("fig4", fig4), ("fig5", fig5), ("fig6", fig6), ("fig7", fig7),
+                    ("fig8", fig8), ("fig9", fig9)):
+        if args.only is None or name in args.only:
+            try:
+                f()
+            except Exception as e:  # keep going, report at the end
+                print(f"FAILED {name}: {type(e).__name__}: {e}")

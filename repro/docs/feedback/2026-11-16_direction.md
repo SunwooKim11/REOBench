@@ -465,3 +465,7 @@ REOBench §3, Beyond Accuracy §III-C·§V, EarthShift §4.1을 PDF에서 직접
 - LSCD-TTA 주장과 우리 손상 결과 대조: 클래스 유사성 → 이어짐(클래스 합쳐짐), gradient 소실·저신뢰 지배 → 이어지지 않음(문제는 과신), 불균형 → 미검증.
 - Niloy 외의 "분할에서 Tent가 돕는다"는 BN 통계 교체의 효과로 우리 Potsdam 결과(통계만 +1.9 / +3.1, BN 고정 Tent −2.0 / −1.2)와 맞는다.
 - 중간 발표 정리본의 F2를 완료로 바꿈(조사분 일부 미확인 명시). 피드백 파일의 F2 두 항목 체크.
+
+### 2026-11-24 발표용 그림 9장 (`docs/figs/midterm_2026-11-26/`, `scripts/analysis/plot_midterm_figs.py`)
+사용자 지적: 정리본에 시각화가 없다. 기존 결과 파일에서 그림 9장을 그림(방법 비교, 정확도 추정 산점도, confidence·flip 대 정확도, EM 두 단계, head 상한, 쌍 비교,
+blur augmentation, 손상 12종 예시, 분할 손상별 막대). 새 실험 없음. 정리본 3절에 슬라이드별 배치와 그림 목록을 추가.
