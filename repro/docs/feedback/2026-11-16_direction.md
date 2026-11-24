@@ -355,3 +355,19 @@
   합성 손상용 처방이고, 자연 shift에서는 신호(flip, 정렬 후 ATC)로서의 가치가 더 크다. (3) 한계: 데이터 쌍 1개, 19클래스, seed 1개,
   백본 17개가 표본(백본 간 순위 상관)이라 조건 간 추정이 아니다. 두 데이터셋의 클래스 정의·GSD 차이가 섞여 있다.
 
+### 2026-11-24 Potsdam 분할: 신호 측정과 11월 방법 (중간, `experiments/2026-11-23_seg_signals/RESULTS.md`)
+SatMAE B / ScaleMAE B, clean + 손상 8종 × 5단계, 배치 8, stream마다 초기화. 수치는 SatMAE / ScaleMAE 순. tmux `segnov`(11-23 17:36 시작).
+완료: 신호 측정, flipf, dsbr, dsbr_src, flipf_bnbatch. 진행 중: dsbr_src_bnbatch, dsbr_bnbatch. 빠진 손상 4종(rotate, scale, translate, data gaps)은 미생성.
+- 학습 없는 정렬(손상 평균 mIoU): none 50.6 / 51.3, bn(decoder BN을 test 통계로) 52.5 / 54.4, isa(입력 정렬) 53.8 / 53.9, isa_bn 55.1 / 56.3.
+- flip(none과 bn 예측이 다른 픽셀 비율)은 손상 stream 40개에서 픽셀 정확도를 따른다: Spearman −0.94 / −0.97 (평균 confidence +0.86 / +0.94).
+  isa로 잰 flip은 약하다(−0.52 / −0.69): 입력 정렬은 radiometric 손상에서만 예측을 바꾼다.
+- 과신은 분류보다 작다: confidence − 픽셀 정확도 평균 +3.3 / +4.8pt (JPEG +10.9 / +11.2, ScaleMAE noise +9.3, S&P +8.7).
+- 픽셀 필터는 분류와 반대: 엔트로피 필터(< 0.4 ln 5)는 47 / 54%를 남기고 그 정확도 89.2 / 90.6%, flip 필터는 88%를 남기고 76.2 / 77.7% (전체 71.5 / 72.4).
+  flip한 픽셀의 정확도는 36%. 남기는 비율이 달라 직접 비교는 아니다.
+- 예측 쏠림 tv: none 11.4 / 12.3% → bn 5.9 / 5.6% (clean 4.1 / 3.6). none의 tv와 픽셀 정확도의 Spearman −0.89 / −0.89.
+- 학습하는 방법(none 대비 손상 평균 mIoU): tent −1.96 / −1.19, sar −1.14 / −0.71, flipf −0.97 / −0.63, dsbr +0.85 / +0.56, dsbr_src +0.02 / +0.09,
+  bnadapt +1.87 / +3.08, tent_bnbatch +2.73 / +3.79, flipf_bnbatch +2.60 / +3.67.
+- 읽기: (1) "flip이 정확도를 따른다"는 분할에서도 선다. (2) BN 고정 상태에서 양수인 학습 방법은 DSBR뿐이고, flip 필터는 Tent의 손해를 절반으로 줄이지만
+  이득은 못 낸다(분류와 다름). (3) source 비율을 목표로 한 DSBR 변형은 균등 목표보다 나쁘다. (4) 이득은 여전히 통계 정렬에서 온다
+  (flipf_bnbatch ≈ tent_bnbatch ≈ bnadapt + 0.7~0.9). seed 1개, lr은 10월과 같은 값(7.5e-6) 하나.
+
