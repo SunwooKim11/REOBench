@@ -440,3 +440,10 @@ tmux `segnov` 종료(16:46, 실패 없음). 추가된 것: dsbr_bnbatch +2.84 / 
 ### 2026-11-24 중간 발표 준비용 통합 정리 (`docs/WRAPUP_midterm_2026-11-26.md`)
 사용자 요청: 발표(11-26)는 지금까지의 결과로 한다. F1–F5 대응 현황, 슬라이드 구성안, 슬라이드에 넣을 표 12개, 볼 것, 방법 후보, 한계와 예상 질문을 한 파일에 모음.
 라벨 없는 head 적응의 가능성 확인(`scripts/analysis/head_selftrain.py`)은 사용자 요청으로 중단, 결과 없음(스크립트는 미완·미검증 상태로 commit하지 않음).
+
+### 2026-11-24 matched-pair 연구(arXiv 2611.13849) 원문 확인 (`docs/reading/matched_pair_study.md`)
+사용자가 PDF를 papers에 추가. Claude가 본문 1–8쪽을 직접 읽고 노트에 "원문 직접 확인" 절을 추가, 중간 발표 정리본(F4, F5, T8, 예상 질문, 후보 1)에 반영.
+- F5: 쌍 설계의 이유를 그쪽이 명시(기존 비교는 objective·구조·크기·데이터·전처리가 한꺼번에 다름). F4: 그쪽 선형 probe = train 통계 표준화 + L-BFGS, 우리 head와 같은 방식.
+- 차이는 작은 인공 구조물 클래스에 몰리고 GSD와의 관련을 추측, 배율 통제 실험을 future work로 남김 → 방법 후보 1(배율 탐색)의 외부 근거.
+- DINOv3-SAT: CLS가 약하고 patch 평균이 낫지만(UCM 선형 72.7 → 84.9) 가장 좋은 feature로도 web에 10.6pt 뒤짐.
+- 그쪽의 Silhouette–k-NN 상관(ρ 0.96–0.98)은 encoder 간·라벨 기준이라 우리의 stream 간·k-means 기준 결과(+0.21)와 모순이 아니다.

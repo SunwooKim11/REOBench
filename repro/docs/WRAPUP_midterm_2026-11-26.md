@@ -20,7 +20,7 @@ PPT skill에는 **3절(슬라이드 구성)과 4절(표)** 을 그대로 주면 
 | F2. RS corruption의 고유성 | 분석은 완료, 선행 연구 조사는 부분 | "RS 이미지라서 다르다"는 증거는 약하다. 고유성은 **손상의 종류**와 **촬영 단위로 공유되는 shift**에 있다 | 같은 손상을 ImageNet과 RS에 적용한 비교, 12종의 단계별 배치 표 (S11) |
 | F3. 벤치마크 2개 이상, 논문 읽기 | 완료 | AID-C, RESISC45-C, Potsdam-C, RESISC45 ↔ UC Merced. 네 논문 모두 노트 있음 | S4 |
 | F4. fMoW 사전학습 ResNet / ViT, head 학습 방식 | 완료 | fMoW 백본 7개와 ImageNet 짝. head는 frozen feature 위의 선형 head이고 학습 방식의 영향도 통제함 | S3, 4절 표 T10 |
-| F5. 백본 선택 근거 | 부분 완료 | 구조와 방법이 같고 데이터만 다른 쌍으로 구성해 "위성 사전학습 때문인가"를 가른다 | S3. "기존 저자들이 왜 그 모델을 골랐는지"는 미정리 |
+| F5. 백본 선택 근거 | 부분 완료 | 구조와 방법이 같고 데이터만 다른 쌍으로 구성해 "위성 사전학습 때문인가"를 가른다 | S3. 같은 설계의 선행 연구(arXiv 2611.13849)가 이유를 명시. REOBench, Beyond Accuracy, EarthShift 저자들의 선택 이유는 미정리 |
 
 ### F1 상세
 - 교수님 지적: LSCD-TTA의 두 항은 전체 클래스 분포가 아니라 표본별 예측으로 분포를 조정한다. 손실을 여러 개 붙이는 것은 요즘 방식이 아니다.
@@ -49,14 +49,21 @@ PPT skill에는 **3절(슬라이드 구성)과 4절(표)** 을 그대로 주면 
 - head: 모든 백본에 같은 절차. frozen feature를 clean train 통계로 표준화하고 선형 head를 L-BFGS로 학습, L2 세기는 검증 NLL로 선택.
 - 공식 linear probe 관행을 확인했다. MAE와 Scale-MAE는 head 앞에 affine 없는 BatchNorm을 두고(우리 표준화와 같은 계산),
   DINO, DINOv3, MoCo v3, SatDINO는 두지 않는다.
+  matched-pair 연구(arXiv 2611.13849)의 선형 probe도 "train 통계로 표준화 → L-BFGS 로지스틱 회귀"로 우리와 같은 방식이다.
 - head 학습 방식에 따른 차이를 통제했다. 표준화 없이 학습한 head에서도 정렬 이득이 같다(AID-C +5.4 대 +5.5, RESISC45-C +5.8 대 +5.9).
 
 ### F5 상세
 - 선택 원칙: (구조, 사전학습 방식)이 같고 데이터만 다른 쌍 6개 + 지도학습 ImageNet 기준점 3개.
   위성 백본만 쓰면 결과가 위성 사전학습 때문인지 구조 때문인지 가를 수 없다.
 - ResNet을 넣은 이유: BatchNorm이 있어 기존 TTA의 원래 대상이다.
-- 선행 연구: "Satellite Pretraining Is Not One Thing"(arXiv 2611.13849)이 같은 쌍 설계로 clean 정확도를 비교했다.
-  우리 clean 결과와 방향이 같다. 그쪽은 손상, shift, calibration, TTA를 다루지 않는다.
+- 선행 연구: "Satellite Pretraining Is Not One Thing"(arXiv 2611.13849, GeoCV@WACV 2027)이 같은 쌍 설계로 clean 정확도를 비교했다
+  (encoder 14개, 쌍 5개, 데이터 5개에 UC Merced와 RESISC45 포함). 노트: `docs/reading/matched_pair_study.md`.
+  - 쌍으로 비교하는 이유를 그쪽이 명시했다: 기존 비교는 objective, 구조, 크기, 데이터, 전처리가 한꺼번에 달라 "위성 데이터 때문인지"를 말할 수 없다.
+  - 결론: 위성 사전학습은 세 쌍에서 돕고 두 쌍에서 해친다(선형 probe 평균: SatDINO +1.0, Scale-MAE +1.0, RemoteCLIP +1.2, SatMAE −4.2, DINOv3-SAT −10.3).
+    "위성으로 사전학습했다"는 선택 기준이 못 된다. 우리 clean 결과와 방향이 같다.
+  - 차이는 작은 인공 구조물 클래스(court, palace, storage tank)에 몰리고, 저자들은 GSD와의 관련을 추측하며 "배율을 통제한 실험"을 future work로 남겼다.
+  - DINOv3-SAT은 CLS token이 약하다(patch 평균으로 바꾸면 UC Merced 선형 72.7 → 84.9). 가장 좋은 feature로도 web에 10.6pt 뒤진다.
+  - 그쪽이 다루지 않은 것: 손상, 데이터셋 간 shift, calibration, TTA, 라벨 없는 신호. 우리 기여는 이쪽이다. MoCo ResNet-50 쌍도 그쪽에는 없다.
 - "GeoFM의 강건성을 보완한다"에 대한 지금의 답: 약점은 shift에서 confidence가 틀리고 예측이 쏠리는 것이다.
   라벨 없는 신호로 감지할 수 있고, 공통 이동은 정렬로 되돌릴 수 있다. 남는 것은 head 불일치와 백본에서 사라진 정보다.
 - 남은 것: REOBench, Beyond Accuracy, EarthShift 저자들이 각 모델을 고른 이유의 정리.
@@ -197,6 +204,8 @@ clean은 61.9 / 65.0. 빠진 손상 4종(rotate, scale, translate, data gaps)은
 | RESISC45 | 90.6 | 83.3 | 51.3 | 0.27 |
 
 k-means Silhouette과 정확도의 순위상관은 평균 +0.21 / +0.28이고 백본에 따라 −0.87에서 +0.87까지 갈린다.
+matched-pair 연구도 같은 방향을 보고했다: 선형 probe − k-NN 차이가 MAE ViT-L 22.9, SatMAE 19.0pt, DINOv3 ViT-L 5.5pt.
+그쪽의 "Silhouette이 k-NN 정확도를 예측한다(ρ 0.96–0.98)"는 encoder 사이의 비교이고 라벨로 잰 값이라 우리 결과(한 백본 안의 손상 stream 사이)와 모순이 아니다.
 출처: `experiments/2026-11-24_cluster_cot/RESULTS_subspace.md`, `RESULTS.md`.
 
 ### T9. 엔트로피 최소화를 오래 돌리면 (AID-C, head 입력만 2,000 step, 17개 백본 평균)
@@ -260,7 +269,8 @@ source 클래스 평균에서 멀어지는 정도는 둘이 비슷하다(+5.8 �
 | 4 | feature 그림 두 장 | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`, `fig2_shift_align_motion_blur_s3.png` | 10분 |
 | 5 | Geometry 세 가지 (T8, Silhouette 상관, T9) | 이 문서 4절 | 15분 |
 | 6 | 10월 결과가 필요하면 | `docs/WRAPUP_progress_2026-11-23.md` §1 | 10분 |
-| 7 | 질문이 나올 만한 논문 | `docs/reading/dsbr.md`, `entropy_enigma.md` §5, `sensebench.md` | 필요할 때 |
+| 7 | 백본 선택 근거의 선행 연구 (F5) | `docs/reading/matched_pair_study.md`의 "원문 직접 확인" 절 | 10분 |
+| 8 | 질문이 나올 만한 논문 | `docs/reading/dsbr.md`, `entropy_enigma.md` §5, `sensebench.md` | 필요할 때 |
 
 Geometry에서 이해해야 할 것은 세 문장이다.
 - 선형 head는 95%를 맞히는데 k-means는 59%다. 클래스는 직선으로 갈라지지만 둥근 덩어리 하나를 이루지 않는다.
@@ -277,6 +287,8 @@ Geometry에서 이해해야 할 것은 세 문장이다.
 | 2 | 라벨 없는 head 적응 | 클래스 비율을 강제하고 flip으로 고른 표본으로 head만 갱신 | 여지가 가장 크게 측정된 곳(자연 shift, motion blur) | 선행 연구가 많음(T3A, LAME, SHOT) |
 | 3 | head가 읽는 부분공간 안의 정렬 (GOLD) | 29–44차원 안에서 공분산까지 정렬 | 이동의 83–94%는 head가 읽지 않는 방향 | 부품 수준 |
 | 4 | 붕괴 감지로 적응 제어 | 예측 클래스 수와 flip으로 멈추거나 되돌림 | T9 | 이득이 작음 |
+
+1번의 외부 근거: matched-pair 연구가 "위성 사전학습의 효과는 겉보기 크기가 GSD에 달린 작은 구조물에 몰린다"고 보고하고 배율을 통제한 실험을 future work로 남겼다.
 
 첫 실험(발표 뒤): 배율 탐색의 상한(scale 손상, RESISC45 ↔ UCM), data gaps에서 token 제외, 2번의 가능성 확인.
 2번의 가능성 확인은 시작했다가 중단했다(결과 없음).
@@ -301,7 +313,8 @@ Geometry에서 이해해야 할 것은 세 문장이다.
 |---|---|
 | 정렬은 source 통계를 쓰는데 반칙 아닌가 | 표준화해서 학습한 head에서는 test 식에 source 통계가 들어가지 않는다. 그대로 학습한 head에서 쓰는 통계도 BatchNorm의 running 통계와 같은 종류다. 다만 새롭지는 않다 |
 | RS만의 문제가 무엇인가 | 이미지 도메인이 아니라 손상의 종류(data gaps, scale, clouds)와, shift가 촬영 단위로 stream 전체에 공유된다는 점이다 |
-| 왜 DINOv3 web이 가장 강한가 | 같은 방법의 위성 모델은 14pt 낮으므로 방법이 아니라 데이터나 규모다. 어느 쪽인지는 가르지 못했다 |
+| 왜 DINOv3 web이 가장 강한가 | 같은 방법의 위성 모델은 14pt 낮으므로 방법이 아니라 데이터나 규모다. 어느 쪽인지는 가르지 못했다. matched-pair 연구와 DINOv3 저자들의 GEO-Bench 평가도 web이 위성을 이긴다고 보고했다 |
+| DINOv3-SAT이 낮은 것은 feature를 잘못 뽑아서가 아닌가 | 우리는 CLS와 patch 평균을 이어 붙여 쓴다. matched-pair 연구가 세 가지 feature를 모두 시험했고 가장 좋은 것으로도 web에 뒤졌다 |
 | 분할에서도 되나 | 현상(엔트로피 방법은 손해, 쏠림을 누르면 이득, flip이 정확도를 따름)은 같다. feature geometry 설명은 분류에서만 확인했다 |
 | 다음은 무엇인가 | 6절의 1번과 2번. 여지가 어디 있는지는 T12로 쟀다 |
 
