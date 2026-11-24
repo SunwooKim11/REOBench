@@ -456,3 +456,12 @@ REOBench §3, Beyond Accuracy §III-C·§V, EarthShift §4.1을 PDF에서 직접
   배제하지 못한 설명(augmentation 노출)은 우리 augmentation 표가 직접 본다.
 - EarthShift: GFM 8 + 일반 3 + 무작위 초기화 2. 모델 구성에 대한 한계 언급 없음.
 - 중간 발표 정리본의 F5를 완료로 바꾸고 선택 방식 표를 넣음. 피드백 파일의 F4, F5 체크.
+
+### 2026-11-24 F2 선행 연구 조사 (`docs/PRIOR_ART_rs_tta_corruption.md`)
+질문: RS 성질로 인한 TTA 문제가 손상에서도 이어지는지 선행 연구가 있는가. 웹 조사는 agent(21편, 출판사 페이지는 열리지 않음), LSCD-TTA는 Claude가 PDF로 확인.
+- RS 성질이 TTA를 깬다는 주장(LSCD-TTA)은 논증 수준. 그 논문 표에서 Tent는 source보다 높다(74.19 → 76.08, PDF로 확인).
+- 그 주장을 손상에서 시험한 연구, 손상된 RS 장면 분류에 Tent·EATA·SAR·CoTTA를 돌린 연구를 찾지 못함. 손상 + TTA는 분할(Niloy 외, Tent 도움), 검출(DIOR-C, Tent 해로움),
+  초분광, LiDAR뿐. 확인 필요: Murugesan 외(Frontiers in AI 2026).
+- LSCD-TTA 주장과 우리 손상 결과 대조: 클래스 유사성 → 이어짐(클래스 합쳐짐), gradient 소실·저신뢰 지배 → 이어지지 않음(문제는 과신), 불균형 → 미검증.
+- Niloy 외의 "분할에서 Tent가 돕는다"는 BN 통계 교체의 효과로 우리 Potsdam 결과(통계만 +1.9 / +3.1, BN 고정 Tent −2.0 / −1.2)와 맞는다.
+- 중간 발표 정리본의 F2를 완료로 바꿈(조사분 일부 미확인 명시). 피드백 파일의 F2 두 항목 체크.

@@ -42,7 +42,7 @@ paper PDFs under `~/REOBench/papers/`.
 | `WRAPUP_midterm_2026-11-26.md` | everything for the mid-term presentation in one file: feedback status, slide plan, tables, method candidates |
 | `WRAPUP_progress_2026-11-23.md` | what was done until October and after |
 | `STUDY_*.md` | study notes (alignment, stage-1 metrics) |
-| `PRIOR_ART_*.md` | prior-art surveys (statistics alignment, feature signals, CLIP segmentation TTA, SAE pruning) |
+| `PRIOR_ART_*.md` | prior-art surveys (statistics alignment, feature signals, CLIP segmentation TTA, SAE pruning, TTA under corruption in remote sensing) |
 | `PAPERS_tta_2026-10.md`, `PPT_prompt_2026-10.md` | paper list and slide prompt of the TTA phase |
 | `reading/` | one note per paper (index: `reading/README.md`) |
 | `feedback/` | advisor feedback, one file per meeting, plus the running progress log `2026-11-16_direction.md` |
