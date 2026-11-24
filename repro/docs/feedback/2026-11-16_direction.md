@@ -404,3 +404,12 @@ tmux `segnov` 종료(16:46, 실패 없음). 추가된 것: dsbr_bnbatch +2.84 / 
 - 읽기: (1) Entropy Enigma의 군집 설명("정확도가 높으면 잘 군집")은 end-to-end 분류기의 것이고 frozen 백본에서는 군집형 feature를 내는 계열에만 맞는다.
   원인 설명은 군집보다 source 통계에서의 이동·예측 쏠림으로 쓰는 편이 안전하다. (2) 분할에는 현상(EM이 해롭다, 쏠림을 누르면 낫다, flip이 정확도를 따른다)만
   주장하고 geometry 설명은 분류에 한정한다(사용자 지적: neural collapse류 구조는 분할에서 약하다). (3) 추정기 비교에는 COT를 baseline으로 넣어야 한다.
+
+### 2026-11-24 SenseBench 읽기 (`docs/reading/sensebench.md`)
+사용자가 papers에 추가(NeurIPS 2026 E&D). VLM이 RS 열화를 알아보는지 재는 벤치마크(22종, 10,815문항)이고 task 정확도는 재지 않는다.
+- 합성 엔진은 공개되지 않음(저장소는 추론·평가 코드만, 논문에 파라미터 없음) → 분류 체계만 빌릴 수 있다.
+- REOBench에 대한 문장("treat image quality as a mere confounding variable")은 열화를 평가 대상으로 삼지 않았다는 뜻이고 열화의 고유성·현실성 비판은 아니다.
+- 복합 열화 붕괴(Gemini 79.68 → 41.17)는 열화를 맞히는 객관식 정확도. 복합 stream 평가의 동기로는 쓸 수 있고 task 정확도 근거로는 못 쓴다.
+- "열화를 알아보고 대처를 고른다"의 상한을 기존 분할 결과로 계산: 고정 isa_bn 55.81 / 57.41, 손상별 최선 56.52 / 58.05 mIoU (+0.7 / +0.6, 손상 10종).
+  이득은 정렬이 필요 없는 손상과 clean에서 건드리지 않는 데서 온다.
+- 제안(미실행): 복합 stream, 전송·보정 단계 열화 소수(band attenuation, band switch, stripe, tile missing)를 통제 세트로.
