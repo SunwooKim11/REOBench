@@ -421,3 +421,18 @@ tmux `segnov` 종료(16:46, 실패 없음). 추가된 것: dsbr_bnbatch +2.84 / 
   motivation·related work에서 인용한다. REOBench의 가치가 떨어진 것은 아니다.
 - 복합 stream과 통제 2종(band attenuation, band switch)은 차선. 사용자 의견: 성능을 올리는 방법이 아직 없는데 더 어려운 설정을 먼저 돌리는 것은 순서가 맞지 않다.
   통계 정렬은 source 통계를 쓰고 novelty가 약하다는 것이 사용자의 평가.
+
+### 2026-11-24 방법 후보 정리 (사용자 요청), head 상한 측정 (`experiments/2026-11-24_cluster_cot/RESULTS_head_oracle.md`)
+사용자 결정: 모레 중간 발표는 지금까지의 결과로 한다. 이제 방법을 찾아야 한다. 후보를 정리하기 전에 순위를 가르는 상한을 하나 쟀다.
+- **head 상한** (`scripts/analysis/head_oracle.py`, 손상 12종의 3·5단계 24개 stream, 17개 백본 평균, 홀수 번째 test 이미지에서 평가):
+  AID-C clean 94.3, raw 77.1, 정렬 84.2, 손상 stream 라벨로 head 미세조정 89.2. RESISC45-C 90.8 / 70.5 / 78.1 / 84.2.
+  → 정렬 뒤에도 head만 고쳐 +5.0 / +6.1pt 여지, clean까지 5.1 / 6.6pt는 head로 못 메움. 클래스 bias만 다시 맞추면 +1.0 / +1.0 (쏠림 보정만으로는 부족).
+  여지가 몰린 곳(상한 − 정렬, AID / RESISC45): motion blur +20.8 / +22.1, data gaps +9.6 / +11.9, scale +8.4 / +8.7, salt & pepper +5.8 / +7.1. 과신이 몰려 있던 3종과 같다.
+- 자연 shift에서는 target 라벨로 학습한 head가 95.0–99.5 (UCM) / 90.5–97.7 (RESISC45)이고 source head는 평균 15.3 / 30.9pt 낮다(기존 표). feature는 target 클래스를 가르고, 안 맞는 것은 head다.
+- **후보** (Claude 제안, 사용자 확정 전):
+  1. 촬영 조건 되돌리기(입력 단계, 학습 없음): radiometric(ISA, 완료) + 배율(GSD) 탐색 + 무효 영역 token 제외. 선택 기준은 라벨 없는 신호(source 통계 거리, flip, COT). RS 컨셉이 가장 분명하고 분할에도 붙는다.
+  2. 라벨 없는 head 적응: 클래스 비율 제약(Sinkhorn) + flip으로 고른 표본. 여지가 가장 크게 측정된 곳(자연 shift, motion blur). 선행 연구(T3A, LAME, SHOT)가 많다. 가능성 확인 실행 중(`head_selftrain.py`).
+  3. GOLD 부분공간 안에서의 정렬(C−1차원에서 공분산까지). 작은 배치용 구성요소.
+  4. 붕괴 감지(예측 클래스 수, flip)로 적응을 멈추거나 되돌리기. 구성요소.
+  5. D4(90° 회전·뒤집기) 일관성. 여지 작음.
+  하지 않을 것: head 입력 pruning·SAE(oracle 0), 백본 EM 개선(정렬 + TENT가 +0.8 / +1.9), 군집 기반 신호.
