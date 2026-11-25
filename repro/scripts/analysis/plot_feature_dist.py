@@ -1,10 +1,12 @@
-"""Pictures of the head-input features (AID): separable but not clustered, and what a corruption / the alignment does.
+"""Pictures of the head-input features (AID): separable but not clustered, and what a corruption / head-input standardization does.
 
+  fig0_projection.png     : schematic on toy 3-D data: a 2-D view is an orthographic projection onto a plane; the PCA plane and the
+      plane through the class means are two choices of plane (the first two columns of fig1)
   fig1_clean_geometry.png : clean test stream of 4 backbones (lowest and highest k-means accuracy) in three 2-D views:
-      PCA            top-2 principal directions of the clean test stream (largest variance, label-free)
-      class plane    the plane through the clean-train means of the three highlighted classes (their best linear view)
-      t-SNE          exact t-SNE (perplexity 30) on the top-50 principal components (local neighbourhoods)
-  fig2_shift_align.png    : the same backbones, clean / corrupted / corrupted after head-input alignment (batches of 64),
+      PCA            orthographic projection onto the top-2 principal directions of the clean test stream (largest variance, label-free)
+      class plane    orthographic projection onto the plane through the clean-train means of the three highlighted classes
+      t-SNE          exact t-SNE (perplexity 30) on the top-50 principal components (local neighbourhoods; axes have no meaning)
+  fig2_shift_align.png    : the same backbones, clean / corrupted / corrupted after head-input standardization (batches of 64),
       x = direction of the common shift (mean corrupted - mean clean), y = top principal direction of the clean stream
       orthogonal to x; all three panels of a row share the axes.
 Highlighted: the three residential classes of AID (similar classes); every other class is grey (a scatter plot carries at
@@ -78,6 +80,57 @@ def scatter(ax, p, y, s=7):
         ax.scatter(p[y == k, 0], p[y == k, 1], s=s * 1.6, c=col, edgecolors=SURF, linewidths=0.4, rasterized=True)
 
 
+NOTE1 = ("Each dot = one AID clean test image, as its head input z (384-2,048 dimensions).\n"
+         "Columns 1 and 2 are orthographic projections of the same dots onto two different planes (see fig0_projection.png): column 1 = the plane of\n"
+         "largest spread (PCA), column 2 = the plane through the clean-train means of the three coloured classes. Column 3 (t-SNE) keeps who is near whom.\n"
+         "linear = linear head accuracy, 5-NN = majority label of the 5 nearest train images, k-means = 30 clusters without labels, best match to classes.")
+NOTE2 = ("Each dot = one image, as its head input z, projected orthographically onto two directions.\n"
+         "x = the common shift: the direction from the clean mean to the corrupted-stream mean. The value is the distance from the clean mean along it,\n"
+         "in source std units (0 = clean mean, dashed line). y = the direction of largest spread of the clean features, made perpendicular to x.\n"
+         "All three panels of a row use the same x and y. Standardization uses the mean / std of each test batch of 64 images.")
+
+
+def schematic():
+    """Toy 3-D data: two orthographic projections of the same points, onto the PCA plane and onto the plane through the class means."""
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    rng = np.random.default_rng(0)
+    means = np.array([[-2.2, -1.2, 0.0], [2.2, -1.2, 0.0], [0.0, 2.0, 0.0]])
+    cols = [c for _, c in HL.values()]
+    pts = [mu + rng.normal(size=(60, 3)) * [0.5, 0.5, 2.4] for mu in means]
+    P = np.concatenate(pts); lab = np.repeat(np.arange(3), 60)
+    fig = plt.figure(figsize=(14.5, 5.4))
+    gs = fig.add_gridspec(1, 3, width_ratios=[1.5, 1, 1], wspace=0.12)
+    ax = fig.add_subplot(gs[0], projection="3d")
+    sq = np.array([[-4.2, -3.2, 0], [4.2, -3.2, 0], [4.2, 3.8, 0], [-4.2, 3.8, 0]])
+    ax.add_collection3d(Poly3DCollection([sq], facecolor="#e7e6e1", edgecolor=INK2, alpha=0.5, linewidths=0.8))
+    for k in range(3):
+        q = pts[k]
+        ax.scatter(q[:, 0], q[:, 1], q[:, 2], s=9, color=cols[k], depthshade=False)
+        for i in range(0, 60, 12):
+            ax.plot([q[i, 0]] * 2, [q[i, 1]] * 2, [q[i, 2], 0], color=INK2, lw=0.6, ls=(0, (2, 2)))
+            ax.scatter([q[i, 0]], [q[i, 1]], [0], s=12, color=cols[k], marker="x", depthshade=False)
+        ax.scatter(*means[k], s=110, color=cols[k], edgecolors=INK, marker="*", depthshade=False, zorder=10)
+    ax.set_title("feature space (shown in 3-D)\ngrey plane = plane through the 3 class means (stars)\ndotted = drop each point straight onto it",
+                 fontsize=10, color=INK)
+    ax.set_axis_off(); ax.set_box_aspect((1.2, 1, 1.3)); ax.view_init(elev=20, azim=-25)
+    ax.set_zlim(-6, 6)
+    Pc = P - P.mean(0)
+    V = np.linalg.svd(Pc, full_matrices=False)[2]
+    Q = np.linalg.qr((means[1:] - means[0]).T)[0]
+    for c, (title, pr) in enumerate((("projection on the PCA plane\n(2 directions of largest spread, no labels)", Pc @ V[:2].T),
+                                    ("projection on the plane through the 3 class means\n(uses labels)", (P - means.mean(0)) @ Q))):
+        a = fig.add_subplot(gs[c + 1])
+        for k in range(3):
+            a.scatter(pr[lab == k, 0], pr[lab == k, 1], s=14, color=cols[k], edgecolors=SURF, linewidths=0.4)
+        a.set_title(title, fontsize=10, color=INK); a.set_xticks([]); a.set_yticks([])
+    fig.suptitle("A 2-D view = orthographic projection onto a plane. PCA and the class-mean view differ only in which plane is used.\n"
+                 "Toy data: the widest spread (vertical) is shared by all classes, so the PCA plane mixes them; the class-mean plane separates them.",
+                 fontsize=11, fontweight="bold", y=1.08)
+    fig.savefig(OUT / "fig0_projection.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("saved", OUT / "fig0_projection.png")
+
+
 def legend(fig):
     hs = [plt.Line2D([], [], marker="o", ls="", ms=7, mfc=c, mec=SURF, label=n) for n, c in HL.values()]
     hs.append(plt.Line2D([], [], marker="o", ls="", ms=5, mfc=GREY, mec=GREY, label="other 27 classes"))
@@ -95,8 +148,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--corr", default="motion_blur")
     ap.add_argument("--sev", type=int, default=3)
+    ap.add_argument("--schematic_only", action="store_true")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    schematic()
+    if args.schematic_only:
+        sys.exit(0)
     f1, A1 = plt.subplots(len(MODELS), 3, figsize=(11.5, 3.55 * len(MODELS)))
     f2, A2 = plt.subplots(len(MODELS), 3, figsize=(11.5, 3.3 * len(MODELS)))
     for r, m in enumerate(MODELS):
@@ -114,9 +171,9 @@ if __name__ == "__main__":
         V = torch.linalg.svd(xc, full_matrices=False)[2]
         cm = torch.stack([ztr[ytr == k].mean(0) for k in HL])
         Q = torch.linalg.qr((cm[1:] - cm[0]).T)[0]
-        views = [("PCA: 2 directions of largest variance", xc @ V[:2].T),
-                 ("plane through the 3 class means", (x - cm.mean(0)) @ Q),
-                 ("t-SNE: local neighbourhoods", tsne(xc @ V[:50].T))]
+        views = [("projection on the 2 widest directions\n(PCA, no labels)", xc @ V[:2].T),
+                 ("projection on the plane through\nthe 3 class means (uses labels)", (x - cm.mean(0)) @ Q),
+                 ("t-SNE: nearest neighbours kept\n(distances and axes have no meaning)", tsne(xc @ V[:50].T))]
         for c, (title, p) in enumerate(views):
             ax = A1[r, c]
             scatter(ax, p, y)
@@ -134,7 +191,7 @@ if __name__ == "__main__":
         u2 = torch.linalg.svd(res, full_matrices=False)[2][0]
         B = torch.stack([u1, u2]).T
         pts = [("clean", (x - x.mean(0)) @ B, y, acc(x, y)), (f"{args.corr} s{args.sev}", (xk - x.mean(0)) @ B, yk, acc(xk, yk)),
-               (f"{args.corr} s{args.sev}, aligned", (xa - x.mean(0)) @ B, yk, acc(xa, yk))]
+               (f"{args.corr} s{args.sev}, standardized", (xa - x.mean(0)) @ B, yk, acc(xa, yk))]
         allp = torch.cat([p for _, p, _, _ in pts])
         lim = [(allp[:, k].quantile(0.002).item(), allp[:, k].quantile(0.998).item()) for k in (0, 1)]
         for c, (title, p, yy, a) in enumerate(pts):
@@ -146,18 +203,24 @@ if __name__ == "__main__":
             ax.set_title(f"{title}: accuracy {a:.1f}%", color=INK, loc="left")
             ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
             if c == 0:
-                ax.set_ylabel(f"{m}\ntop clean direction", color=INK)
+                ax.set_ylabel(f"{m}\nwidest clean direction ⊥ x", color=INK)
             if r == len(MODELS) - 1:
-                ax.set_xlabel("direction of the common shift (source std units)")
+                ax.set_xlabel("x: along the common shift (source std units)")
         print(f"{m}: lin {acc(x, y):.1f} knn {knn:.1f} km {km:.1f} | {args.corr}_s{args.sev} {acc(xk, yk):.1f} -> aligned {acc(xa, yk):.1f} "
               f"| shift {d.norm().item():.1f}", flush=True)
     for f, name, title in ((f1, "fig1_clean_geometry.png", "AID clean test features (head input z): linearly separable, locally consistent, not one blob per class"),
                            (f2, f"fig2_shift_align_{args.corr}_s{args.sev}.png",
-                            "A corruption moves all features together; alignment moves the mean back\n(triangle = stream mean, dashed line = clean mean)")):
+                            "A corruption moves all features together; head-input standardization moves the mean back\n(triangle = stream mean, dashed line = clean mean)")):
         legend(f)
         two = "\n" in title
         f.suptitle(title, x=0.5, y=0.995, fontsize=12, fontweight="bold")
         f.legends[0].set_bbox_to_anchor((0.5, 0.955 if two else 0.965))
         f.tight_layout(rect=(0, 0, 1, 0.93 if two else 0.945))
-        f.savefig(OUT / name, dpi=130)
+        if f is f1:
+            f.text(0.01, 0.002, NOTE1, ha="left", va="bottom", fontsize=9, color=INK2)
+            f.subplots_adjust(bottom=0.06)
+        else:
+            f.text(0.01, 0.002, NOTE2, ha="left", va="bottom", fontsize=9, color=INK2)
+            f.subplots_adjust(bottom=0.085)
+        f.savefig(OUT / name, dpi=130, bbox_inches="tight")
         print("saved", OUT / name)

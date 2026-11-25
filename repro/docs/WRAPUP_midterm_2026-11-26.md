@@ -183,12 +183,12 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
 | S4 | 짧게 | 데이터와 벤치마크 (F3) | T11 | 합성 손상 3개, 자연 shift 1개 |
 | S5 | 필수 | 기존 TTA는 평균적으로 손해 | **fig1**, T1 | 엔트로피 기반은 손해, head 입력 표준화가 가장 큼 |
 | S6 | 필수 | 왜 실패하나: 과신과 예측 쏠림 | **fig4**, T2, T9 | 과신은 3종 손상에 몰려 있고 예측 클래스가 합쳐진다 |
-| S7 | 필수 | head 입력 표준화가 하는 일 | **fig10**, `docs/figs/2026-11-24_feature_dist/fig2_shift_align_motion_blur_s3.png`에서 필요한 행만 잘라 씀, 식 한 줄, head 통제 결과 | head 입력을 test 배치 통계로 다시 표준화 |
+| S7 | 필수 | head 입력 표준화가 하는 일 | **fig10**, `docs/figs/2026-11-24_feature_dist/fig2_shift_align_motion_blur_s3.png`에서 필요한 행만 잘라 씀(축 설명은 그림 아래 주석, 한글 이름은 같은 폴더 `README.md`), 식 한 줄, head 통제 결과 | head 입력을 test 배치 통계로 다시 표준화 |
 | S8 | 필수 | flip 신호와 정확도 추정 | **fig3**, **fig2**, T3 | flip은 정확도를 따르고, 추정 오차는 COT와 같은 수준 |
 | S9 | 짧게 | 자연 shift | T4 | 신호는 유지, head 입력 표준화는 약함 |
 | S10 | 짧게 | 분할 (Potsdam, 12종) | **fig9**, T5의 첫 표 | 엔트로피 방법은 손해, BN 통계 교체와 입력 정렬이 이득, flip이 정확도를 따른다. 기하 손상은 분할에서 거의 떨어지지 않는다 |
 | S11 | 필수 | RS 손상의 고유성 (F2) | **fig8**, **fig7**, T6, T7, LSCD-TTA 주장 대조표(2절 F2 상세) | 고유성은 손상 종류에 있다. RS 성질과 TTA 실패의 연결은 손상에서 시험된 적이 없다 |
-| S12 | 건너뜀 | feature의 모양 (선택) | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`에서 필요한 행만 잘라 씀, T8 | 갈라지지만 덩어리는 아니다 |
+| S12 | 건너뜀 | feature의 모양 (선택) | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`에서 필요한 행만 잘라 씀, 정사영 설명 `fig0_projection.png`, T8 | 갈라지지만 덩어리는 아니다 |
 | S13 | 필수 | 남은 여지 | **fig5**, T12 | head 쪽에 5–6pt, 자연 shift는 거의 전부 head |
 | S14 | 부분 4 | 방법 후보와 계획 | 6절 | 촬영 조건 되돌리기 + 라벨 없는 head 적응 |
 | S15 | 짧게 | 한계 | 7절 | seed 1개, 자연 shift 쌍 1개 |

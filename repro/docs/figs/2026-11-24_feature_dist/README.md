@@ -8,6 +8,23 @@
 - 행 = 백본 4개. satmae와 moco_in은 k-means 정확도가 가장 낮은 쪽(44), satdino_s8과 dinov3_web_l16은 가장 높은 쪽(80–81)이다.
 - z는 384–2,048차원이라 2차원으로 내려서 그린다. 어느 2차원을 고르느냐에 따라 보이는 것이 달라서, 같은 점을 세 가지 방법으로 내렸다.
 
+## fig0_projection.png: 2차원 그림은 정사영이다 (2026-11-26 추가)
+
+장난감 3차원 데이터로 그린 설명 그림이다. 각 점에서 평면으로 수직선을 내려 떨어진 자리를 찍는 것이 정사영(orthographic projection)이고,
+fig1의 첫 두 열은 같은 점을 서로 다른 평면에 정사영한 것이다.
+- PCA 평면: 점들이 가장 넓게 퍼진 두 방향. 라벨을 안 쓴다. 넓게 퍼진 방향이 모든 클래스에 공통인 변화(장난감에서는 세로)이면 클래스가 겹쳐 보인다.
+- 세 클래스 평균을 지나는 평면: 별 세 개(클래스 평균)를 지나는 평면. 라벨을 쓴다. 세 클래스를 떼어 보기에 가장 좋은 평면이다.
+
+PPT에 넣을 한글 이름 (서버에 한글 글꼴이 없어 그림 안은 영어):
+
+| 그림 안 제목 | 한글 |
+|---|---|
+| projection on the 2 widest directions (PCA, no labels) | PCA 평면 정사영 (가장 넓게 퍼진 두 방향, 라벨 없음) |
+| projection on the plane through the 3 class means (uses labels) | 세 클래스 평균을 지나는 평면 정사영 (라벨 사용) |
+| t-SNE: nearest neighbours kept (distances and axes have no meaning) | t-SNE (가까운 이웃 관계만 유지, 축과 거리는 의미 없음) |
+| x: along the common shift (source std units) | x: 공통 이동 방향 (clean 평균 → 손상 stream 평균), 0 = clean 평균, 단위 = source 표준편차 |
+| widest clean direction ⊥ x | y: clean feature가 가장 넓게 퍼진 방향 (x와 직교) |
+
 ## fig1_clean_geometry.png: clean feature의 모양
 
 행 이름 아래 숫자 세 개는 같은 clean test feature를 세 가지 방법으로 분류한 정확도다.
@@ -37,7 +54,7 @@
 
 ## fig2_shift_align_motion_blur_s3.png: 손상이 feature를 어떻게 옮기고, head 입력 표준화가 무엇을 되돌리나
 
-열: clean / motion blur 3단계 / 같은 손상 stream을 head 입력 표준화(배치 64)한 뒤. 제목의 accuracy는 그 상태의 분류 정확도다.
+열: clean / motion blur 3단계 / 같은 손상 stream을 head 입력 표준화(배치 64)한 뒤. 그림 아래에 축 설명을 영어로 넣었다(2026-11-26). 제목의 accuracy는 그 상태의 분류 정확도다.
 
 축(한 행의 세 그림이 같은 축을 쓴다):
 - **x축 "direction of the common shift"**: 손상 stream의 평균 z에서 clean의 평균 z를 뺀 벡터 방향. 손상이 모든 이미지를 함께 민 방향이다.

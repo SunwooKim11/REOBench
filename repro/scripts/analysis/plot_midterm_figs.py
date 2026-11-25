@@ -446,8 +446,9 @@ def fig11(models=("satmae", "satdino_s8")):
         V = torch.linalg.svd(xc, full_matrices=False)[2]
         cm = torch.stack([ztr[ytr == k].mean(0) for k in HL3])
         Q = torch.linalg.qr((cm[1:] - cm[0]).T)[0]
-        views = [("directions of largest variance (PCA)", xc @ V[:2].T), ("plane through the 3 class means", (x - cm.mean(0)) @ Q),
-                 ("t-SNE: who is near whom", tsne(xc @ V[:50].T))]
+        views = [("projection on the 2 widest directions\n(PCA, no labels)", xc @ V[:2].T),
+                 ("projection on the plane through\nthe 3 class means (uses labels)", (x - cm.mean(0)) @ Q),
+                 ("t-SNE: nearest neighbours kept\n(axes have no meaning)", tsne(xc @ V[:50].T))]
         for c, (title, pts) in enumerate(views):
             a = axes[r, c + 1]
             _scatter3(a, pts, y)
@@ -458,7 +459,10 @@ def fig11(models=("satmae", "satdino_s8")):
                 a.set_title(title, fontsize=13, color=INK2, fontweight="normal")
         print(f"fig11 {m}: lin {lin:.1f} knn {knn:.1f} km {km:.1f}", flush=True)
     _legend3(fig, 1.0)
-    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    fig.tight_layout(rect=(0, 0.05, 1, 0.94))
+    fig.text(0.01, 0.0, "Columns 2 and 3 are orthographic projections of the same features onto two planes: the plane of largest spread (PCA) and the plane "
+             "through the clean-train means of the three coloured classes\n(see docs/figs/2026-11-24_feature_dist/fig0_projection.png). "
+             "Column 4 (t-SNE) keeps who is near whom.", ha="left", va="bottom", fontsize=10.5, color=INK2)
     save(fig, "fig11_feature_geometry.png")
 
 
@@ -498,12 +502,16 @@ def fig12(models=("mae_in", "dinov3_web_l16"), corr="motion_blur", sev=3):
             ax.set_title(f"{title}\naccuracy {a:.1f}%", loc="left", fontsize=13)
             ax.set_yticks([])
             if c == 0:
-                ax.set_ylabel(m, fontsize=15, fontweight="bold")
+                ax.set_ylabel(f"{m}\ny: widest clean direction ⊥ x", fontsize=14)
             if r == len(models) - 1:
-                ax.set_xlabel("direction of the common shift (source std units)")
+                ax.set_xlabel("x: along the common shift (source std units)")
         print(f"fig12 {m}: clean {pts[0][3]:.1f} {corr}_s{sev} {pts[1][3]:.1f} aligned {pts[2][3]:.1f} shift {d.norm().item():.1f}", flush=True)
     _legend3(fig, 1.0)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
+    fig.text(0.01, -0.005, "Each dot = one image, as its head input z, projected orthographically onto two directions. x = the common shift: the direction from "
+             "the clean mean to the corrupted-stream mean;\nthe value is the distance from the clean mean along it, in source std units (0 = clean mean, dashed line). "
+             "y = the direction of largest spread of the clean features, made perpendicular to x\n(no tick labels). All panels of a row use the same x and y.",
+             ha="left", va="top", fontsize=10.5, color=INK2)
     save(fig, "fig12_shift_alignment.png")
 
 
