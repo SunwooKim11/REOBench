@@ -1,0 +1,165 @@
+{
+  "config": {
+    "model": "satmae",
+    "head_cfg": "PN",
+    "head_seed": 0,
+    "method": "fsa",
+    "bs": 64,
+    "lr": null,
+    "seed": 0,
+    "noises": [
+      "gaussian_noise_new",
+      "salt_and_pepper_noise",
+      "gaussian_blur",
+      "motion_blur",
+      "brightness_contrast",
+      "clouds",
+      "haze_update_new",
+      "data_gaps",
+      "compression_artifacts",
+      "rotate_new",
+      "scale_image",
+      "translate_image_new"
+    ],
+    "sevs": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "no_clean": false,
+    "cotta_ap": null,
+    "sar_reset": null,
+    "cotta_params": "all",
+    "with_isa": false,
+    "fsa_layer": "blocks.7",
+    "n_src": 32,
+    "isa_target": "train",
+    "tag": "_blocks.7_n32",
+    "workers": 12
+  },
+  "lr": 0.001,
+  "clean": 92.35,
+  "gaussian_noise_new": {
+    "severity": [
+      82.4,
+      77.1,
+      71.35,
+      65.25,
+      58.5
+    ],
+    "mean": 70.92
+  },
+  "salt_and_pepper_noise": {
+    "severity": [
+      88.85,
+      84.0,
+      72.45,
+      60.0,
+      39.15
+    ],
+    "mean": 68.89
+  },
+  "gaussian_blur": {
+    "severity": [
+      88.8,
+      85.5,
+      79.2,
+      73.95,
+      69.35
+    ],
+    "mean": 79.35999999999999
+  },
+  "motion_blur": {
+    "severity": [
+      71.65,
+      62.0,
+      52.3,
+      45.35,
+      38.8
+    ],
+    "mean": 54.019999999999996
+  },
+  "brightness_contrast": {
+    "severity": [
+      92.4,
+      92.15,
+      91.0,
+      85.95,
+      46.65
+    ],
+    "mean": 81.63
+  },
+  "clouds": {
+    "severity": [
+      91.8,
+      91.7,
+      91.05,
+      88.8,
+      82.35
+    ],
+    "mean": 89.14000000000001
+  },
+  "haze_update_new": {
+    "severity": [
+      91.75,
+      89.6,
+      84.9,
+      70.6,
+      41.1
+    ],
+    "mean": 75.59
+  },
+  "data_gaps": {
+    "severity": [
+      87.35,
+      82.05,
+      76.85,
+      66.7,
+      53.35
+    ],
+    "mean": 73.26
+  },
+  "compression_artifacts": {
+    "severity": [
+      88.95,
+      86.9,
+      83.2,
+      71.7,
+      46.85
+    ],
+    "mean": 75.52000000000001
+  },
+  "rotate_new": {
+    "severity": [
+      89.65,
+      87.85,
+      87.95,
+      88.45,
+      90.15
+    ],
+    "mean": 88.80999999999999
+  },
+  "scale_image": {
+    "severity": [
+      90.7,
+      88.95,
+      84.55,
+      77.3,
+      66.4
+    ],
+    "mean": 81.58
+  },
+  "translate_image_new": {
+    "severity": [
+      90.7,
+      90.65,
+      89.2,
+      88.75,
+      87.85
+    ],
+    "mean": 89.42999999999999
+  },
+  "avg": 77.34583333333333
+}
