@@ -428,7 +428,7 @@ source 클래스 평균에서 멀어지는 정도는 둘이 비슷하다(+5.8 �
 | 순서 | 무엇 | 어디 | 시간 |
 |---|---|---|---|
 | 1 | 이 문서 전체 | – | 20분 |
-| 2 | 정렬이 하는 일 (식과 두 단계) | `docs/STUDY_alignment.md` §2.4 | 15분 |
+| 2 | 정렬이 하는 일 (Normalize·입력 정렬·head 입력 정렬의 구분, 식과 두 단계, 필요한 소스 통계) | `docs/STUDY_alignment.md` §1, §2.4 | 20분 |
 | 3 | 백본 표, augmentation 표, 손상 배치 표 | `docs/SETTINGS.md` §1, §2.5 | 15분 |
 | 4 | feature 그림 두 장 | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`, `fig2_shift_align_motion_blur_s3.png` | 10분 |
 | 5 | Geometry 세 가지 (T8, Silhouette 상관, T9) | 이 문서 4절 | 15분 |

@@ -301,7 +301,7 @@
 - 위치 정의:
   - 분류 모델: `이미지 → ViT-L 블록 0…23 → 최종 LayerNorm → CLS 토큰 (1024) → nn.Linear(1024, 30)`.
     - **최종 norm**: 최종 LayerNorm 출력 전체 (B, N, 1024). 통계는 배치의 모든 토큰(CLS + 패치)에서 구함.
-    - **head 입력**: 선형 head에 들어가는 CLS 벡터 (B, 1024)만. 통계는 배치의 CLS 8개에서 구함.
+    - **head 입력**: 선형 head에 들어가는 CLS 벡터 (B, 1024)만. 통계는 배치의 CLS 64개에서 구함(분류 배치 64; 2026-11-25 정정, 이전에 8개로 잘못 적음).
     - 둘은 같은 LayerNorm 바로 뒤이고 통계를 구하는 토큰만 다름.
   - 분할 모델: `ViT-L (블록 7/11/15/23 특징) → UperNet 디코더 (PPM 4갈래 + lateral ×3 + FPN conv ×3 + fpn_bottleneck, 모두 Conv-BN-ReLU, BN 약 13개) → 512채널 맵 → conv_seg (1×1 conv, 512→6)`.
     - **분류기 입력** (`decode_head.conv_seg:in`): conv_seg에 들어가는 512채널 맵 한 곳. 분류 head 입력에 해당.
@@ -350,7 +350,7 @@
 ### 5.7 feature shift 진단 (AID 분류 백본, 2026-10-22, `scripts/analysis/feature_shift.py`)
 - clean test 400장과 같은 이미지의 왜곡본(강도 5, 파일명으로 짝지음)을 백본에 통과시켜, 위치별로 측정:
   d_mu(채널 평균 이동 / σ_clean), d_sd(|log σ 비|), cos(같은 이미지·토큰의 clean/왜곡 특징 코사인), +al(채널 정렬 후 cos 증가),
-  outlier(clean 특징 채널 RMS의 max/median, 상위 1% 채널의 에너지 비율). 통계는 400장 전체(배치 8이 아님). 결과 `experiments/2026-10-22_feature_shift/summary.txt`.
+  outlier(clean 특징 채널 RMS의 max/median, 상위 1% 채널의 에너지 비율). 통계는 400장 전체(배치 단위가 아님). 결과 `experiments/2026-10-22_feature_shift/summary.txt`.
 - 관찰:
   - **radiometric = 입력에서 스케일 변화**: d_sd가 embed에서 최대(0.80 / 0.73, SatMAE / ScaleMAE)이고 깊어질수록 0.2대로 감소.
     정렬 회복(+al)도 embed·초반 블록에서 최대(+0.074 / +0.083) → 입력 정렬(ISA)이 맞는 이유와 일치.
@@ -364,7 +364,7 @@
   - **SatMAE vs ScaleMAE**: ScaleMAE는 degradation 정렬 회복이 2배 이상(+0.035~0.046 vs +0.012~0.019) → 분할 블록 정렬 이득
     (+9.3 vs +2.1)과 일치. 그러나 분류에서는 반대(블록 7 degradation SatMAE +12.0 vs ScaleMAE +3.9)라 설명 안 됨.
     분류 ScaleMAE가 블록 정렬로 radiometric이 떨어지는 이유도 이 진단으로는 안 나옴(정렬 회복은 오히려 큼).
-    → 배치 8 통계의 잡음(이 진단은 400장 통계) 또는 head(CLS 하나)가 소수 채널에 의존하는 정도가 후보.
+    → 배치 통계의 잡음(분류 배치 64, 이 진단은 400장 통계) 또는 head(CLS 하나)가 소수 채널에 의존하는 정도가 후보.
 
 ### 5.8 소스 통계 의존도 (AID 분류, 2026-10-28, `scripts/archive/tta/run_src_ablation.sh`, `summary_src_ablation.txt`)
 "TTA는 소스 데이터 접근 불가인데 소스 통계를 쓰는 건 반칙 아닌가?"에 대한 점검. 쓰는 정보는 이미지가 아니라 집계 통계

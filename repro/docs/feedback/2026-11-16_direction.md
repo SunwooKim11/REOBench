@@ -511,3 +511,16 @@ token 제외 `src/reobench_tta/token_mask.py`(ViT 13개에서 "제외한 patch�
   head 학습률 1e-3 / 1e-2에서 clean mIoU 54.9 / 55.2 (dino_in_s16)로 차이가 작아 1e-3 고정. tmux `segprobe`(T5 빈칸 실행 뒤 시작).
 - midterm 5절에 confidence, Geometry, feature 이동 지표의 설명 위치를 추가. S12(feature의 모양)를 "건너뜀"으로 둔 것은 Claude 판단이었음을 사용자에게 알림.
 
+### 2026-11-25 `docs/STUDY_alignment.md` 전체 갱신 (사용자 질문 세 가지)
+사용자: (1) §2.4 위쪽이 낡았다, 합쳐서 정리. (2) encoder는 고정이고 head만 학습하는데, 배포된 head가 표준화를 W, b에 합쳤는지 test 때는 모른다 → 한계 아닌가.
+(3) ISA는 사전학습 통계로 픽셀에서 하는 것인가, head 입력 정렬과 같은 것인가.
+- 문서를 11월 기준으로 다시 씀. §1(고정 / 학습, 정렬 위치 네 곳, Normalize·입력 정렬·head 입력 정렬 구분, 필요한 소스 통계), §3(10월·11월 수치)이 새 절. §2.4 번호는 유지.
+- 답 (2): head 학습 방식은 몰라도 된다. head를 "h를 받는 상자"로 보고 h를 clean train의 h 통계로 되돌리면 표준화가 따로 있든, 합쳐졌든, 없든 같은 계산이 된다.
+  한계는 "h의 clean train 통계 2 × D개(또는 라벨 없는 clean 이미지 몇 장)가 있어야 한다"로 좁혀진다. W′, b′만으로는 통계를 되찾을 수 없다. "source-free"라고 말하면 안 된다.
+- 답 (3): ISA는 encoder에 들어가는 사진의 픽셀을 고친다(Normalize 앞). 목표 통계는 사전학습 상수가 아니라 다운스트림 clean train의 픽셀 통계.
+  사전학습 상수를 목표로 둔 변형은 10월에 clean −2.60 / −3.05였다.
+- 바로잡은 사실 두 가지.
+  - Potsdam UPerNet(T5)은 encoder까지 fine-tune한 모델이다. "encoder 고정"은 분류와 분할 linear probe에만 해당.
+  - 10월 분류의 배치는 8이 아니라 64였다(`fsa_s0_headin.json`의 config로 확인). STUDY_alignment와 `NOTES_tta.md` §5.5, §5.7의 "CLS 8개 / 배치 8"을 정정.
+- 17개 백본 분류의 AID-C / RESISC45-C에서 입력 정렬(ISA)은 돌린 적이 없다(RRSHID 예측 일치율에서만). 빈 곳으로 기록.
+
