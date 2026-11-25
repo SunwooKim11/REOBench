@@ -531,3 +531,12 @@ token 제외 `src/reobench_tta/token_mask.py`(ViT 13개에서 "제외한 patch�
   (fig1, 3, 5, 10, 12). fig9는 "decoder BN: test-batch statistics", "input pixels aligned to train statistics"로. midterm §4 앞에 세 가지 정렬의 용어표를 넣고
   T1, T4, T12, S5, S7, fig1·fig9 행의 이름을 바꿈. STUDY 문서와 나머지 문장의 "정렬"은 그대로 둠(용어표가 가리킴).
 
+
+### 2026-11-25 방법 후보 1의 상한: 배율 탐색 결과 (`experiments/2026-11-25_undo_acquisition/RESULTS_scale.md`)
+17개 백본, 21:30 완료. op 12개(축소 + reflect 패딩 5개, 그대로, 가운데 확대 5개, 4등분 평균), 라벨 없이 op 고르기(source 통계 거리 / confidence / flip).
+- AID-C scale, 5단계 평균: 그대로 73.1, head 입력 표준화 82.7, 정답 역변환 93.6, 라벨 없이 stat으로 고른 op 93.4, flip으로 고른 op 93.5 (clean 94.8).
+  RESISC45-C: 69.3, 77.1, 87.5, 87.0, 87.6 (clean 90.6). stat이 정답 역변환을 고른 백본은 단계별 12–16 / 17 (AID).
+- 실패한 것: 11개 op의 softmax 평균(ens) 78.7, 4등분 평균(tile2) 67.8. confidence로 고르기는 4–5단계에서 떨어짐(88.5, 87.1).
+- 자연 shift(EarthShift)에는 거의 듣지 않음: R45→UCM 그대로 79.0, oracle op 79.7, stat 76.9(손해). UCM→R45 65.6, oracle 69.1, stat 66.0.
+  두 데이터셋의 해상도 차이가 자연 shift의 주된 원인은 아니라는 뜻으로 읽음(Claude 해석).
+- 주의: 후보 op에 정확한 역변환이 들어 있고 손상이 합성(reflect 패딩)이라 상한에 가깝다. 실제 GSD 차이에는 패딩 흔적이 없다.

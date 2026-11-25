@@ -26,6 +26,8 @@ in `docs/NOTES_tta.md` (2026-10) and `docs/feedback/2026-11-16_direction.md` (20
 | `2026-11-23_head_nostd` | Head-input alignment with a head trained on unstandardized features (head-recipe control) | `scripts/analysis/head_nostd.py` | `RESULTS.md` |
 | `2026-11-23_seg_signals` | Potsdam segmentation: label-free signals (flip, confidence, prediction bias) and flip filter / DSBR | `scripts/seg/seg_signals.py`, `scripts/seg/seg_tta.py` | `RESULTS.md` |
 | `2026-11-24_cluster_cot` | Entropy Enigma checks on the 17 backbones: COT accuracy estimate, Silhouette / Shift distance vs accuracy, k-means vs linear head, two phases of entropy minimisation (tent vs DSBR) | `scripts/analysis/cluster_cot.py`, `cluster_subspace.py`, `em_phases.py`, `plot_feature_dist.py` | `RESULTS.md`, `RESULTS_subspace.md`, `RESULTS_em_phases.md` |
+| `2026-11-25_undo_acquisition` | Upper bounds for undoing the acquisition condition at the input, 17 backbones: scale search (12 zoom ops, label-free op choice) and data-gaps repair (fill / interpolate / exclude tokens) | `scripts/analysis/scale_search.py`, `gaps_repair.py` |
+| `2026-11-25_seg_probe` | Potsdam segmentation with all 17 frozen backbones + a linear head; none / head-input standardization / input alignment (running) | `scripts/seg/seg_probe.py` |
 
 The segmentation-TTA check on Cityscapes→ACDC and the official CoTTA run keep their logs inside `third_party/`.
 Their numbers are recorded in NOTES_tta.md §2.

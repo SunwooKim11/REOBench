@@ -15,6 +15,13 @@ fig1의 첫 두 열은 같은 점을 서로 다른 평면에 정사영한 것이
 - PCA 평면: 점들이 가장 넓게 퍼진 두 방향. 라벨을 안 쓴다. 넓게 퍼진 방향이 모든 클래스에 공통인 변화(장난감에서는 세로)이면 클래스가 겹쳐 보인다.
 - 세 클래스 평균을 지나는 평면: 별 세 개(클래스 평균)를 지나는 평면. 라벨을 쓴다. 세 클래스를 떼어 보기에 가장 좋은 평면이다.
 
+선행 사례 (2026-11-26 확인): Müller, Kornblith, Hinton, *When Does Label Smoothing Help?* (NeurIPS 2019) §2, Fig. 1이 같은 방식을 쓴다.
+"Pick three classes", "Find an orthonormal basis of the plane crossing the templates of these three classes", "Project the penultimate layer
+activations of examples from these three classes onto this plane." 차이: 그 논문의 평면은 세 클래스의 template(마지막 층 가중치 w_k)을 지나고,
+우리는 세 클래스의 clean train feature 평균을 지난다. 비슷한 목적의 다른 그림: Neural Collapse(Papyan et al. PNAS 2020) Fig. 1은 세 클래스의
+평균·classifier·feature를 클래스 평균의 SVD로 3차원에 그린다. 라벨을 써서 축을 고른다는 점에서 LDA(Fisher 판별) 투영과도 같은 종류다.
+읽을 때 주의: 평면을 세 클래스가 갈라지도록 골랐으므로 평균끼리 떨어져 보이는 것은 당연하다. 보는 것은 평균 사이 거리에 비해 각 클래스가 얼마나 퍼졌나이다.
+
 PPT에 넣을 한글 이름 (서버에 한글 글꼴이 없어 그림 안은 영어):
 
 | 그림 안 제목 | 한글 |
