@@ -608,3 +608,11 @@ frozen backbone + 선형 head(1×1 conv). 프로토콜은 Claude가 정한 것�
   Tent protocol의 가장 가까운 증거(lr 10배, AID-C 17개: none 81.8, tent 76.1, dsbr 80.4, flip 필터 83.8)를 같이 적음. DSBR도 none 아래로 내려간다.
 - 선례 확인(검색): T3A, TAST, LAME은 frozen feature 위에서만 적응. "채널별 affine을 엔트로피로 학습"을 그대로 한 논문은 확인 못 함.
 - 다시 돌리는 것: `cls_tta_fm.py`에 `--order`(sorted, lt10, lt100)를 추가하고 AID-C 17개 백본을 Tent protocol로 실행 중(tmux `fmorder`, 1차 none·tent·dsbr, 2차 sar·flipf). 로그 `experiments/2026-11-17_fm_tta/run_order.log`.
+
+### 2026-11-26 fig4를 Tent protocol로 다시 실행 (사용자 요청, 05:30 중간 결과: `experiments/2026-11-26_em_long_tent/`)
+사용자: "fig4를 Tent protocol로 돌려야 의미가 있다. 이것이 DSBR의 당위성이다. 불균형 실험보다 먼저." DiT(ditload)도 끄라고 함 → 껐고 launcher에서 다시 켜는 줄을 뺌.
+- `scripts/tta/cls_tta_long.py`: `cls_tta_fm.py`와 같은 파라미터·SGD·lr, AID-C 3단계 stream을 반복해 2,000 step, checkpoint에서 stream 전체 평가. 이미지를 한 번만 디코딩해 GPU에 올림.
+- 끝난 7개 백본 × 3–4개 손상(27쌍): tent 붕괴(예측 클래스 5개 이하) 10쌍, dsbr 붕괴 4쌍. SatMAE motion blur: tent 29.6 → 4.0(클래스 1개), dsbr 82.2(30개).
+  dsbr도 붕괴: scalemae motion blur, moco_in의 motion blur·data gaps·scale. DINO 계열은 tent도 붕괴하지 않음.
+- feature 단계 fig4(17개 모두 tent 하락, dsbr 상승)와 다름. 정리 문서 B6를 fig4b + T15로 바꿈. ViT-S/8 두 개는 GPU를 주려고 멈춤(나중에 이어서).
+- 불균형 실험(Tent protocol)은 멈춘 상태(lt100의 12개 백본쯤까지).
