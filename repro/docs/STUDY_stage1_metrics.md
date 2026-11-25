@@ -148,6 +148,11 @@ rel_drift, frac_common, CKA, cos, PR ratio, 정렬 후 acc를 비교해 4.1–4.
 - 계산: 정렬 전 예측과 정렬 후 예측이 다른 샘플의 비율(%).
 - 뜻: "source 통계 관점에서 보면 판단이 달라지는 샘플이 얼마나 되나". shift가 없으면 0.8–5.7%(배치 통계의 잡음), 클수록 원래 예측을 믿기 어렵다.
 - stage 1: 정확도와의 순위 상관 0.90–1.00(모든 백본). 정렬로 오르는 정확도 ≈ 0.47 × (flip − clean flip).
+- **flip 필터 (TTA, 우리 변형; `scripts/tta/cls_tta_fm.py`의 `flipf`, 2026-11-17)**: 배치마다 head 입력을 그대로 넣은 예측과 test 배치로 표준화해 넣은 예측을 비교해,
+  **둘이 같은 표본만** 엔트로피 최소화(TENT와 같은 파라미터: encoder norm 층의 γ, β)에 쓴다. 임계값도 가중치도 없는 같다 / 다르다의 이진 선택이다.
+  SAR·EATA의 신뢰도 필터(엔트로피 < 0.4 ln C)를 flip으로 바꾼 것이고, 예측은 그대로의 head 입력으로 한다. Entropy Enigma에는 없는 설정이다
+  (그 논문의 flip은 적응 전후 예측의 차이이고 정확도 추정에만 쓴다). 결과: AID-C / RESISC45-C 84.3 / 79.1 (none 81.8 / 75.2, 17개 백본 전부 이득).
+  과신 백본에서 남긴 표본의 오류율이 SAR 필터 23–27%, flip 필터 7–13%.
 
 ### 5.3 confidence 기반 정확도 추정
 - AC (Average Confidence): 평균 confidence를 그대로 정확도 추정값으로.
