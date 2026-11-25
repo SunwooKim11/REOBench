@@ -540,3 +540,8 @@ token 제외 `src/reobench_tta/token_mask.py`(ViT 13개에서 "제외한 patch�
 - 자연 shift(EarthShift)에는 거의 듣지 않음: R45→UCM 그대로 79.0, oracle op 79.7, stat 76.9(손해). UCM→R45 65.6, oracle 69.1, stat 66.0.
   두 데이터셋의 해상도 차이가 자연 shift의 주된 원인은 아니라는 뜻으로 읽음(Claude 해석).
 - 주의: 후보 op에 정확한 역변환이 들어 있고 손상이 합성(reflect 패딩)이라 상한에 가깝다. 실제 GSD 차이에는 패딩 흔적이 없다.
+
+### 2026-11-25 T5 빈칸 실행 완료, T5를 한 표로 통합
+생성 4종에서 sar, dsbr + BN 통계 교체 실행 완료(22:46). midterm T5를 모델별 한 표(배포 8종 평균, 생성 4종 각각, 4종 평균, 12종 평균)로 합쳐 "실행 안 함"과 별도 손상별 표를 없앰.
+- 12종 평균 변화 (SatMAE / ScaleMAE): sar −1.0 / −0.7, dsbr + BN 통계 교체 +2.3 / +3.0. BN 통계 교체 위의 세 학습 방법(tent, flip 필터, dsbr)은 0.2pt 이내로 같다.
+- Potsdam 17개 백본 linear probe는 21:30 시작, 내일 오전 늦게 끝날 예정(사용자: 내일 면담에는 T5까지만 가져감).

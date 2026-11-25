@@ -1,0 +1,63 @@
+{
+  "config": {
+    "model": "scalemae",
+    "set": "B",
+    "method": "dsbr",
+    "alpha": 0.9,
+    "out_dir": "2026-11-23_seg_signals",
+    "bn": "batch",
+    "bs": 8,
+    "lr": 7.5e-06,
+    "sar_e0": 0.4,
+    "sar_reset": 0.2,
+    "cotta_thr": null,
+    "corruptions": [
+      "rotate",
+      "scale_image",
+      "translate_image",
+      "data_gaps"
+    ],
+    "sevs": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "no_clean": true,
+    "max_images": null,
+    "seed": 0,
+    "with_isa": false,
+    "fsa_layer": null,
+    "tag": "_geo4",
+    "workers": 3
+  },
+  "streams": {
+    "rotate_s1": 63.80213579612594,
+    "rotate_s2": 63.975586783380244,
+    "rotate_s3": 63.93623200181895,
+    "rotate_s4": 63.42551136412439,
+    "rotate_s5": 64.38059607575458,
+    "scale_image_s1": 63.13367293325162,
+    "scale_image_s2": 62.02196152835114,
+    "scale_image_s3": 60.52998049707929,
+    "scale_image_s4": 58.9554498383624,
+    "scale_image_s5": 57.08288229487691,
+    "translate_image_s1": 64.17098588949385,
+    "translate_image_s2": 64.00876000217932,
+    "translate_image_s3": 63.88032785857649,
+    "translate_image_s4": 63.77508002868654,
+    "translate_image_s5": 63.64408967006826,
+    "data_gaps_s1": 60.88567822626899,
+    "data_gaps_s2": 57.470709018901836,
+    "data_gaps_s3": 54.668249372758716,
+    "data_gaps_s4": 50.92892137068693,
+    "data_gaps_s5": 47.9257866433027
+  },
+  "per_corruption": {
+    "rotate": 63.904012404240824,
+    "scale_image": 60.344789418384266,
+    "translate_image": 63.89584868980089,
+    "data_gaps": 54.37586892638383
+  }
+}

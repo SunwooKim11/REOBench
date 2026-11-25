@@ -109,7 +109,8 @@ for model in ("satmae", "scalemae"):
     table(out, ["method", "clean", "손상 평균"] + SHORT, rows)
 
     # TTA methods on the four generated corruptions (runs with --tag _geo4; no clean stream in these runs)
-    G = [("tent", "tent_geo4"), ("tent_bnbatch", "tent_geo4_bnbatch"), ("dsbr", "dsbr_geo4"), ("flipf", "flipf_geo4"), ("flipf_bnbatch", "flipf_geo4_bnbatch")]
+    G = [("tent", "tent_geo4"), ("tent_bnbatch", "tent_geo4_bnbatch"), ("sar", "sar_geo4"), ("dsbr", "dsbr_geo4"),
+         ("dsbr_bnbatch", "dsbr_geo4_bnbatch"), ("flipf", "flipf_geo4"), ("flipf_bnbatch", "flipf_geo4_bnbatch")]
     RG = {n: json.load(open(D / "outputs" / f"{model}_B" / f"{f_}.json")) for n, f_ in G if (D / "outputs" / f"{model}_B" / f"{f_}.json").exists()}
     if RG and all(f"{c}_s5" in S for c in GEO):
         out += [f"## {model}_B: 학습하는 방법, 생성한 4종 (mIoU; none 행은 절대값, 나머지는 none 대비 변화)", "",
