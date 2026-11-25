@@ -523,4 +523,6 @@ token 제외 `src/reobench_tta/token_mask.py`(ViT 13개에서 "제외한 patch�
   - Potsdam UPerNet(T5)은 encoder까지 fine-tune한 모델이다. "encoder 고정"은 분류와 분할 linear probe에만 해당.
   - 10월 분류의 배치는 8이 아니라 64였다(`fsa_s0_headin.json`의 config로 확인). STUDY_alignment와 `NOTES_tta.md` §5.5, §5.7의 "CLS 8개 / 배치 8"을 정정.
 - 17개 백본 분류의 AID-C / RESISC45-C에서 입력 정렬(ISA)은 돌린 적이 없다(RRSHID 예측 일치율에서만). 빈 곳으로 기록.
-
+- (같은 날 정정) 위의 "head 학습 방식은 몰라도 된다"는 표현을 사용자가 바로잡음: 1단계(표준화)를 두고 학습했으면 (z − mean) / std만, 없이 학습했으면
+  그 뒤에 σ_src를 곱하고 μ_src를 더해야 한다. 식과 필요한 소스 통계가 head 학습 방식으로 갈린다. "h를 clean train 통계로 되돌린다"는 한 줄 표기는
+  같은 계산을 묶어 적는 법일 뿐이다. STUDY_alignment §1.4, §2.4 (5)를 이 구분이 먼저 나오도록 고침.
