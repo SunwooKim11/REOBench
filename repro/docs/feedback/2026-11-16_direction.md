@@ -526,3 +526,8 @@ token 제외 `src/reobench_tta/token_mask.py`(ViT 13개에서 "제외한 patch�
 - (같은 날 정정) 위의 "head 학습 방식은 몰라도 된다"는 표현을 사용자가 바로잡음: 1단계(표준화)를 두고 학습했으면 (z − mean) / std만, 없이 학습했으면
   그 뒤에 σ_src를 곱하고 μ_src를 더해야 한다. 식과 필요한 소스 통계가 head 학습 방식으로 갈린다. "h를 clean train 통계로 되돌린다"는 한 줄 표기는
   같은 계산을 묶어 적는 법일 뿐이다. STUDY_alignment §1.4, §2.4 (5)를 이 구분이 먼저 나오도록 고침.
+- (같은 날) 사용자: fig1의 "statistics alignment"가 head 입력만인지 입력 픽셀·중간 블록·BN까지인지 모호하고, "정렬"보다 "표준화"가 낫다.
+  확인: fig1의 초록 세 줄(`none_al`, `tent_al`, `dsbr_al`)은 head 입력 표준화뿐(`cls_tta_fm.py`). 그림 라벨을 "head-input standardization"으로 바꾸고 주석을 달았다
+  (fig1, 3, 5, 10, 12). fig9는 "decoder BN: test-batch statistics", "input pixels aligned to train statistics"로. midterm §4 앞에 세 가지 정렬의 용어표를 넣고
+  T1, T4, T12, S5, S7, fig1·fig9 행의 이름을 바꿈. STUDY 문서와 나머지 문장의 "정렬"은 그대로 둠(용어표가 가리킴).
+

@@ -4,12 +4,12 @@
   fig2_estimation.png     : label-free accuracy estimates vs true accuracy on the 2,040 corrupted streams (T3)
   fig3_signals.png        : confidence vs accuracy and flip vs accuracy, three backbones on RESISC45-C
   fig4_em_phases.png      : entropy minimisation over 2,000 steps, tent vs DSBR: accuracy and predicted classes (T9)
-  fig5_headroom.png       : per corruption: as is -> aligned -> head re-fitted with labels -> clean (T12)
+  fig5_headroom.png       : per corruption: as is -> head-input standardization -> head re-fitted with labels -> clean (T12)
   fig6_pairs.png          : satellite minus generic pretraining for the six matched pairs (T10)
   fig7_blur_aug.png       : drop under Gaussian blur, backbones with / without blur augmentation (T7)
   fig8_corruptions.png    : one AID image under the 12 REOBench corruptions, grouped by acquisition stage (T6)
   fig9_seg.png            : Potsdam mIoU per corruption (12) for none / BN / input / input + BN alignment (T5)
-  fig10_alignment.png     : what head-input alignment does: pipeline, one feature channel, prediction share per class
+  fig10_alignment.png     : what head-input standardization does: pipeline, one feature channel, prediction share per class
   fig11_feature_geometry.png : clean features of two backbones: accuracy by read-out and three 2-D views
   fig12_shift_alignment.png  : clean / corrupted / aligned features along the common shift, two backbones
 Labels are in English (no Korean font on the server). Colours: dataviz reference palette, light surface.
@@ -69,8 +69,8 @@ def save(fig, name):
 
 def fig1():
     M = [("none", "no adaptation", GREY), ("tent", "Tent", ORANGE), ("sar", "SAR", ORANGE), ("eata", "EATA", ORANGE),
-         ("dsbr", "DSBR", BLUE), ("flipf", "flip filter", BLUE), ("none_al", "alignment only (no learning)", AQUA),
-         ("tent_al", "alignment + Tent", AQUA), ("dsbr_al", "alignment + DSBR", AQUA)]
+         ("dsbr", "DSBR", BLUE), ("flipf", "flip filter", BLUE), ("none_al", "head-input standardization only", AQUA),
+         ("tent_al", "standardization + Tent", AQUA), ("dsbr_al", "standardization + DSBR", AQUA)]
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True)
     for ax, (ds, title) in zip(axes, DS):
         V = np.array([[json.load(open(E / "2026-11-17_fm_tta" / ds / m / f"{k}.json"))["avg"] for m in ORDER] for k, _, _ in M])
@@ -84,8 +84,12 @@ def fig1():
         ax.set_xlabel("accuracy on corrupted streams (%), dots = 17 backbones"); ax.set_title(title, loc="left")
         ax.tick_params(axis="y", length=0)
     hs = [plt.Rectangle((0, 0), 1, 1, color=c, alpha=0.6, label=n) for n, c in (("entropy-based", ORANGE), ("no confidence used", BLUE),
-                                                                              ("statistics alignment", AQUA))]
+                                                                              ("head-input standardization (no learning)", AQUA))]
     fig.legend(handles=hs, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.04))
+    fig.text(0.01, -0.06, "Head-input standardization: the feature that enters the linear head is standardized per channel with the mean / std of the "
+             "current test batch (64 images). Nothing else is changed:\nno input-pixel alignment, no alignment inside the backbone, no BN. "
+             "\"+ Tent\" / \"+ DSBR\": that method updates the backbone norm layers, and predictions use the standardized head input.",
+             ha="left", va="top", fontsize=9.5, color=INK2)
     save(fig, "fig1_methods.png")
 
 
@@ -133,7 +137,7 @@ def fig3():
     for c, m in enumerate(models):
         G = sig(m, "r45"); K = [k for k in G if k != "clean"]
         acc = np.array([G[k]["acc"] for k in K])
-        for r, (key, lab, col) in enumerate((("ac", "mean confidence (%)", ORANGE), ("flip", "flip rate after alignment (%)", BLUE))):
+        for r, (key, lab, col) in enumerate((("ac", "mean confidence (%)", ORANGE), ("flip", "flip rate after head-input standardization (%)", BLUE))):
             x = np.array([G[k][key] for k in K]); ax = axes[r, c]
             ax.scatter(x, acc, s=22, color=col, edgecolors=SURF, linewidths=0.4)
             ax.set_xlabel(lab); ax.set_ylim(0, 100)
@@ -192,7 +196,7 @@ def fig5():
         ax.set_xlim(28, 100); ax.set_xlabel("accuracy (%), mean of 17 backbones, severity 3 and 5"); ax.set_title(title, loc="left")
         ax.grid(axis="x", color=GRID, lw=0.8); ax.set_axisbelow(True)
     hs = [plt.Line2D([], [], marker="o", ls="", ms=7, mfc=GREY, mec=SURF, label="as is"),
-          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=AQUA, mec=SURF, label="alignment (what we use; no labels)"),
+          plt.Line2D([], [], marker="o", ls="", ms=7, mfc=AQUA, mec=SURF, label="head-input standardization (what we use; no labels)"),
           plt.Line2D([], [], marker="o", ls="", ms=7, mfc=BLUE, mec=SURF, label="upper bound, not a method: head re-fitted WITH labels of the corrupted stream")]
     fig.legend(handles=hs, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.03), fontsize=10)
     save(fig, "fig5_headroom.png")
@@ -271,14 +275,14 @@ def fig8(cls="Port", sev=3):
 
 def fig9():
     # 12 corruptions (8 released + 4 we generated), grouped by what responds
-    groups = (("input alignment recovers", (("brightness_contrast", "brightness /\ncontrast"), ("haze", "haze"))),
-              ("BN alignment helps", (("gaussian_noise", "Gaussian\nnoise"), ("salt_and_pepper_noise", "salt &\npepper"),
+    groups = (("input-pixel alignment recovers", (("brightness_contrast", "brightness /\ncontrast"), ("haze", "haze"))),
+              ("decoder-BN batch statistics help", (("gaussian_noise", "Gaussian\nnoise"), ("salt_and_pepper_noise", "salt &\npepper"),
                                       ("compression_artifacts", "JPEG"), ("data_gaps", "data\ngaps *"))),
               ("small drop, nothing helps", (("gaussian_blur", "Gaussian\nblur"), ("motion_blur", "motion\nblur"), ("clouds", "clouds"),
                                              ("scale_image", "scale *"), ("rotate", "rotate *"), ("translate_image", "translate *"))))
     cor = [c for _, g in groups for c, _ in g]
     lab = [l for _, g in groups for _, l in g]
-    V = (("none", "no adaptation", GREY), ("bn", "BN alignment", BLUE), ("isa", "input alignment", ORANGE), ("isa_bn", "input + BN alignment", AQUA))
+    V = (("none", "no adaptation", GREY), ("bn", "decoder BN: test-batch statistics", BLUE), ("isa", "input pixels aligned to train statistics", ORANGE), ("isa_bn", "both", AQUA))
     fig, axes = plt.subplots(2, 1, figsize=(15, 6.8), sharex=True)
     for ax, (m, title) in zip(axes, (("satmae_B", "SatMAE"), ("scalemae_B", "Scale-MAE"))):
         d = json.load(open(E / "2026-11-23_seg_signals" / "signals" / f"{m}.json"))
@@ -340,7 +344,7 @@ def fig10(model="mae_in", ds="aid"):
         ax.annotate("", xy=(x1, y + 3.75), xytext=(x0, y + 3.75), arrowprops=dict(arrowstyle="-|>", color=INK2, lw=1.1))
 
     for y, tag, mid, fc, ec in ((28, "as trained and used without adaptation", "z = (h - mean_src) / std_src", "#eceae5", INK2),
-                                (9, "test time, aligned (ours)", "z = (h - mean_batch) / std_batch", "#dbe9fb", BLUE)):
+                                (9, "test time, standardized with test-batch statistics", "z = (h - mean_batch) / std_batch", "#dbe9fb", BLUE)):
         ax.text(0, y + 10.2, tag, fontsize=11, fontweight="bold", color=INK, va="bottom")
         box(0, y, 13, "image", SURF); arrow(13.8, 17.2, y)
         box(18, y, 19, "frozen backbone", "#eceae5"); arrow(37.8, 41.2, y)
@@ -360,7 +364,7 @@ def fig10(model="mae_in", ds="aid"):
     bins = np.linspace(lo, hi, 60)
     ax1.hist(zc[:, j].numpy(), bins=bins, color=GREY, alpha=0.55, label=f"clean (accuracy {ac:.1f}%)")
     ax1.hist(zk[:, j].numpy(), bins=bins, histtype="step", color=ORANGE, lw=2, label=f"{SHORT[cname]}, severity 3 ({a0:.1f}%)")
-    ax1.hist(za[:, j].numpy(), bins=bins, histtype="step", color=BLUE, lw=2, label=f"same stream, aligned ({a1:.1f}%)")
+    ax1.hist(za[:, j].numpy(), bins=bins, histtype="step", color=BLUE, lw=2, label=f"same stream, standardized ({a1:.1f}%)")
     ax1.axvline(0, color=INK2, lw=0.8, ls=(0, (3, 3)))
     ax1.set_xlabel("value of one feature channel (source std units; 0 = source mean)"); ax1.set_ylabel("images")
     ax1.set_title(f"{model}, {ds.upper()}: the channel with the largest shift", loc="left", fontsize=11)
@@ -372,12 +376,12 @@ def fig10(model="mae_in", ds="aid"):
     o = np.argsort(-sk); x = np.arange(nc)
     ax2.bar(x, st[o], width=0.8, color=GREY, alpha=0.55, label="true share")
     ax2.plot(x, sk[o], color=ORANGE, lw=2, marker="o", ms=4, label="predicted, corrupted")
-    ax2.plot(x, sa[o], color=BLUE, lw=2, marker="o", ms=4, label="predicted, aligned")
+    ax2.plot(x, sa[o], color=BLUE, lw=2, marker="o", ms=4, label="predicted, standardized")
     names = sorted(os.listdir(common.TRAIN_DIR))
     ax2.annotate(f"{names[o[0]]}: {sk[o[0]]:.0f}% of predictions", xy=(0, sk[o[0]]), xytext=(4, sk[o[0]] * 0.92), fontsize=10,
                  arrowprops=dict(arrowstyle="-", color=INK2, lw=0.8))
     ax2.set_xlabel("classes, sorted by predicted share on the corrupted stream"); ax2.set_ylabel("share of images (%)")
-    ax2.set_xticks([]); ax2.set_title("predictions collapse to a few classes; alignment spreads them again", loc="left", fontsize=11)
+    ax2.set_xticks([]); ax2.set_title("predictions collapse to a few classes; standardization spreads them again", loc="left", fontsize=11)
     ax2.legend(loc="upper right", fontsize=9.5)
     save(fig, "fig10_alignment.png")
     print(f"fig10: {model} {ds} {cname}_s3 clean {ac:.1f} corrupted {a0:.1f} aligned {a1:.1f} channel {j}")
@@ -478,7 +482,7 @@ def fig12(models=("mae_in", "dinov3_web_l16"), corr="motion_blur", sev=3):
         u2 = torch.linalg.svd(xc - (xc @ u1)[:, None] * u1, full_matrices=False)[2][0]
         B = torch.stack([u1, u2]).T
         pts = [("clean", xc @ B, y, acc(x, y)), (f"{SHORT[corr]}, severity {sev}", (xk - x.mean(0)) @ B, yk, acc(xk, yk)),
-               ("same stream, aligned", (xa - x.mean(0)) @ B, yk, acc(xa, yk))]
+               ("same stream, standardized", (xa - x.mean(0)) @ B, yk, acc(xa, yk))]
         allp = torch.cat([p for _, p, _, _ in pts])
         lim = [(allp[:, k].quantile(0.003).item(), allp[:, k].quantile(0.997).item()) for k in (0, 1)]
         for c, (title, p, yy, a) in enumerate(pts):
