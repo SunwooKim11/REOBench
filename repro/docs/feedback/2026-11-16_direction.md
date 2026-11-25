@@ -559,3 +559,28 @@ token 제외 `src/reobench_tta/token_mask.py`(ViT 13개에서 "제외한 patch�
   - T12: clean이 T1과 다른 이유(test 절반으로 평가) 추가.
   - 6절: 방법 후보 1의 두 실험은 11-25에 예비 실행됐음을 적고 상한 표를 붙임(슬라이드에는 넣지 않음).
   - fig9(묶음 제목이 구분선에 닿음), fig10(주석이 범례와 겹침)을 글자 위치만 고쳐 다시 그림.
+
+### 2026-11-26 부분 2 구성을 다시 짬 (사용자 지적), GRAM 논문, k-means가 낮은 이유
+사용자 지적: (1) 피드백 대응이 슬라이드 두 장으로 끝나고 너무 간단하다. 직접 읽은 EarthShift, Beyond Accuracy, RSPDBench, matched-pair 연구가 드러나지 않는다.
+(2) 백본의 사전학습 방식을 깊이 알아야 하는데 MoCo, GASSL, SatDINO는 Claude가 읽은 것이다. (3) geometry 분석이 슬라이드에 하나도 없다.
+(4) 결론이 "flip과 DSBR을 적용했고 head 입력 표준화가 좋더라"로 읽힌다. Claude 판단: 1, 3, 4에 동의. 슬라이드를 "무엇이 듣나" 순서로 짰고 S12를 "건너뜀"으로 둔 것이 원인.
+- 정리 문서 3절을 네 묶음 16장으로 다시 씀: A 피드백과 읽은 것(5), B 어떻게 실패하나(6), C 분석에서 나온 도구(3), D 남은 여지와 방향(2). 1절의 "할 말"도 진단 중심으로 고침.
+- `docs/STUDY_backbones.md` 새로 씀: 방식별 한 장 표, 방식 설명, 누가 읽었나, 예상 질문. 방식 설명은 Claude가 아는 내용이고 원문 재대조는 안 함(문서에 명시).
+- DINO 쌍이 셋인 이유: 공개된 SatDINO 가중치가 S/16, S/8, B/16 셋이고 DINO(v1)에 같은 구조가 다 있음. ViT-L은 양쪽 다 없음. 크기별 분석은 연구 질문이 아니라는 것이 Claude 의견.
+- **GRAM** (arXiv 2511.10300, 사용자가 찾음): 요약 agent가 HTML 전체를 읽음. `docs/reading/gram_slum_tta.md`, `PRIOR_ART_rs_tta_corruption.md` §2에 행 추가.
+  도시 간 자연 shift의 슬럼 분할이고 손상은 없음. confidence로 고른 pseudo label이 가장 나쁘고(0.463) 예측 일치로 고른 것이 가장 좋다(0.859): flip 필터의 선례.
+- **k-means가 낮은 이유** (사용자 해석: "한 클래스가 구 여러 개 또는 타원형"). `scripts/analysis/cluster_shape.py`, `experiments/2026-11-24_cluster_cot/RESULTS_shape.md`.
+  - 17개 백본 평균(AID / RESISC45): k-means 59.1 / 51.3, 가장 가까운 클래스 평균 85.1 / 75.8, 클래스 내 공분산으로 whitening한 뒤 92.3 / 83.9, 5-NN 88.5 / 83.3, 선형 94.8 / 90.6.
+  - 클래스 하나를 둘로 쪼갰을 때 줄어드는 분산: 실제 8.8 / 9.6%, 같은 공분산의 Gaussian 8.1 / 8.6%, 두 클래스를 합친 것 17.6 / 18.0%. 다봉으로 판정된 클래스 1% / 6%.
+  - 클래스 내 분산의 76 / 69%가 클래스 평균 부분공간 밖. 첫 주성분의 몫은 12–13%.
+  - 클래스 평균에서 시작한 k-means는 77.8 / 62.4이고 목적함수는 무작위 시작과 1% 이내로 같음. 시작점 40개에서 정확도가 한 백본 안에서 9–19pt 흔들림.
+  - 결론: "여러 덩어리"는 틀리고 "덩어리 하나, 둥글지 않음(클래스와 무관한 여러 방향으로 넓게 퍼짐)"이 맞다. **Claude가 11-24 노트와 fig1 제목("not one blob per class"),
+    README("satmae는 한 클래스가 여러 섬으로 쪼개져")에 쓴 설명이 틀렸으므로 고침.** fig1 제목을 바꿔 다시 그리고, 설명 그림 `fig3_class_shape.png`를 추가.
+  - 쌍 비교는 k-means 대신 5-NN으로 봄(안정적): 위성 사전학습이 AID 5쌍, RESISC45 4쌍에서 5-NN을 올림. 절대값은 목적함수를 따름(MAE·MoCo·지도학습 81–92, DINO 91–95).
+
+### 2026-11-26 Potsdam 17개 백본 분할 끝 (`experiments/2026-11-25_seg_probe/RESULTS.md`, 01:39 종료)
+frozen backbone + 선형 head(1×1 conv). 프로토콜은 Claude가 정한 것이고 사용자 확인은 받지 않음. 면담에는 쓰지 않는다(사용자 결정).
+- 17개 평균 mIoU: clean 56.4, 손상 none 48.2, head 입력 feature 표준화(fa) 48.7(+0.5), 입력 정렬 49.3, 둘 다 49.3. clean에서 fa의 비용 −2.2pt.
+- fa의 이득은 MAE 계열에만 있다(satmae +4.0, scalemae +5.5, mae_in +3.5). DINO·지도학습 ViT는 −0.2 ~ −1.3으로 손해. 분류(17개 모두 이득)와 다르다.
+- flip과 픽셀 정확도의 순위상관은 평균 −0.92(−0.82 ~ −0.98), confidence는 +0.83이고 scalemae에서 +0.20으로 무너진다.
+- 쌍 비교(위성 − 일반, 손상 none): MAE → SatMAE −7.5, MoCo −1.9, DINO S16 / S8 / B16 −0.4 / +0.4 / −2.7, DINOv3 −8.9. 분할에서는 위성 쪽이 낫다고 할 쌍이 없다.

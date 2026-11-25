@@ -1,4 +1,4 @@
-# feature 분포 그림 읽는 법 (2026-11-24 그림, 2026-11-26 설명 작성)
+# feature 분포 그림 읽는 법 (2026-11-24 그림, 2026-11-26 설명 작성, 같은 날 fig3 추가와 해석 정정)
 
 스크립트: `scripts/analysis/plot_feature_dist.py`. 수치: `experiments/2026-11-24_cluster_cot/RESULTS.md`.
 
@@ -28,7 +28,7 @@ PPT에 넣을 한글 이름 (서버에 한글 글꼴이 없어 그림 안은 영
 |---|---|
 | projection on the 2 widest directions (PCA, no labels) | PCA 평면 정사영 (가장 넓게 퍼진 두 방향, 라벨 없음) |
 | projection on the plane through the 3 class means (uses labels) | 세 클래스 평균을 지나는 평면 정사영 (라벨 사용) |
-| t-SNE: nearest neighbours kept (distances and axes have no meaning) | t-SNE (가까운 이웃 관계만 유지, 축과 거리는 의미 없음) |
+| t-SNE: nearest neighbours kept (distances and axes have no meaning) | t-SNE (가까운 이웃 관계만 유지, 축과 거리는 의미 없음. 섬의 개수도 믿지 말 것) |
 | x: along the common shift (source std units) | x: 공통 이동 방향 (clean 평균 → 손상 stream 평균), 0 = clean 평균, 단위 = source 표준편차 |
 | widest clean direction ⊥ x | y: clean feature가 가장 넓게 퍼진 방향 (x와 직교) |
 
@@ -40,7 +40,7 @@ PPT에 넣을 한글 이름 (서버에 한글 글꼴이 없어 그림 안은 영
 |---|---|---|
 | linear | 학습한 선형 head (z W + b) | 클래스 사이에 평면 경계를 그을 수 있나 (선형 분리) |
 | 5-NN | 가장 가까운 train 이미지 5장의 다수결 라벨 | 가까운 이웃이 같은 클래스인가 (국소 일관성) |
-| k-means | 라벨 없이 30개 군집으로 나눈 뒤, 군집과 클래스를 가장 잘 맞게 짝지어 센 정확도 | 클래스마다 한 덩어리로 뭉쳐 있나 |
+| k-means | 라벨 없이 30개 군집으로 나눈 뒤, 군집과 클래스를 가장 잘 맞게 짝지어 센 정확도 | 라벨 없이 유클리드 거리만으로 클래스를 찾을 수 있나 (클래스가 둥글고 서로 떨어진 덩어리인가) |
 
 세 열(같은 점을 다르게 내린 그림):
 
@@ -53,11 +53,71 @@ PPT에 넣을 한글 이름 (서버에 한글 글꼴이 없어 그림 안은 영
 - PCA의 "주성분"은 채널 하나가 아니라 채널들의 가중합인 방향이다.
 - t-SNE의 "neighbourhood"는 한 점 주변의 가까운 점들이고, 그 점들이 같은 클래스인지가 보는 대상이다. 다른 클래스가 가까이 붙어 있으면 섬이 붙거나 섞여 보인다.
 
-제목 "linearly separable, locally consistent, not one blob per class"의 뜻:
+제목 "linearly separable, locally consistent, but k-means does not find the classes"의 뜻 (2026-11-26 제목과 설명을 고침):
 - **linearly separable**: 선형 head가 93–98%. 평면 경계로 클래스를 거의 다 가를 수 있다(가운데 열).
 - **locally consistent**: 5-NN이 81–96%. 가까운 이웃은 대개 같은 클래스다(t-SNE의 같은 색 섬).
-- **not one blob per class**: k-means는 44–81%. 한 클래스가 한 덩어리로 뭉쳐 있지는 않다. satmae는 한 클래스가 여러 섬으로 쪼개져 있고(t-SNE의 파랑이 여러 곳),
-  PCA에서는 셋이 겹친다. 그래서 "군집이 뚜렷하다"를 가정하는 방법(Entropy Enigma의 Silhouette 해석, k-means 기반 방법)은 이 feature에서 잘 맞지 않는다.
+- **k-means does not find the classes**: k-means는 44–81%. 라벨 없이 유클리드 거리로 30개 덩어리를 찾으면 클래스와 맞지 않는다.
+  이유는 fig3에서 따로 쟀다. 클래스가 여러 덩어리로 쪼개져 있어서가 아니라, 클래스마다 덩어리는 하나인데 클래스를 가르지 않는 방향으로 넓게 퍼져 있어서다.
+- 정정: 이전 제목은 "not one blob per class"였고 "satmae는 한 클래스가 여러 섬으로 쪼개져 있다"고 적었다. t-SNE에서 그렇게 보이지만
+  t-SNE는 이어진 덩어리도 섬으로 끊어 그리는 경우가 있고, fig3의 2분할 측정에서는 satmae의 30개 클래스 중 다봉으로 판정된 것이 없다. 그 설명은 틀렸다.
+- 그래도 "군집이 뚜렷하다"를 가정하는 방법(Entropy Enigma의 Silhouette 해석, k-means 기반 방법)이 이 feature에서 잘 맞지 않는다는 결론은 같다.
+
+## fig3_class_shape.png: k-means는 왜 선형 head보다 훨씬 낮은가 (2026-11-26 추가)
+
+수치: `experiments/2026-11-24_cluster_cot/RESULTS_shape.md` (`scripts/analysis/cluster_shape.py`). 그림: `plot_feature_dist.py --shape_only`.
+
+위 줄은 장난감 2차원 데이터(3클래스)로 그린 세 가지 가능성이다. 색 = 실제 클래스, 검은 십자와 선 = k-means가 라벨 없이 찾은 중심 3개와 경계.
+아래 숫자는 네 가지 방법의 정확도다.
+
+| 장난감 | 모양 | 선형 | 5-NN | 가장 가까운 클래스 평균 | k-means |
+|---|---|---:|---:|---:|---:|
+| (a) | 클래스마다 둥근 덩어리 하나 | 100 | 100 | 100 | 100 |
+| (b) | 클래스마다 덩어리 하나, 모두 같은 방향으로 길게 퍼짐 | 98 | 95 | 86 | 38 |
+| (c) | 클래스마다 떨어진 섬 여러 개 | 42 | 100 | 42 | 47 |
+
+- (b)에서 k-means가 틀리는 이유: k-means는 "퍼진 정도"가 큰 방향을 따라 자른다. 길게 퍼진 방향이 클래스와 무관하면 경계가 클래스를 가로지른다(그림의 가로선).
+  선형 head는 그 방향을 무시하고 클래스를 가르는 방향만 본다.
+- (c)라면 선형 head와 클래스 평균이 둘 다 무너지고 k-NN만 산다.
+
+아래 줄은 실제 측정이다.
+
+**왼쪽: 네 방법의 순서가 (b)와 같다** (clean test, 17개 백본 평균, AID / RESISC45)
+
+| 방법 | AID | RESISC45 | 뜻 |
+|---|---:|---:|---|
+| k-means (라벨 없음) | 59.1 | 51.3 | |
+| 가장 가까운 클래스 평균 (클래스당 중심 1개, 중심은 train 라벨로 계산) | 85.1 | 75.8 | 중심 하나로도 대부분 맞는다 = 클래스마다 덩어리는 하나 |
+| 같은 방법, 모든 클래스에 공통인 퍼진 모양을 편 뒤 (클래스 내 공분산으로 whitening, LDA와 같은 모형) | 92.3 | 83.9 | 공통으로 퍼진 모양만 펴 주면 선형 head에 가깝다 |
+| 5-NN | 88.5 | 83.3 | |
+| 선형 head | 94.8 | 90.6 | |
+
+**오른쪽: 클래스 하나를 둘로 쪼개 봐도 덩어리 하나처럼 쪼개진다** (AID, 점 = 백본 17개)
+- 재는 것: 한 클래스의 점들을 가장 잘 둘로 나눴을 때(2-means) 그 클래스의 분산이 몇 % 줄어드나. 떨어진 덩어리 둘이면 크게 줄고, 덩어리 하나면 조금 줄어든다.
+- 실제 클래스 8.8%, 같은 퍼짐을 가진 Gaussian 덩어리 하나 8.1%, 실제 클래스 둘을 합친 것(덩어리 둘의 기준) 17.6%. 실제 클래스는 덩어리 하나 쪽이다.
+- Gaussian 기준보다 뚜렷이 큰(+3pt 초과) 클래스의 비율은 AID 1%, RESISC45 6%다. 예외는 dinov3_web(AID 10%, RESISC45 22%)이다.
+
+같은 표의 나머지 수치.
+- 클래스 내 분산의 76%(AID) / 69%(RESISC45)가 클래스 평균들이 만드는 부분공간 밖에 있다. 퍼짐의 대부분이 클래스를 가르지 않는 방향이다.
+- 한 방향으로 가늘고 긴 타원은 아니다. 클래스 분산 중 첫 주성분의 몫은 평균 12%뿐이다. 여러 방향으로 넓게 퍼진 덩어리다.
+- k-means 목적함수는 클래스에 맞는 분할을 가려내지 못한다. 클래스 평균에서 시작한 k-means(정확도 77.8 / 62.4)와 무작위로 시작한 k-means(59.1 / 51.3)의
+  목적함수 값이 1% 이내로 같다. 시작점을 40번 바꾸면 정확도가 한 백본 안에서 9–19pt 흔들린다(mae_in 35–45%, satdino_s8 67–86%; 4개 백본에서 확인). 즉 59%라는 숫자에는 "k-means가 이 고차원에서 불안정하다"가 섞여 있다.
+- 중심을 클래스당 8개로 늘려도(train에 240개 중심, 다수결 이름) 80.7 / 70.8로, 라벨로 구한 중심 1개(85.1 / 75.8)보다 낮다.
+
+정리: "한 클래스가 구 여러 개"는 측정과 맞지 않고, "한 덩어리인데 둥글지 않다(클래스와 무관한 여러 방향으로 넓게 퍼짐)"가 맞다.
+주의: 2분할 측정은 PCA 256차원에서 했고, 아주 작은 하위 군집까지 없다고 말하는 것은 아니다. whitening과 클래스 평균은 라벨을 쓰므로 방법이 아니라 진단이다.
+
+PPT용 한글 캡션 (fig3):
+
+| 그림 안 글자 | 한글 |
+|---|---|
+| (a) one round cloud per class | (a) 클래스마다 둥근 덩어리 하나 |
+| (b) one cloud per class, all stretched the same way | (b) 클래스마다 덩어리 하나, 모두 같은 방향으로 퍼짐 |
+| (c) several separate islands per class | (c) 클래스마다 떨어진 섬 여러 개 |
+| nearest class mean | 가장 가까운 클래스 평균 (클래스당 중심 1개) |
+| nearest class mean after undoing the shared stretch | 공통으로 퍼진 모양을 편 뒤의 클래스 평균 분류 |
+| variance removed by the best 2-way split | 가장 잘 둘로 나눴을 때 줄어드는 분산 |
+| one Gaussian cloud, same spread | 같은 퍼짐의 Gaussian 덩어리 하나 |
+| two real classes pooled | 실제 클래스 둘을 합친 것 (덩어리 둘) |
 
 ## fig2_shift_align_motion_blur_s3.png: 손상이 feature를 어떻게 옮기고, head 입력 표준화가 무엇을 되돌리나
 

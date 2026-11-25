@@ -33,6 +33,7 @@
 | RS DA survey (arXiv 2510.15615) | survey | GSD, 촬영 방식, 지역, 날씨, 조명 | 논증 | 손상은 과제로 언급되지 않음 | TTA 한 번 언급 | agent |
 | DOTA-C (He 외, arXiv 2308.15378) | 19종 손상 + 구름, 검출 11개 | 작은 객체, 복잡한 배경, 크기 변화 (강건성에 대해) | 정성·크기별 관찰 | 있음 | 없음 | agent |
 | Mei 외 (J. Remote Sensing 2024) | AID-NN, DOTA-NN 노이즈 7종 | 없음 | – | 있음 | 없음 | agent |
+| GRAM (Lee 외, arXiv 2511.10300; 사용자가 찾음 2026-11-26, venue는 사용자 확인으로 AAAI 2026) | 12개 도시 → 3개 도시, 슬럼 이진 분할, SegFormer + Mixture-of-Experts | 지역마다 슬럼의 모습이 달라 shift가 크다, 라벨 부족 | 실험. mIoU source / TENT / SAR / 제안: 0.681 / 0.691 / 0.700 / 0.859 (Dar es Salaam). pseudo label을 confidence로 고르면 0.463, 안 고르면 0.818, 예측 일치로 고르면 0.859 | 없음 (도시 간 자연 shift) | TENT는 변화 없음, CoTTA·BECoTTA는 이득. 10 epoch self-training이라 online TTA와 다름 | agent (`docs/reading/gram_slum_tta.md`) |
 | REOBench | 12종 손상, EO 기초모델 | 없음 (모델 계열 수준의 설명) | 클래스별 분석 없음 | 있음 | 없음 | Claude |
 | Beyond Accuracy | 구름, 노이즈, motion blur, encoder 16개 | 없음 | 손상에서 EO encoder가 과신, temperature scaling이 듣지 않음 | 있음 | 없음 | Claude |
 | RSPDBench | 물리 사양 기반 열화 | 없음 | – | 있음 | §4.7 "label-free TTA가 필요하다", 실행 없음 | Claude |

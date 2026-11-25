@@ -1,4 +1,4 @@
-"""Pictures of the head-input features (AID): separable but not clustered, and what a corruption / head-input standardization does.
+"""Pictures of the head-input features (AID): linearly separable but not found by k-means, and what a corruption / head-input standardization does.
 
   fig0_projection.png     : schematic on toy 3-D data: a 2-D view is an orthographic projection onto a plane; the PCA plane and the
       plane through the class means are two choices of plane (the first two columns of fig1)
@@ -6,6 +6,8 @@
       PCA            orthographic projection onto the top-2 principal directions of the clean test stream (largest variance, label-free)
       class plane    orthographic projection onto the plane through the clean-train means of the three highlighted classes
       t-SNE          exact t-SNE (perplexity 30) on the top-50 principal components (local neighbourhoods; axes have no meaning)
+  fig3_class_shape.png    : why k-means is far below the linear head: toy pictures of three class shapes with four read-outs,
+      and the measured numbers of scripts/analysis/cluster_shape.py (--shape_only)
   fig2_shift_align.png    : the same backbones, clean / corrupted / corrupted after head-input standardization (batches of 64),
       x = direction of the common shift (mean corrupted - mean clean), y = top principal direction of the clean stream
       orthogonal to x; all three panels of a row share the axes.
@@ -131,6 +133,112 @@ def schematic():
     print("saved", OUT / "fig0_projection.png")
 
 
+def _toy_km(x, k, rng, n=10):
+    best = None
+    for _ in range(n):
+        c = x[rng.choice(len(x), 1)]
+        for _ in range(k - 1):
+            d2 = ((x[:, None] - c[None]) ** 2).sum(-1).min(1)
+            c = np.concatenate([c, x[rng.choice(len(x), 1, p=d2 / d2.sum())]])
+        for _ in range(100):
+            lab = ((x[:, None] - c[None]) ** 2).sum(-1).argmin(1)
+            c2 = np.stack([x[lab == j].mean(0) if (lab == j).any() else c[j] for j in range(k)])
+            if np.allclose(c2, c):
+                break
+            c = c2
+        j = ((x - c[lab]) ** 2).sum()
+        if best is None or j < best[2]:
+            best = (lab, c, j)
+    return best
+
+
+def class_shape():
+    """Toy pictures of three class shapes with the four read-outs, and the measured numbers (cluster_shape.py, shape.json)."""
+    import json
+    from cluster_cot import OUT as EXP
+    R = json.load(open(EXP / "shape.json"))
+    rng = np.random.default_rng(0)
+    cols = [c for _, c in HL.values()]
+    n = 150
+    toys = []
+    m = np.array([[-3.0, -1.5], [3.0, -1.5], [0.0, 3.2]])
+    toys.append(("(a) one round cloud per class", np.concatenate([mu + rng.normal(size=(n, 2)) * 0.8 for mu in m])))
+    m = np.array([[-1.7, 0.0], [0.0, 0.0], [1.7, 0.0]])
+    toys.append(("(b) one cloud per class, all stretched the same way",
+                 np.concatenate([mu + rng.normal(size=(n, 2)) * [0.42, 3.0] for mu in m])))
+    isl = [[(i, j) for i in range(3) for j in range(3) if (i + j) % 3 == k] for k in range(3)]
+    toys.append(("(c) several separate islands per class",
+                 np.concatenate([np.concatenate([np.array(q) * 2.6 - 2.6 + rng.normal(size=(n // 3, 2)) * 0.38 for q in isl[k]]) for k in range(3)])))
+    y = np.repeat(np.arange(3), n)
+    fig = plt.figure(figsize=(14.5, 9.6))
+    gs = fig.add_gridspec(2, 6, height_ratios=[1.25, 1], hspace=0.42, wspace=0.9)
+    for c, (title, x) in enumerate(toys):
+        ax = fig.add_subplot(gs[0, 2 * c:2 * c + 2])
+        lab, cen, _ = _toy_km(x, 3, rng)
+        cont = np.array([[((lab == a) & (y == b)).sum() for b in range(3)] for a in range(3)])
+        i, j = lsa(-cont)
+        km = 100 * cont[i, j].sum() / len(y)
+        X1 = np.c_[(x - x.mean(0)) / x.std(0), np.ones(len(x))]
+        W = np.zeros((3, 3))
+        for _ in range(3000):                                   # softmax regression = a linear head
+            pr = np.exp(X1 @ W); pr /= pr.sum(1, keepdims=True)
+            W -= 0.5 * X1.T @ (pr - np.eye(3)[y]) / len(y)
+        lin = 100 * ((X1 @ W).argmax(1) == y).mean()
+        mu = np.stack([x[y == k].mean(0) for k in range(3)])
+        ncm = 100 * (((x[:, None] - mu[None]) ** 2).sum(-1).argmin(1) == y).mean()
+        d = ((x[:, None] - x[None]) ** 2).sum(-1); np.fill_diagonal(d, np.inf)
+        nb = y[np.argsort(d, 1)[:, :5]]
+        knn = 100 * (np.array([np.bincount(r, minlength=3).argmax() for r in nb]) == y).mean()
+        lo, hi = x.min(0) - 1.0, x.max(0) + 1.0
+        gx, gy = np.meshgrid(np.linspace(lo[0], hi[0], 400), np.linspace(lo[1], hi[1], 400))
+        G = np.c_[gx.ravel(), gy.ravel()]
+        reg = ((G[:, None] - cen[None]) ** 2).sum(-1).argmin(1).reshape(gx.shape)
+        ax.contour(gx, gy, reg, levels=[0.5, 1.5], colors=[INK], linewidths=0.9, linestyles="-")
+        for k in range(3):
+            ax.scatter(x[y == k, 0], x[y == k, 1], s=11, color=cols[k], edgecolors=SURF, linewidths=0.3)
+        ax.scatter(cen[:, 0], cen[:, 1], s=130, marker="P", color=INK, edgecolors=SURF, linewidths=1.0, zorder=5)
+        ax.set_xlim(lo[0], hi[0]); ax.set_ylim(lo[1], hi[1]); ax.set_xticks([]); ax.set_yticks([])
+        ax.set_title(title, fontsize=11, color=INK, fontweight="bold")
+        ax.set_xlabel(f"linear {lin:.0f}    5-NN {knn:.0f}\nnearest class mean {ncm:.0f}    k-means {km:.0f}", fontsize=11, color=INK, labelpad=8)
+    fig.text(0.5, 0.935, "toy data, 3 classes (colours = true class).  black crosses and lines = the 3 centres and borders k-means finds without labels.  "
+             "numbers = accuracy (%) of four read-outs", ha="center", fontsize=10, color=INK2)
+    # measured numbers
+    rows = (("k-means (no labels)", "km"), ("nearest class mean\n(1 centre per class)", "ncm"),
+            ("nearest class mean after\nundoing the shared stretch", "ncm_white"), ("5-NN", "knn"), ("linear head", "lin"))
+    ax = fig.add_subplot(gs[1, 0:3])
+    DS = (("aid", "AID", "#52514e"), ("r45", "RESISC45", "#a9a8a2"))
+    yy = np.arange(len(rows))[::-1]
+    for di, (ds, name, col) in enumerate(DS):
+        v = [np.mean([r[k] for key, r in R.items() if key.endswith("_" + ds)]) for _, k in rows]
+        ax.barh(yy + (0.19 if di == 0 else -0.19), v, height=0.34, color=col, label=name)
+        for a, b in zip(yy, v):
+            ax.text(b + 1, a + (0.19 if di == 0 else -0.19), f"{b:.1f}", va="center", fontsize=9.5, color=INK)
+    ax.set_yticks(yy); ax.set_yticklabels([r[0] for r in rows], fontsize=10, color=INK); ax.set_xlim(0, 132); ax.set_xticks([0, 25, 50, 75, 100])
+    ax.spines[["top", "right"]].set_visible(False); ax.tick_params(axis="y", length=0)
+    ax.set_xlabel("accuracy on clean test features (%), mean of 17 backbones")
+    ax.set_title("measured: the read-outs order like toy (b)", fontsize=11, color=INK, fontweight="bold", loc="left")
+    ax.legend(loc="center right", fontsize=10)
+    ax = fig.add_subplot(gs[1, 3:6])
+    bars = (("a real class", "split2", "#2a78d6"), ("one Gaussian cloud,\nsame spread", "null", "#a9a8a2"),
+            ("two real classes pooled\n(= two clouds)", "pair2", "#eb6834"))
+    keys = [k for k in R if k.endswith("_aid")]
+    means = []
+    for bi, (name, k, col) in enumerate(bars):
+        v = np.array([100 * R[key][k] for key in keys])
+        ax.bar(bi, v.mean(), width=0.55, color=col, alpha=0.55)
+        ax.scatter(bi + rng.uniform(-0.16, 0.16, len(v)), v, s=22, color=col, edgecolors=SURF, linewidths=0.5, zorder=3)
+        means.append(v.mean())
+    ax.set_xticks(range(3)); ax.set_xticklabels([f"{b[0]}\nmean {m:.1f}%" for b, m in zip(bars, means)], fontsize=10, color=INK)
+    ax.set_ylabel("variance removed by the best\n2-way split (%)"); ax.spines[["top", "right"]].set_visible(False)
+    ax.set_ylim(0, max(100 * R[k]["pair2"] for k in keys) + 5)
+    ax.set_title("measured: a class splits like ONE cloud, not like two (AID, dots = 17 backbones)", fontsize=11, color=INK, fontweight="bold", loc="left")
+    fig.suptitle("Why is k-means far below the linear head?  Each class is one cloud, spread widely in directions that do not separate classes",
+                 fontsize=13, fontweight="bold", y=0.985)
+    fig.savefig(OUT / "fig3_class_shape.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("saved", OUT / "fig3_class_shape.png")
+
+
 def legend(fig):
     hs = [plt.Line2D([], [], marker="o", ls="", ms=7, mfc=c, mec=SURF, label=n) for n, c in HL.values()]
     hs.append(plt.Line2D([], [], marker="o", ls="", ms=5, mfc=GREY, mec=GREY, label="other 27 classes"))
@@ -149,8 +257,11 @@ if __name__ == "__main__":
     ap.add_argument("--corr", default="motion_blur")
     ap.add_argument("--sev", type=int, default=3)
     ap.add_argument("--schematic_only", action="store_true")
+    ap.add_argument("--shape_only", action="store_true", help="only fig3_class_shape.png (needs shape.json of cluster_shape.py)")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    if args.shape_only:
+        class_shape(); sys.exit(0)
     schematic()
     if args.schematic_only:
         sys.exit(0)
@@ -208,7 +319,7 @@ if __name__ == "__main__":
                 ax.set_xlabel("x: along the common shift (source std units)")
         print(f"{m}: lin {acc(x, y):.1f} knn {knn:.1f} km {km:.1f} | {args.corr}_s{args.sev} {acc(xk, yk):.1f} -> aligned {acc(xa, yk):.1f} "
               f"| shift {d.norm().item():.1f}", flush=True)
-    for f, name, title in ((f1, "fig1_clean_geometry.png", "AID clean test features (head input z): linearly separable, locally consistent, not one blob per class"),
+    for f, name, title in ((f1, "fig1_clean_geometry.png", "AID clean test features (head input z): linearly separable, locally consistent, but k-means does not find the classes"),
                            (f2, f"fig2_shift_align_{args.corr}_s{args.sev}.png",
                             "A corruption moves all features together; head-input standardization moves the mean back\n(triangle = stream mean, dashed line = clean mean)")):
         legend(f)
