@@ -599,3 +599,12 @@ frozen backbone + 선형 head(1×1 conv). 프로토콜은 Claude가 정한 것�
 - (같은 날 추가) 정의의 출처 확인. LSCD-TTA(arXiv v2, 요약 agent)는 "information density"와 class imbalance를 논증으로만 쓰고 정의·측정·불균형 평가가 없음.
   복잡도 지표는 Claude가 정한 것: JPEG 비트/픽셀과 gradient 크기 평균은 Yu & Winkler(QoMEX 2013, PDF 본문 확인)에 선례, 히스토그램 엔트로피는 선례 미확인.
   edge 밀도를 "Sobel"이라고 적었으나 코드는 중앙 차분이라 표기를 고침. long-tail 식은 Cui 외(CVPR 2019)와 같은 꼴(agent가 원문 문장 확인), SAR·NOTE의 설정은 agent 요약만.
+
+### 2026-11-26 사용자 지적: feature 단계 실행과 Tent protocol을 구분하지 않았음
+사용자는 tent·DSBR이 모두 Tent protocol(백본 norm 층 학습)로 돌았다고 알고 있었다. 실제로 T1, fig1, T5, T13 (1)(2)(3)(5)와 10월 결과는 Tent protocol이 맞다(코드 docstring으로 확인:
+`cls_tta_fm.py`는 상위 25% 블록과 마지막 norm을 뺀 norm 층 affine, `seg_tta.py`는 모든 LayerNorm/BatchNorm). feature 단계(`feat_tta.py`, head 앞 채널별 affine 하나)는 T9·fig4, T13 (4)(6), T14의 tent·dsbr 열뿐이다.
+- Claude의 잘못: feature 단계 결과를 표 제목의 한 구절("head 입력만")로만 표시했고, 어제 불균형 표에서는 Tent protocol 숫자(T1)와 같은 이름으로 나란히 적었다.
+- 고친 것: 정리 문서 4절 맨 앞에 두 방식의 표(학습 파라미터, 쓰인 곳, 근거, 선례, 공평성)를 넣고, T9·T13 (4)·B6·7절에 "feature 단계에서만 확인"을 명시.
+  Tent protocol의 가장 가까운 증거(lr 10배, AID-C 17개: none 81.8, tent 76.1, dsbr 80.4, flip 필터 83.8)를 같이 적음. DSBR도 none 아래로 내려간다.
+- 선례 확인(검색): T3A, TAST, LAME은 frozen feature 위에서만 적응. "채널별 affine을 엔트로피로 학습"을 그대로 한 논문은 확인 못 함.
+- 다시 돌리는 것: `cls_tta_fm.py`에 `--order`(sorted, lt10, lt100)를 추가하고 AID-C 17개 백본을 Tent protocol로 실행 중(tmux `fmorder`, 1차 none·tent·dsbr, 2차 sar·flipf). 로그 `experiments/2026-11-17_fm_tta/run_order.log`.

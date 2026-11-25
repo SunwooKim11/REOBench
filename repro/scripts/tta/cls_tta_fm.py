@@ -38,6 +38,7 @@ Methods
             difference from tent is the loss.
   dsbr_al : dsbr (decay 0.9) on the aligned head input
 --lr_mult k adds _x<k> to the method names (none is not rerun).
+--order sorted | lt10 | lt100 (2026-11-26): the same streams in class order / long-tailed (order_of); adds _<order> to the names.
 Per stream: acc, ECE, signed ECE, NLL, AUROC (feat_metrics.stream_metrics); for the filter variants the share of samples used;
 top_share = share of the most frequent predicted class (prediction bias; written for runs made from 2026-11-19 on).
 
@@ -197,6 +198,25 @@ def streams_of(ds):
     return out
 
 
+def order_of(labels, order, seed, si, C):
+    """Indices of one stream. shuffle: all images, random order. sorted: all images ordered by class. lt<rho>: long-tailed,
+    the class of rank r keeps the share rho^(-r / (C - 1)) of its images (ranking and kept counts are the same for every
+    stream), then shuffled. = scripts/analysis/rs_properties.py, here with one ranking (seed)."""
+    y = torch.tensor(labels)
+    g = torch.Generator().manual_seed(seed * 1000 + si)
+    if order == "shuffle":
+        return torch.randperm(len(y), generator=g)
+    if order == "sorted":
+        return y.argsort(stable=True)
+    rho, g2 = int(order[2:]), torch.Generator().manual_seed(seed)
+    rk, keep = torch.randperm(C, generator=g2), []
+    for k in range(C):
+        ix = (y == k).nonzero()[:, 0]
+        keep.append(ix[torch.randperm(len(ix), generator=g2)[:max(1, round(len(ix) * rho ** (-rk[k].item() / (C - 1))))]])
+    keep = torch.cat(keep)
+    return keep[torch.randperm(len(keep), generator=g)]
+
+
 def fisher_of(net0, loader):  # = scripts/tta/cls_tta.py (DeYO repo main.py L420-446): pseudo-label CE, squared grads, averaged
     net = configure(copy.deepcopy(net0))
     params, _ = eata.collect_params(net)
@@ -221,8 +241,8 @@ def run(name, ds, methods, args):
     e0 = 0.4 * math.log(C)
     is_bn = any(isinstance(m, nn.BatchNorm2d) for m in net0.modules())
     lr = (0.00025 if is_bn else 0.001) * args.lr_mult
-    sfx = "" if args.lr_mult == 1 else f"_x{args.lr_mult:g}"
-    methods = [m for m in methods if (is_bn or m != "tent_bnstat") and (not sfx or m != "none")]
+    sfx = ("" if args.lr_mult == 1 else f"_x{args.lr_mult:g}") + ("" if args.order == "shuffle" else f"_{args.order}")
+    methods = [m for m in methods if (is_bn or m != "tent_bnstat") and (args.lr_mult == 1 or m != "none")]
     tf = T.Compose([T.Resize((224, 224)), T.ToTensor(), T.Normalize(*net0.norm)])
     todo = [m for m in methods if not (out_dir / f"{m}{sfx}.json").exists()]
     if not todo:
@@ -230,9 +250,9 @@ def run(name, ds, methods, args):
     streams = streams_of(ds)
     items, batches, sid = [], [], []
     for si, (_, it) in enumerate(streams):
-        perm = torch.randperm(len(it), generator=torch.Generator().manual_seed(args.seed * 1000 + si)) + len(items)
+        perm = order_of([y for _, y in it], args.order, args.seed, si, C) + len(items)
         items += it
-        for i in range(0, len(it), args.bs):
+        for i in range(0, len(perm), args.bs):
             batches.append(perm[i:i + args.bs].tolist()); sid.append(si)
     _, names = collect(net0)
     print(f"== {name} {ds}: C {C}, lr {lr:g}, {'BN' if is_bn else 'LN'}, adapting {len(names)} tensors "
@@ -302,7 +322,7 @@ def run(name, ds, methods, args):
                 res["streams"][sname] = {q: r[q] for q in ("acc", "ece", "signed_ece", "nll", "auroc")}
                 res["streams"][sname]["top_share"] = torch.bincount(L.argmax(1), minlength=C).max().item() / len(L)
                 if k in ("entf", "flipf", "bothf", "flipf_al", "tent_al"):
-                    res["streams"][sname]["used"] = used[si] / len(it)
+                    res["streams"][sname]["used"] = used[si] / len(L)
             mean = lambda q: sum(v[q] for s_, v in res["streams"].items() if s_ != "clean") / 60
             res["clean"], res["avg"], res["avg_signed_ece"] = res["streams"]["clean"]["acc"], mean("acc"), mean("signed_ece")
             json.dump(res, open(out_dir / f"{k}{sfx}.json", "w"), indent=1)
@@ -319,6 +339,7 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--lr_mult", type=float, default=1.0)
     ap.add_argument("--workers", type=int, default=32)
+    ap.add_argument("--order", default="shuffle", help="shuffle | sorted | lt10 | lt100 (class composition of every stream; adds _<order> to the file names)")
     args = ap.parse_args()
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
