@@ -282,7 +282,26 @@ fig6에는 MAE → Scale-MAE 쌍을 넣어 7개다. DINOv3의 AID-C 값은 반�
 
 정확도와의 순위상관(60개 stream, 17개 백본 평균, AID / RESISC45): flip −0.96 / −0.97, confidence +0.96 / +0.91.
 RESISC45에서 confidence는 세 백본에서 0.54–0.64로 떨어지고, flip은 17개 모두 −0.94 이하.
-출처: `experiments/2026-11-24_cluster_cot/RESULTS.md`.
+**flip 추정의 식 (발표에서 Entropy Enigma의 Weighted Flips와 다르다고 밝힐 것).**
+
+```
+추정 정확도 = ATC_al − k · max(0, flip − clean flip),   k = 0.472
+```
+- flip = head 입력을 그대로 넣은 예측과 test 배치로 표준화해 넣은 예측이 다른 표본의 비율(%). 학습이 없다.
+- ATC_al = 표준화한 head의 confidence에 ATC를 적용한 값. 표준화 뒤의 정확도를 잘 맞춘다(오차 1.6pt). 임계값은 라벨 있는 clean stream에서 정한다.
+- k·(flip − clean flip) = 표준화로 오른 만큼을 빼서 원래 정확도로 되돌리는 항. 2,040개 stream에서 (표준화 후 정확도 − 원래 정확도)와 초과 flip의
+  상관이 0.94이고, 원점을 지나는 최소제곱 기울기가 0.472다.
+- k를 맞추는 데 손상 stream의 라벨이 쓰인다. 그래서 T3의 값은 **백본 하나를 빼고 나머지 16개로 k를 맞춰 뺀 백본에 적용**한 것이다(leave-one-backbone-out).
+  자연 shift(T4)에는 합성 손상 2,040개로 맞춘 k = 0.472를 그대로 썼다.
+
+| | Entropy Enigma (Weighted Flips) | 우리 flip 추정 |
+|---|---|---|
+| flip | 적응 전 모델 대 EM 1,000 step 뒤 모델 | head 입력 그대로 대 표준화 뒤, 학습 없음 |
+| 가중 | 초기 confidence의 percentile | 없음. clean stream의 flip을 뺌 |
+| 정확도로 바꾸는 식 | 2차식 f(WF) = 0.00036·WF² − 0.32·WF + 75.66 (계수 3개) | ATC_al − k · 초과 flip (계수 1개) |
+| 식을 맞춘 곳 | ImageNet-C의 보류 손상에서 한 번, 다른 데이터셋에 그대로 | 다른 백본들의 합성 손상 stream (T3), 합성 손상 전체 (T4) |
+
+출처: `scripts/analysis/eval_labelfree.py`, `experiments/2026-11-16_backbone_feats/signals/summary.txt`.
 
 ### T4. 자연 shift (RESISC45 ↔ UC Merced, 17개 백본 평균)
 
