@@ -5,7 +5,7 @@
   fig3_signals.png        : confidence vs accuracy and flip vs accuracy, three backbones on RESISC45-C
   fig4_em_phases.png      : entropy minimisation over 2,000 steps, tent vs DSBR: accuracy and predicted classes (T9)
   fig5_headroom.png       : per corruption: as is -> head-input standardization -> head re-fitted with labels -> clean (T12)
-  fig6_pairs.png          : satellite minus generic pretraining for the six matched pairs (T10)
+  fig6_pairs.png          : satellite minus generic pretraining for the seven pairs of T10
   fig7_blur_aug.png       : drop under Gaussian blur, backbones with / without blur augmentation (T7)
   fig8_corruptions.png    : one AID image under the 12 REOBench corruptions, grouped by acquisition stage (T6)
   fig9_seg.png            : Potsdam mIoU per corruption (12) for none / BN / input / input + BN alignment (T5)
@@ -275,7 +275,7 @@ def fig8(cls="Port", sev=3):
 
 def fig9():
     # 12 corruptions (8 released + 4 we generated), grouped by what responds
-    groups = (("input-pixel alignment recovers", (("brightness_contrast", "brightness /\ncontrast"), ("haze", "haze"))),
+    groups = (("input-pixel alignment\nrecovers", (("brightness_contrast", "brightness /\ncontrast"), ("haze", "haze"))),
               ("decoder-BN batch statistics help", (("gaussian_noise", "Gaussian\nnoise"), ("salt_and_pepper_noise", "salt &\npepper"),
                                       ("compression_artifacts", "JPEG"), ("data_gaps", "data\ngaps *"))),
               ("small drop, nothing helps", (("gaussian_blur", "Gaussian\nblur"), ("motion_blur", "motion\nblur"), ("clouds", "clouds"),
@@ -298,10 +298,10 @@ def fig9():
         for gi, (gname, g) in enumerate(groups):
             if gi:
                 ax.axvline(pos - 0.5, color=GRID, lw=1.2)
-            ax.text(pos + (len(g) - 1) / 2, 78, gname, ha="center", va="center", fontsize=11, color=INK2)
+            ax.text(pos + (len(g) - 1) / 2, 80, gname, ha="center", va="center", fontsize=11, color=INK2, linespacing=1.15)
             pos += len(g)
         ax.set_xlim(-0.6, len(cor) - 0.4)
-        ax.set_ylim(0, 84); ax.set_yticks([0, 20, 40, 60]); ax.set_ylabel("mIoU (%)"); ax.set_title(title, loc="left")
+        ax.set_ylim(0, 90); ax.set_yticks([0, 20, 40, 60]); ax.set_ylabel("mIoU (%)"); ax.set_title(title, loc="left")
         ax.grid(axis="y", color=GRID, lw=0.8); ax.set_axisbelow(True)
     axes[1].set_xticks(np.arange(len(cor))); axes[1].set_xticklabels(lab)
     axes[0].legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.3))
@@ -378,7 +378,7 @@ def fig10(model="mae_in", ds="aid"):
     ax2.plot(x, sk[o], color=ORANGE, lw=2, marker="o", ms=4, label="predicted, corrupted")
     ax2.plot(x, sa[o], color=BLUE, lw=2, marker="o", ms=4, label="predicted, standardized")
     names = sorted(os.listdir(common.TRAIN_DIR))
-    ax2.annotate(f"{names[o[0]]}: {sk[o[0]]:.0f}% of predictions", xy=(0, sk[o[0]]), xytext=(4, sk[o[0]] * 0.92), fontsize=10,
+    ax2.annotate(f"{names[o[0]]}: {sk[o[0]]:.0f}% of predictions", xy=(0, sk[o[0]]), xytext=(4, sk[o[0]] * 0.70), fontsize=10,
                  arrowprops=dict(arrowstyle="-", color=INK2, lw=0.8))
     ax2.set_xlabel("classes, sorted by predicted share on the corrupted stream"); ax2.set_ylabel("share of images (%)")
     ax2.set_xticks([]); ax2.set_title("predictions collapse to a few classes; standardization spreads them again", loc="left", fontsize=11)
