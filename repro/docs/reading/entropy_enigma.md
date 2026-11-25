@@ -106,3 +106,37 @@ arXiv 2405.05012. 코드: github.com/oripress/EntropyEnigma.
 - **두 단계(§3)**: feature 단계 tent에서 정확도가 오른 뒤 떨어지는 것은 재현(81.8 → 83.0 → 70.5). 그러나 DSBR도 Shift distance가 tent만큼 늘면서
   정확도는 오른다(88.0). 우리 설정에서 실패를 가르는 것은 예측 클래스 수(tent 23.5 / 30, DSBR 29.8 / 30).
 - 남은 것: §3 "꼭 해야 하는 것" 1번(WF를 같은 조건에서 직접 비교)은 아직 하지 않았다.
+
+## 6. 후속 연구: Entropy Enigma를 TTA 성능 개선에 쓴 곳 (2026-11-26 조사)
+
+Claude가 서브에이전트로 조사했다. Semantic Scholar 기준 인용 약 36편이고, 각 행은 arXiv 초록이나 본문을 열어 확인했다(원문은 아직 정독하지 않음).
+"source 가중치만" = 되돌아갈 사전학습 가중치는 필요하지만 source 데이터와 source 통계는 필요 없음.
+
+**요약.** flip을 TTA 방법 안에서 쓴 것은 ABR(ICASSP 2026) 하나이고, 용도는 "언제 리셋할지"다.
+Weighted Flips나 2차식을 조기 종료, step 수 선택, 하이퍼파라미터 선택에 쓴 논문은 찾지 못했다. 대부분은 "EM이 붕괴한다"의 근거로만 인용한다.
+우리 flip 필터와 가장 가까운 것은 Entropy Enigma를 인용하지 않는 DeYO, AETTA, 그리고 동기로만 인용하는 SICL이다.
+
+| # | 논문 | 저자, venue, 연도 | 링크 | 가져온 것 (또는 flip·불일치 아이디어) | TTA를 어떻게 개선하나 | source 데이터·통계 | 공식 코드 |
+|---|---|---|---|---|---|---|---|
+| 1 | Adaptive and Balanced Re-initialization for Long-timescale CTTA (ABR). 이전 판 "Maintain Plasticity…" (arXiv 2412.20034) | Y. Wang, J. Tong 외, H. Chen; ICASSP 2026 (arXiv 주석 기준) | arxiv.org/abs/2602.06328 | Entropy Enigma를 인용. 현재 모델과 이전 모델 사이의 예측 flip을 confidence와 그 증가로 가중하고 EMA로 평활 | flip 궤적의 기울기가 최저점 이후 β/√Δt를 넘으면 리셋. flip으로 정한 계수만큼 source 가중치 쪽으로 섞는다. CCC에서 RDumb 대비 평균 +2.3pt (CCC-Medium +4.8). EATA / RDumb 위에 구현 | source 가중치만 | 못 찾음 |
+| 2 | AETTA: Label-Free Accuracy Estimation for TTA | T. Lee, S. Chottananurak, T. Gong, S.-J. Lee; CVPR 2024 | arxiv.org/abs/2404.01351 | 인용 안 함(더 먼저 나옴). 적응한 모델과 그 dropout 표본들 사이의 예측 불일치. 배치 예측이 낮은 엔트로피로 쏠리면 벌점 | 온라인 정확도 추정으로 리셋 결정(최근 5개 추정이 그 전 5개보다 낮거나 0.2 미만). TTA 방법 6개 평균 +11.7pt | 없음 (배치만 씀, 리셋 대상은 명시 안 됨) | 있음, github.com/taeckyung/AETTA |
+| 3 | Entropy is not Enough for TTA (DeYO) | J. Lee 외; ICLR 2024 Spotlight | arxiv.org/abs/2403.07366 | 인용 안 함. PLPD: 입력과 patch를 섞은 입력 사이의 pseudo-label 확률 감소. 두 view 사이의 예측 변화를 필터와 가중으로 씀 | 엔트로피와 PLPD 임계값으로 표본을 고르고 PLPD로 가중. 치우친 shift와 "wild" 설정에서 개선. Multi-Hypothesis TTA(ECCV 2026)가 이 필터를 재사용 | 없음 | 있음, github.com/Jhyun17/DeYO |
+| 4 | Towards Reliable TTA: Style Invariance as a Correctness Likelihood (SICL) | G. Nam, T. Kim, J. Joeong, E. Yang; WACV 2026 | arxiv.org/abs/2512.07390 | EM이 과신으로 간다는 근거로 인용. 원래 예측과 스타일을 흔든 20개 변형의 예측 일치율. 입력 자신의 첫 층 채널 평균·표준편차에 잡음을 넣고, 잡음 크기는 test 배치로 정함 | 주로 forward만 하는 calibration 부품(보정 오차 약 13pt 감소). 부록 실험 하나에서만 SoTTA의 표본 필터를 이것으로 바꿈 | 없음 (논문 Table 1) | 못 찾음 |
+| 5 | When and Where to Reset Matters for Long-Term TTA | T. Lim, J.-W. Hwang, K. Lee; ICLR 2026 | arxiv.org/abs/2603.03796 | 인용 안 함. 같은 실패 단계를 다룸. 붕괴 신호 = 배치 평균 예측의 음의 엔트로피를 그 EMA와 비교 | 신호가 EMA를 넘을 때만, 뒤쪽 일부 층만 리셋. 온라인 Fisher 정규화로 잃은 지식 회복. ETA, EATA, ROID, CMF, PeTTA에 붙는 부품 | source 가중치만 (Fisher는 test 데이터로 누적) | 있음, github.com/YonseiML/asr |
+| 6 | DSBR (Entropy Minimization without Model Collapse: Mitigating Prediction Bias in Medical Imaging) | T. Nielen, S. Ambekar, J. Kiechle, D. Lang, J. Schnabel; arXiv 2026, venue 미표기 | arxiv.org/abs/2606.02339 | Entropy Enigma의 군집 관점을 직접 이어받음(shift가 적응 전에 이미 군집을 합침). 20% 보류 평가 프로토콜도 같음 | 예측 클래스 빈도의 EMA 역수로 엔트로피를 가중 | 없음 (1/K에서 시작) | 못 찾음 |
+| 7 | RDumb++: Drift-Aware Continual TTA | H. Mishra; arXiv 2026, venue 없음 | arxiv.org/abs/2601.15544 | 인용 안 함. 엔트로피의 z-score(EMA 평균·분산 기준)와 KL 점수(기준 분포가 논문에 정의되지 않음) | 고정 1,000 step 리셋 대신 drift가 보이면 전체 또는 절반 리셋. CCC-Medium 약 +3pt | source 가중치만 | 못 찾음 (CCC notebook만) |
+| 8 | CAMA: Calibrated Anti-Collapse Marginal Alignment for TTA of VLMs | J. Kang, Y. Guo; arXiv 2026, venue 없음 | arxiv.org/abs/2611.28461 | 관련 연구에서 한 번(embedding drift). 자기 설명은 feature 압축이 클래스 비율을 치우치게 한다는 것 | 배치 상호정보량 + 배치 평균 예측을 기준 클래스 분포에 맞춤(기준은 처음 몇 배치에서 추정) | 없음 | 못 찾음 |
+| 9 | EATA-C: Uncertainty-Calibrated Test-Time Model Adaptation without Forgetting | M. Tan, G. Chen 외, S. Niu; TPAMI 2025 (DOI는 검색 결과에서만 확인) | arxiv.org/abs/2403.11491 | 인용 안 함. 전체 망과 부분 망 사이의 차이(모델 불확실성), 예측 라벨 사이의 불일치(데이터 불확실성) | 순수 EM 대신 일관성 손실 + 표본별로 confidence를 올리거나 내리는 min-max 엔트로피 정규화 | 논문은 Fisher를 test 표본으로 낸다고 씀. 불확실: EATA 실제 코드에서는 clean 분포 내 데이터였음 | 확인 안 함 |
+| 10 | TTA Induces Stronger Accuracy- and Agreement-on-the-Line | E. Kim, M. Sun, C. Baek, A. Raghunathan, J. Z. Kolter; NeurIPS 2024 | arxiv.org/abs/2310.04941 | 인용 안 함. 모델 쌍 사이의 불일치가 OOD 정확도를 예측 | 라벨 없이 TTA 하이퍼파라미터와 전략 선택 | 아마 필요 (여러 모델 + 라벨 있는 ID 정확도). 초록으로는 확인 안 됨 | 못 찾음 |
+| 11 | Realistic Evaluation of TTA Algorithms: Unsupervised Hyperparameter Selection | S. Cygert, D. Sójka, T. Trzciński, B. Twardowski; arXiv 2024 (venue 미확인) | arxiv.org/abs/2407.14231 | 라벨 없는 대리 지표로 TTA 하이퍼파라미터 선택 | 방법이 아니라 벤치마크. 라벨 없는 대리 지표는 들쭉날쭉하고, 믿을 만한 것은 test 라벨 몇 개나 사전학습 데이터를 쓰는 전략뿐 | 일부 전략은 필요 | 공개라고 씀, URL 미확인 |
+| 12 | Monitoring Risks in Test-Time Adaptation | M. Schirmer, M. Jazbec, C. Naesseth, E. Nalisnick; NeurIPS 2025 (Semantic Scholar 기준, 미확인) | arxiv.org/abs/2507.08721 | 붕괴와 정확도 추정의 근거로 인용. 최대 softmax 확률을 손실의 대리로 써서 confidence sequence로 추적 | 경보만 울리고 멈추거나 리셋하지는 않음 | 필요 (라벨 있는 source 보정 표본 1,000장) | 있음, github.com/monasch/tta-monitor |
+
+배경으로만 인용해서 뺀 것: Multi-Hypothesis TTA (arXiv 2607.00259, ECCV 2026), COME (2410.10894), TTVD (2412.07980).
+쓰임을 확인 못 한 것: LCoTTA (NeurIPS 2025), PEA (ICLR 2026, backprop 없는 공분산 정렬, source 통계 필요 여부 미확인). MGP (ICML 2026)는 인용 여부 미확인.
+
+**우리에게 가까운 것.**
+- **SICL (#4)**: 입력 자신의 채널 평균·표준편차를 test 배치 기준으로 흔들어 예측 일치율을 본다. 우리 flip(표준화 전후 예측 차이)을 source 통계 없이 만드는 본보기가 될 수 있다.
+- **DeYO (#3)**: 두 view 사이의 예측 변화를 업데이트의 필터와 가중으로 바로 쓴다. 공식 코드가 있고 10월에 이미 구현해 둔 방법이다.
+- **ABR (#1)**: Entropy Enigma의 flip을 TTA 안에서 쓴 유일한 예. 정확도 회귀가 아니라 "실패 단계에 들어섰으니 되돌려라"는 신호로 쓴다.
+- **AETTA (#2)**: 불일치를 온라인 정확도 추정으로 바꿔 리셋을 정한다. source 통계 없이 되고 코드가 있다.
+- 빈 곳: Entropy Enigma식 flip을 표본별 업데이트 필터로 쓰거나, 온라인으로 step 수를 고르는 데 쓴 논문은 찾지 못했다.
