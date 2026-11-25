@@ -205,7 +205,7 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
 | B1 | S11 | RS 손상의 고유성 (F2) | **fig8**, T6, 같은 손상을 ImageNet과 RS에 적용한 비교(2절 F2 상세의 MS-SSIM과 유지율) | 같은 손상은 ImageNet과 RS 이미지를 거의 같게 망가뜨린다. 고유성은 이미지가 아니라 손상의 종류(data gaps, clouds, scale, rotate)에 있다 |
 | B2 | S11, S3 | 사전학습이 설명하는 부분 | **fig7**, T7, **fig6** | Gaussian blur augmentation이 있는 11개와 없는 6개의 하락 범위가 겹치지 않는다. scale은 5쌍에서 위성 쪽이 강하다. 위성 사전학습의 전체 효과는 방식마다 반대다 |
 | B3 | S6 | confidence는 어디서 틀리나 | T2, **fig3**의 윗줄, **fig10**의 오른쪽(예측 비율) | 과신은 손상 3종에 몰려 있고, 그때 예측이 한두 클래스로 쏠린다(mae_in, AID scale 3단계에서 한 클래스가 58%) |
-| B4 | S12 | clean feature의 모양 | feature 그림 폴더의 `fig3_class_shape.png`(설명 그림 + 측정), `fig1_clean_geometry.png`에서 한두 행, T8 | 클래스는 선형으로 갈라지고 이웃도 같은 클래스인데 k-means는 못 찾는다. 클래스마다 덩어리는 하나지만 클래스와 무관한 방향으로 넓게 퍼져 있기 때문이다. 뭉친 정도는 목적함수를 따른다(MAE 낮음, DINO 높음) |
+| B4 | S12 | clean feature의 모양 | feature 그림 폴더의 `fig3_class_shape.png`(장난감 세 경우와 실제 측정을 같은 네 방법으로 비교), `fig1_clean_geometry.png`에서 한두 행, T8. 질문 대비 예비 장: `fig3b_class_shape_tests.png`(확인 측정 두 가지) | 클래스는 선형으로 갈라지고 이웃도 같은 클래스인데 k-means는 못 찾는다. 클래스마다 덩어리는 하나지만 클래스와 무관한 방향으로 넓게 퍼져 있기 때문이다. 뭉친 정도는 목적함수를 따른다(MAE 낮음, DINO 높음) |
 | B5 | S7 | 손상이 feature를 옮기는 방식 | feature 그림 폴더의 `fig2_shift_align_motion_blur_s3.png`에서 필요한 행, **fig10**의 왼쪽(채널 분포), 숫자 한 줄(이동의 83–94%는 head가 읽지 않는 방향) | 손상은 모든 이미지를 한 방향으로 통째로 민다. head의 경계는 제자리에 있으므로 예측이 쏠린다. test 배치 통계로 다시 표준화하면 평균이 돌아오지만 퍼진 모양은 남는다 |
 | B6 | S6 | 엔트로피 최소화를 오래 돌리면 | **fig4**, T9 | tent는 예측 클래스가 30개에서 23.5개로 합쳐지며 떨어진다. 쏠림을 누르는 DSBR은 30개를 유지하며 오른다. DSBR 논문이 말한 쏠림의 증폭이 EO 백본 17개에서 보인다. Entropy Enigma의 "오른 뒤 떨어진다"는 stream별로만 약하게 보인다(T9의 주의) |
 

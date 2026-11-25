@@ -153,7 +153,8 @@ def _toy_km(x, k, rng, n=10):
 
 
 def class_shape():
-    """Toy pictures of three class shapes with the four read-outs, and the measured numbers (cluster_shape.py, shape.json)."""
+    """fig3: toy pictures of three class shapes with four read-outs, and the same four read-outs measured on the real features.
+    fig3b (backup): two further measurements from cluster_shape.py (shape.json)."""
     import json
     from cluster_cot import OUT as EXP
     R = json.load(open(EXP / "shape.json"))
@@ -164,16 +165,17 @@ def class_shape():
     m = np.array([[-3.0, -1.5], [3.0, -1.5], [0.0, 3.2]])
     toys.append(("(a) one round cloud per class", np.concatenate([mu + rng.normal(size=(n, 2)) * 0.8 for mu in m])))
     m = np.array([[-1.7, 0.0], [0.0, 0.0], [1.7, 0.0]])
-    toys.append(("(b) one cloud per class, all stretched the same way",
-                 np.concatenate([mu + rng.normal(size=(n, 2)) * [0.42, 3.0] for mu in m])))
+    toys.append(("(b) one cloud per class, all stretched the same way", np.concatenate([mu + rng.normal(size=(n, 2)) * [0.42, 3.0] for mu in m])))
     isl = [[(i, j) for i in range(3) for j in range(3) if (i + j) % 3 == k] for k in range(3)]
     toys.append(("(c) several separate islands per class",
                  np.concatenate([np.concatenate([np.array(q) * 2.6 - 2.6 + rng.normal(size=(n // 3, 2)) * 0.38 for q in isl[k]]) for k in range(3)])))
     y = np.repeat(np.arange(3), n)
-    fig = plt.figure(figsize=(14.5, 9.6))
-    gs = fig.add_gridspec(2, 6, height_ratios=[1.25, 1], hspace=0.42, wspace=0.9)
+    READ = (("linear head", "lin"), ("5-NN", "knn"), ("nearest class mean\n(1 centre per class)", "ncm"), ("k-means\n(no labels)", "km"))
+    fig = plt.figure(figsize=(14.5, 9.8))
+    gs = fig.add_gridspec(2, 3, height_ratios=[1.25, 1], hspace=0.42, wspace=0.3)
+    toy_acc = []
     for c, (title, x) in enumerate(toys):
-        ax = fig.add_subplot(gs[0, 2 * c:2 * c + 2])
+        ax = fig.add_subplot(gs[0, c])
         lab, cen, _ = _toy_km(x, 3, rng)
         cont = np.array([[((lab == a) & (y == b)).sum() for b in range(3)] for a in range(3)])
         i, j = lsa(-cont)
@@ -189,6 +191,7 @@ def class_shape():
         d = ((x[:, None] - x[None]) ** 2).sum(-1); np.fill_diagonal(d, np.inf)
         nb = y[np.argsort(d, 1)[:, :5]]
         knn = 100 * (np.array([np.bincount(r, minlength=3).argmax() for r in nb]) == y).mean()
+        toy_acc.append({"lin": lin, "knn": knn, "ncm": ncm, "km": km})
         lo, hi = x.min(0) - 1.0, x.max(0) + 1.0
         gx, gy = np.meshgrid(np.linspace(lo[0], hi[0], 400), np.linspace(lo[1], hi[1], 400))
         G = np.c_[gx.ravel(), gy.ravel()]
@@ -202,41 +205,58 @@ def class_shape():
         ax.set_xlabel(f"linear {lin:.0f}    5-NN {knn:.0f}\nnearest class mean {ncm:.0f}    k-means {km:.0f}", fontsize=11, color=INK, labelpad=8)
     fig.text(0.5, 0.935, "toy data, 3 classes (colours = true class).  black crosses and lines = the 3 centres and borders k-means finds without labels.  "
              "numbers = accuracy (%) of four read-outs", ha="center", fontsize=10, color=INK2)
-    # measured numbers
-    rows = (("k-means (no labels)", "km"), ("nearest class mean\n(1 centre per class)", "ncm"),
-            ("nearest class mean after\nundoing the shared stretch", "ncm_white"), ("5-NN", "knn"), ("linear head", "lin"))
-    ax = fig.add_subplot(gs[1, 0:3])
-    DS = (("aid", "AID", "#52514e"), ("r45", "RESISC45", "#a9a8a2"))
-    yy = np.arange(len(rows))[::-1]
-    for di, (ds, name, col) in enumerate(DS):
-        v = [np.mean([r[k] for key, r in R.items() if key.endswith("_" + ds)]) for _, k in rows]
-        ax.barh(yy + (0.19 if di == 0 else -0.19), v, height=0.34, color=col, label=name)
-        for a, b in zip(yy, v):
-            ax.text(b + 1, a + (0.19 if di == 0 else -0.19), f"{b:.1f}", va="center", fontsize=9.5, color=INK)
-    ax.set_yticks(yy); ax.set_yticklabels([r[0] for r in rows], fontsize=10, color=INK); ax.set_xlim(0, 132); ax.set_xticks([0, 25, 50, 75, 100])
-    ax.spines[["top", "right"]].set_visible(False); ax.tick_params(axis="y", length=0)
-    ax.set_xlabel("accuracy on clean test features (%), mean of 17 backbones")
-    ax.set_title("measured: the read-outs order like toy (b)", fontsize=11, color=INK, fontweight="bold", loc="left")
-    ax.legend(loc="center right", fontsize=10)
-    ax = fig.add_subplot(gs[1, 3:6])
-    bars = (("a real class", "split2", "#2a78d6"), ("one Gaussian cloud,\nsame spread", "null", "#a9a8a2"),
-            ("two real classes pooled\n(= two clouds)", "pair2", "#eb6834"))
-    keys = [k for k in R if k.endswith("_aid")]
-    means = []
-    for bi, (name, k, col) in enumerate(bars):
-        v = np.array([100 * R[key][k] for key in keys])
-        ax.bar(bi, v.mean(), width=0.55, color=col, alpha=0.55)
-        ax.scatter(bi + rng.uniform(-0.16, 0.16, len(v)), v, s=22, color=col, edgecolors=SURF, linewidths=0.5, zorder=3)
-        means.append(v.mean())
-    ax.set_xticks(range(3)); ax.set_xticklabels([f"{b[0]}\nmean {m:.1f}%" for b, m in zip(bars, means)], fontsize=10, color=INK)
-    ax.set_ylabel("variance removed by the best\n2-way split (%)"); ax.spines[["top", "right"]].set_visible(False)
-    ax.set_ylim(0, max(100 * R[k]["pair2"] for k in keys) + 5)
-    ax.set_title("measured: a class splits like ONE cloud, not like two (AID, dots = 17 backbones)", fontsize=11, color=INK, fontweight="bold", loc="left")
+    # the same four read-outs: toys vs measured
+    ax = fig.add_subplot(gs[1, :])
+    meas = {ds: {k: np.mean([r[k] for key, r in R.items() if key.endswith("_" + ds)]) for _, k in READ} for ds in ("aid", "r45")}
+    series = [("toy (a) round", toy_acc[0], "#dcdbd6", INK2), ("toy (b) stretched", toy_acc[1], "#52514e", SURF), ("toy (c) islands", toy_acc[2], "#a9a8a2", INK),
+              ("measured, AID (17 backbones)", meas["aid"], "#2a78d6", SURF), ("measured, RESISC45 (17 backbones)", meas["r45"], "#8fb8ea", INK)]
+    w = 0.16
+    for si, (name, v, col, _) in enumerate(series):
+        xs = np.arange(len(READ)) + (si - 2) * w + (0.05 if si >= 3 else -0.03)
+        ax.bar(xs, [v[k] for _, k in READ], width=w - 0.015, color=col, label=name)
+        for a, (_, k) in zip(xs, READ):
+            ax.text(a, v[k] + 1.5, f"{v[k]:.0f}", ha="center", fontsize=9.5, color=INK)
+    ax.set_xticks(np.arange(len(READ))); ax.set_xticklabels([r[0] for r in READ], fontsize=11, color=INK)
+    ax.set_ylim(0, 118); ax.set_yticks([0, 25, 50, 75, 100]); ax.set_ylabel("accuracy (%)")
+    ax.spines[["top", "right"]].set_visible(False); ax.tick_params(axis="x", length=0)
+    ax.legend(loc="upper center", ncol=5, bbox_to_anchor=(0.5, 1.2), fontsize=10)
+    ax.set_title("the same four read-outs on the real features (blue) follow the pattern of toy (b): high, high, fairly high, low", fontsize=11.5,
+                 color=INK, fontweight="bold", y=1.2)
     fig.suptitle("Why is k-means far below the linear head?  Each class is one cloud, spread widely in directions that do not separate classes",
                  fontsize=13, fontweight="bold", y=0.985)
     fig.savefig(OUT / "fig3_class_shape.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
     print("saved", OUT / "fig3_class_shape.png")
+
+    # backup figure: two more measurements
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(14.5, 4.6), gridspec_kw={"wspace": 0.3})
+    rows = (("nearest class mean, as is", "ncm"), ("nearest class mean after squashing\nthe spread the classes share", "ncm_white"), ("linear head (reference)", "lin"))
+    yy = np.arange(len(rows))[::-1]
+    for di, (ds, name, col) in enumerate((("aid", "AID", "#52514e"), ("r45", "RESISC45", "#a9a8a2"))):
+        v = [np.mean([r[k] for key, r in R.items() if key.endswith("_" + ds)]) for _, k in rows]
+        ax.barh(yy + (0.19 if di == 0 else -0.19), v, height=0.34, color=col, label=name)
+        for a, b in zip(yy, v):
+            ax.text(b + 1, a + (0.19 if di == 0 else -0.19), f"{b:.1f}", va="center", fontsize=10, color=INK)
+    ax.set_yticks(yy); ax.set_yticklabels([r[0] for r in rows], fontsize=10.5, color=INK); ax.set_xlim(0, 125); ax.set_xticks([0, 25, 50, 75, 100])
+    ax.spines[["top", "right"]].set_visible(False); ax.tick_params(axis="y", length=0); ax.legend(loc="center right", fontsize=10)
+    ax.set_xlabel("accuracy on clean test features (%), mean of 17 backbones")
+    ax.set_title("test 1: squash the shared spread, then one centre per class is almost enough", fontsize=11, color=INK, fontweight="bold", loc="left")
+    bars = (("one real class", "split2", "#2a78d6"), ("reference: ONE cloud\n(Gaussian, same spread)", "null", "#a9a8a2"),
+            ("reference: TWO clouds\n(two real classes pooled)", "pair2", "#eb6834"))
+    keys = [k for k in R if k.endswith("_aid")]
+    means = []
+    for bi, (name, k, col) in enumerate(bars):
+        v = np.array([100 * R[key][k] for key in keys])
+        ax2.bar(bi, v.mean(), width=0.55, color=col, alpha=0.55)
+        ax2.scatter(bi + rng.uniform(-0.16, 0.16, len(v)), v, s=22, color=col, edgecolors=SURF, linewidths=0.5, zorder=3)
+        means.append(v.mean())
+    ax2.set_xticks(range(3)); ax2.set_xticklabels([f"{b[0]}\nmean {m:.1f}%" for b, m in zip(bars, means)], fontsize=10, color=INK)
+    ax2.set_ylabel("how much tighter the points get when\nthe group is cut in two (% of its variance)"); ax2.spines[["top", "right"]].set_visible(False)
+    ax2.set_ylim(0, max(100 * R[k]["pair2"] for k in keys) + 5)
+    ax2.set_title("test 2: cut one class in two. It behaves like ONE cloud (AID, dots = 17 backbones)", fontsize=11, color=INK, fontweight="bold", loc="left")
+    fig.savefig(OUT / "fig3b_class_shape_tests.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("saved", OUT / "fig3b_class_shape_tests.png")
 
 
 def legend(fig):
