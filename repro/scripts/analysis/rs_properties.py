@@ -13,7 +13,7 @@
 
 (B) Per clean test image, complexity proxies of the 224 px image the backbones see:
       jpeg  : bits per pixel of the JPEG (quality 75) file            (compressibility = information density)
-      edge  : mean Sobel gradient magnitude of the grey image          (edge density)
+      edge  : mean gradient magnitude (central differences) of the grey image; cf. SI_mean of Yu & Winkler, QoMEX 2013 (edge density)
       hist  : entropy of the grey-level histogram, bits                (tonal variety)
     and, averaged over the 17 backbones: clean accuracy, accuracy over the 60 corrupted streams, drop, over-confidence
     (confidence - correct, corrupted), flip rate, gain of head-input standardization. Spearman over images and over
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     OC = (("clean", "clean 정확도"), ("corr", "손상 정확도"), ("drop", "하락 (clean − 손상)"), ("over", "과신 (confidence − 정답, 손상)"),
           ("flip", "flip 비율"), ("gain", "head 입력 표준화 이득"))
     out += ["## B. 정보 밀도 / 장면 복잡도", "",
-            "이미지마다 224 px 입력의 복잡도를 세 가지로 잰다: JPEG(품질 75) 비트/픽셀, edge 밀도(Sobel 크기 평균), 밝기 히스토그램 엔트로피.",
+            "이미지마다 224 px 입력의 복잡도를 세 가지로 잰다: JPEG(품질 75) 비트/픽셀, edge 밀도(밝기 gradient 크기의 평균, 중앙 차분), 밝기 히스토그램 엔트로피.",
             "결과 값은 17개 백본 평균(손상 = 60개 stream 평균).", "", "### 데이터셋별 복잡도 (평균, 괄호 = 사분위 25–75%)", "",
             "| 데이터 | 이미지 수 | " + " | ".join(PXN[p] for p in PX) + " |", "|---|---:|---:|---:|---:|"]
     for k, name in (("imagenet", "ImageNet val (클래스당 5장)"), ("aid", "AID test"), ("r45", "RESISC45 test")):

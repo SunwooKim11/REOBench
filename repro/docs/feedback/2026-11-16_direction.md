@@ -596,3 +596,6 @@ frozen backbone + 선형 head(1×1 conv). 프로토콜은 Claude가 정한 것�
   이미지 단위 상관은 0에 가깝고(|ρ| ≤ 0.11), 클래스 평균 단위로는 복잡도와 과신 +0.43 / +0.39, flip +0.40 / +0.32, 하락 +0.23 / +0.22(유의하지 않음), clean 정확도 −0.54 / −0.33.
 - (3) T13(DSBR: 구현 확인, 17개 백본, 쏠림 큰 손상, 긴 적응, 분할, 불균형 stream)과 슬라이드 C2를 추가. flip은 C3, 자연 shift와 분할은 C4로 밀림(17장).
 - T14(위 두 확인)를 추가하고 2절 F2 대조표와 `PRIOR_ART_rs_tta_corruption.md` §3의 "미검증" 두 행을 고침.
+- (같은 날 추가) 정의의 출처 확인. LSCD-TTA(arXiv v2, 요약 agent)는 "information density"와 class imbalance를 논증으로만 쓰고 정의·측정·불균형 평가가 없음.
+  복잡도 지표는 Claude가 정한 것: JPEG 비트/픽셀과 gradient 크기 평균은 Yu & Winkler(QoMEX 2013, PDF 본문 확인)에 선례, 히스토그램 엔트로피는 선례 미확인.
+  edge 밀도를 "Sobel"이라고 적었으나 코드는 중앙 차분이라 표기를 고침. long-tail 식은 Cui 외(CVPR 2019)와 같은 꼴(agent가 원문 문장 확인), SAR·NOTE의 설정은 agent 요약만.
