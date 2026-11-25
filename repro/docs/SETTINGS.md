@@ -353,7 +353,7 @@ UC Merced(0.3 m)는 약 77 m 범위를, RESISC45의 30 m 이미지는 약 7.7 km
 - REOBench 12종 손상을 입힌 RESISC45-C는 우리만 만들었습니다. REOBench의 분류 손상 세트는 AID-C뿐입니다. Beyond Accuracy도
   RESISC45에 손상을 입히지만 종류가 3종(cloud/shadow, Poisson–Gaussian 노이즈, motion blur)으로 다르고 데이터는 공개되지 않았습니다.
   공개된 RESISC45-C가 따로 있는지는 저장한 노트에 없고 웹 검색은 하지 않았습니다.
-- 만든 이유는 지도교수 피드백 F3입니다(`docs/feedback/2026-11-W1_LSCD-TTA.md`). 벤치마크 하나에만 맞추면 reward hacking 우려가
+- 만든 이유는 지도교수 피드백 F3입니다(`docs/feedback/2026-11-03_LSCD-TTA.md`). 벤치마크 하나에만 맞추면 reward hacking 우려가
   있으니 2개 이상으로 하라는 지적이었습니다. RESISC45를 고른 이유:
   - EarthShift의 R45↔UCM 자연 shift와 같은 데이터라 합성 손상과 실제 shift를 같은 데이터 위에서 비교할 수 있습니다.
   - Beyond Accuracy와 겹치는 RGB 데이터라 그 논문과 직접 비교할 수 있습니다.

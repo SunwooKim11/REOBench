@@ -33,7 +33,7 @@
 
 ## 2. 11월 초: 발표 피드백과 방향 전환
 
-LSCD-TTA 발표 뒤 교수님 피드백(`docs/feedback/2026-11-W1_LSCD-TTA.md`):
+LSCD-TTA 발표 뒤 교수님 피드백(`docs/feedback/2026-11-03_LSCD-TTA.md`):
 - RS corruption의 고유성을 문제 제기로 쌓을 것 (F2)
 - 벤치마크를 2개 이상으로, REOBench 계열 논문을 더 읽을 것 (F3, 완료)
 - fMoW로 사전학습한 ResNet·ViT를 찾고 head 학습 방식을 확인할 것 (F4, 표로 정리할 것이 남음)

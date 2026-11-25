@@ -2,8 +2,8 @@
 
 | 파일 | 논문 | 관련 피드백 |
 |---|---|---|
-| [beyond_accuracy.md](beyond_accuracy.md) | Beyond Accuracy: Assessing Calibration of GeoFMs and Their Sensitivity to Distribution Shifts (arXiv 2608) | feedback/2026-11-W1_LSCD-TTA.md F2, F3 |
-| [earthshift.md](earthshift.md) | EarthShift: robustness to real-world distribution shifts in EO (arXiv 2605.29330) | feedback/2026-11-W1_LSCD-TTA.md F3, F5 |
+| [beyond_accuracy.md](beyond_accuracy.md) | Beyond Accuracy: Assessing Calibration of GeoFMs and Their Sensitivity to Distribution Shifts (arXiv 2608) | feedback/2026-11-03_LSCD-TTA.md F2, F3 |
+| [earthshift.md](earthshift.md) | EarthShift: robustness to real-world distribution shifts in EO (arXiv 2605.29330) | feedback/2026-11-03_LSCD-TTA.md F3, F5 |
 | [imagenet_c.md](imagenet_c.md) | ImageNet-C (Hendrycks & Dietterich, ICLR 2019), Claude 요약 | 2026-11-16_direction.md §3 (기준점) |
 | [reobench_openreview.md](reobench_openreview.md) | REOBench OpenReview 리뷰·rebuttal 정리 (사용자 Chrome 수집) | F2, F3 |
 | [rspdbench.md](rspdbench.md) | RSPDBench v3 (WACV 2027) | 2026-11-16_direction.md (보조 연산자) |

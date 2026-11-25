@@ -289,7 +289,10 @@ RESISC45에서 confidence는 세 백본에서 0.54–0.64로 떨어지고, flip�
 | dsbr + BN 정렬 (none 대비) | +2.84 | +3.88 |
 | flip과 픽셀 정확도의 순위상관 (stream 40개) | −0.94 | −0.97 |
 
-clean은 61.9 / 65.0. 빠진 손상 4종(rotate, scale, translate, data gaps)은 생성했고 실행 중이라 발표에는 8종 기준으로 쓴다.
+clean은 61.9 / 65.0. 생성한 4종(rotate, scale, translate, data gaps)의 실행도 끝났다(2026-11-25 02:51).
+4종 평균 mIoU none 57.3 / 59.2, BN 정렬 +0.6 / +0.9, tent −0.9 / −0.7, dsbr +0.8 / +0.6, tent + BN 정렬 +1.1 / +1.3.
+기하 3종은 하락 자체가 작고(none 58.7–64.5) 어떤 방법도 듣지 않는다. data gaps만 BN 정렬로 +5.3 / +5.9.
+12종 전체의 flip과 픽셀 정확도의 순위상관 −0.94 / −0.96(60개 stream). 발표 표는 8종 기준을 유지해도 된다.
 출처: `experiments/2026-11-23_seg_signals/RESULTS.md`.
 
 ### T6. REOBench 12종의 단계별 배치

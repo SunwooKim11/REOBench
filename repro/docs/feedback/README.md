@@ -5,5 +5,5 @@
 
 | 파일 | 발표 | 핵심 요구 |
 |---|---|---|
-| [2026-11-W1_LSCD-TTA.md](2026-11-W1_LSCD-TTA.md) | LSCD-TTA 논문 발표 | RS corruption 고유성 분석, REOBench 계열 논문(Beyond Accuracy), fMoW 사전학습 ResNet/ViT, 백본 선택 근거 |
+| [2026-11-03_LSCD-TTA.md](2026-11-03_LSCD-TTA.md) | LSCD-TTA 논문 발표 | RS corruption 고유성 분석, REOBench 계열 논문(Beyond Accuracy), fMoW 사전학습 ResNet/ViT, 백본 선택 근거 |
 | [2026-11-16_direction.md](2026-11-16_direction.md) | (면담 아님) 사용자 브레인스토밍 + 방향 제안 | RS 고유 구조에서 confidence 대신 쓸 라벨 없는 신호 찾기. 실험 3단계 제안 |

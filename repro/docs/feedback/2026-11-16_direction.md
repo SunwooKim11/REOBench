@@ -1,6 +1,6 @@
 # 방향 정리 (2026-11-16): 사용자 브레인스토밍 + 두 논문 + 교수님 피드백
 
-입력: [2026-11-W1_LSCD-TTA.md](2026-11-W1_LSCD-TTA.md) (F1~F5), [reading/beyond_accuracy.md](../reading/beyond_accuracy.md) (M1~M8),
+입력: [2026-11-03_LSCD-TTA.md](2026-11-03_LSCD-TTA.md) (F1~F5), [reading/beyond_accuracy.md](../reading/beyond_accuracy.md) (M1~M8),
 [reading/earthshift.md](../reading/earthshift.md), 아래 브레인스토밍. 상태: **제안 단계, 사용자 확정 전**.
 
 ## 1. 사용자 브레인스토밍 (원문)
@@ -469,3 +469,11 @@ REOBench §3, Beyond Accuracy §III-C·§V, EarthShift §4.1을 PDF에서 직접
 ### 2026-11-24 발표용 그림 9장 (`docs/figs/midterm_2026-11-26/`, `scripts/analysis/plot_midterm_figs.py`)
 사용자 지적: 정리본에 시각화가 없다. 기존 결과 파일에서 그림 9장을 그림(방법 비교, 정확도 추정 산점도, confidence·flip 대 정확도, EM 두 단계, head 상한, 쌍 비교,
 blur augmentation, 손상 12종 예시, 분할 손상별 막대). 새 실험 없음. 정리본 3절에 슬라이드별 배치와 그림 목록을 추가.
+
+### 2026-11-25 Potsdam 분할: 생성한 4종 실행 완료 (`experiments/2026-11-23_seg_signals/RESULTS.md`)
+tmux `seggeo` 종료(11-25 02:51, 실패 없음). `scripts/seg/summarize_seg_signals.py`를 12종으로 확장(8종 / 12종 평균을 따로 표기).
+- 4종 평균 mIoU (SatMAE / ScaleMAE): none 57.3 / 59.2, bnadapt +0.6 / +0.9, isa −0.7 / −0.3, tent −0.9 / −0.7, dsbr +0.8 / +0.6,
+  tent_bnbatch +1.1 / +1.3, flipf −0.5 / −0.3, flipf_bnbatch +1.0 / +1.3.
+- 기하 3종(rotate, scale, translate)은 none 58.7–64.5로 하락이 작고 모든 방법이 −0.1 ~ −1.5. data gaps만 BN 정렬 +5.3 / +5.9, tent_bnbatch +6.7 / +7.6.
+- 신호는 12종으로 넓혀도 유지: flip(bn)과 픽셀 정확도의 Spearman −0.94 / −0.96 (60개), confidence +0.90 / +0.96. data gaps의 과신 +6.9 / +8.9pt가 12종 중 가장 크다.
+- 읽기: 분류에서 하락이 큰 scale은 분할(512 px 패치, 축소 후 reflect 패딩)에서는 작다. 분할의 RS 고유 손상 중 처방이 필요한 것은 data gaps.
