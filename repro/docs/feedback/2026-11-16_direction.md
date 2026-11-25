@@ -488,3 +488,26 @@ tmux `seggeo` 종료(11-25 02:51, 실패 없음). `scripts/seg/summarize_seg_sig
 - sar, dsbr + BN 정렬은 생성한 4종에서 실행하지 않았음(표에 "실행 안 함"으로 표기).
 - GitHub: `repro_aid` 브랜치 삭제 요청은 보류. REOBench issue #4(열려 있음)의 사용자 댓글(2026-10-15)이 그 브랜치를 링크하고 있고, 그 29개 파일은 `main`에 없음.
 
+### 2026-11-25 방법 후보 1의 상한 측정 시작: data gaps 결과 (`experiments/2026-11-25_undo_acquisition/RESULTS_gaps.md`)
+사용자 지시: GPU가 비어 있으니 추천 1번(배율 탐색)과 2번(data gaps에서 무효 token 제외)을 실행. 스크립트 `scripts/analysis/scale_search.py`, `gaps_repair.py`,
+token 제외 `src/reobench_tta/token_mask.py`(ViT 13개에서 "제외한 patch의 픽셀을 바꿔도 feature 불변" 검사 통과). tmux `undo`, `undogaps`.
+- 설정: 무효 영역 mask는 주어진 것으로 봄(실제 제품의 no-data mask에 해당). 줄무늬는 각도 하나로 정해지는 모양이라 이미지에서 각도만 맞춤.
+  RESISC45-C는 생성 seed로 정확한 각도를 다시 구해 대조: 평균 오차 0.013°, 31,500장 중 2장만 0.5° 초과.
+- AID-C data gaps, 17개 백본 5단계 평균 정확도: 그대로 66.0, head 입력 정렬 80.6, 평균색 채움 82.2, 양쪽 픽셀로 보간 91.1, 보간 + 정렬 92.1 (clean 94.8).
+  RESISC45-C: 56.0, 73.4, 74.6, 84.1, 85.8 (clean 90.6).
+- ViT 13개, token 제외(무효 픽셀이 있는 patch를 attention에서 뺌): AID 73.6 → 93.0, RESISC45 63.4 → 88.0. 보간(92.5 / 85.9)보다 같거나 높고, 5단계에서 token의 59%를 빼도 89.9 / 83.8.
+- 과신도 같이 사라진다: confidence − 정확도 +15.9 → +0.9pt (AID), +19.4 → +0.3pt (RESISC45). 가장 많이 예측된 클래스 비율 19.9% → 5.1%, 23.0% → 4.2%.
+- head 상한과의 비교(3·5단계): AID 그대로 58.4, 정렬 75.6, **라벨로 head를 다시 맞춘 상한 85.0**(11-24), 보간 88.8, 보간 + 정렬 90.8. RESISC45 48.1, 67.9, 상한 79.6, 보간 80.4, 보간 + 정렬 83.5.
+  라벨 없이 입력에서 되돌리는 쪽이 라벨로 head를 고친 상한보다 높다. data gaps의 여지는 head가 아니라 입력에 있다.
+- 백본별: ResNet은 그대로 33–53%까지 떨어지고(AID) 보간으로 80–90%. dinov3_web은 원래 거의 안 떨어짐(96.9). sup_in_vitb16은 token 제외(84.6)가 보간(89.5)보다 낮다.
+- 주의: mask를 안다고 가정한 상한이다. 보간은 고전적인 gap filling이고 새로운 방법이 아니다. 분할에는 아직 적용하지 않았다.
+- 첫 실행은 각도 단계의 인덱스 버그로 12초 만에 멈춰서 고친 뒤 data gaps 쪽만 다시 실행(`scripts/run_undo_gaps.sh`).
+
+### 2026-11-25 사용자 지적: 분할이 두 모델뿐 → 17개 백본으로 확장 시작 (`scripts/seg/seg_probe.py`)
+사용자: 분류만 많이 하고 분할은 SatMAE, ScaleMAE뿐이다. 분할을 먼저 해야 한다. midterm T5의 "실행 안 함"도 보기 좋지 않다.
+- T5 빈칸(생성한 4종에서 sar, dsbr + BN 정렬)은 실제로 실행해 채우기로 함: `scripts/run_seg_fill.sh`, tmux `segfill`.
+- 분할 확장 방식(Claude 선택, 사용자 확인 전): frozen backbone + 선형 head(1x1 conv)를 Potsdam train 3,456 패치로 학습. 512px 패치를 448로 줄여 224 타일 4개로 인코딩
+  (`src/reobench_tta/dense.py`, ResNet은 layer4를 dilation으로 바꿔 격자를 맞춤). UPerNet 미세조정은 백본당 학습 67분 + mmseg 이식이 필요해 택하지 않음.
+  head 학습률 1e-3 / 1e-2에서 clean mIoU 54.9 / 55.2 (dino_in_s16)로 차이가 작아 1e-3 고정. tmux `segprobe`(T5 빈칸 실행 뒤 시작).
+- midterm 5절에 confidence, Geometry, feature 이동 지표의 설명 위치를 추가. S12(feature의 모양)를 "건너뜀"으로 둔 것은 Claude 판단이었음을 사용자에게 알림.
+

@@ -432,6 +432,9 @@ source 클래스 평균에서 멀어지는 정도는 둘이 비슷하다(+5.8 �
 | 3 | 백본 표, augmentation 표, 손상 배치 표 | `docs/SETTINGS.md` §1, §2.5 | 15분 |
 | 4 | feature 그림 두 장 | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`, `fig2_shift_align_motion_blur_s3.png` | 10분 |
 | 5 | Geometry 세 가지 (T8, Silhouette 상관, T9) | 이 문서 4절 | 15분 |
+| 5 | Geometry의 설명 (k-means와 선형 head가 왜 다른가, EM 두 단계) | `docs/reading/entropy_enigma.md` §5 | 15분 |
+| 5 | confidence 분석의 설명 (ECE, 과신, ATC) | `docs/STUDY_stage1_metrics.md` §3, §5.3, 수치는 `experiments/2026-11-16_backbone_feats/ANALYSIS.md` §1 | 15분 |
+| 5 | feature 이동 지표 (rel_drift, frac_common, CKA). 이 문서에는 표가 없고 결론 한 문장만 있다 | `docs/STUDY_stage1_metrics.md` §4, §7, 수치는 `ANALYSIS.md` §3.5 | 필요할 때 |
 | 6 | 10월 결과가 필요하면 | `docs/WRAPUP_progress_2026-11-23.md` §1 | 10분 |
 | 7 | F2 선행 연구 조사 | `docs/PRIOR_ART_rs_tta_corruption.md` §1, §3 | 10분 |
 | 7 | 백본 선택 근거의 선행 연구 (F5) | `docs/reading/matched_pair_study.md`의 "원문 직접 확인" 절 | 10분 |
