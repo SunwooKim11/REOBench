@@ -229,7 +229,7 @@ def class_shape():
     print("saved", OUT / "fig3_class_shape.png")
 
     # backup figure: two more measurements
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(14.5, 4.6), gridspec_kw={"wspace": 0.3})
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(14.5, 4.8), gridspec_kw={"wspace": 0.42})
     rows = (("nearest class mean, as is", "ncm"), ("nearest class mean after squashing\nthe spread the classes share", "ncm_white"), ("linear head (reference)", "lin"))
     yy = np.arange(len(rows))[::-1]
     for di, (ds, name, col) in enumerate((("aid", "AID", "#52514e"), ("r45", "RESISC45", "#a9a8a2"))):
@@ -240,9 +240,9 @@ def class_shape():
     ax.set_yticks(yy); ax.set_yticklabels([r[0] for r in rows], fontsize=10.5, color=INK); ax.set_xlim(0, 125); ax.set_xticks([0, 25, 50, 75, 100])
     ax.spines[["top", "right"]].set_visible(False); ax.tick_params(axis="y", length=0); ax.legend(loc="center right", fontsize=10)
     ax.set_xlabel("accuracy on clean test features (%), mean of 17 backbones")
-    ax.set_title("test 1: squash the shared spread, then one centre per class is almost enough", fontsize=11, color=INK, fontweight="bold", loc="left")
-    bars = (("one real class", "split2", "#2a78d6"), ("reference: ONE cloud\n(Gaussian, same spread)", "null", "#a9a8a2"),
-            ("reference: TWO clouds\n(two real classes pooled)", "pair2", "#eb6834"))
+    ax.set_title("test 1: squash the shared spread, then\none centre per class is almost enough", fontsize=11, color=INK, fontweight="bold", loc="left")
+    bars = (("one real class", "split2", "#2a78d6"), ("reference: ONE cloud\n(Gaussian,\nsame spread)", "null", "#a9a8a2"),
+            ("reference: TWO clouds\n(two real\nclasses pooled)", "pair2", "#eb6834"))
     keys = [k for k in R if k.endswith("_aid")]
     means = []
     for bi, (name, k, col) in enumerate(bars):
@@ -253,7 +253,7 @@ def class_shape():
     ax2.set_xticks(range(3)); ax2.set_xticklabels([f"{b[0]}\nmean {m:.1f}%" for b, m in zip(bars, means)], fontsize=10, color=INK)
     ax2.set_ylabel("how much tighter the points get when\nthe group is cut in two (% of its variance)"); ax2.spines[["top", "right"]].set_visible(False)
     ax2.set_ylim(0, max(100 * R[k]["pair2"] for k in keys) + 5)
-    ax2.set_title("test 2: cut one class in two. It behaves like ONE cloud (AID, dots = 17 backbones)", fontsize=11, color=INK, fontweight="bold", loc="left")
+    ax2.set_title("test 2: cut one class in two. It behaves like\nONE cloud (AID, dots = 17 backbones)", fontsize=11, color=INK, fontweight="bold", loc="left")
     fig.savefig(OUT / "fig3b_class_shape_tests.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
     print("saved", OUT / "fig3b_class_shape_tests.png")
