@@ -212,7 +212,7 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
 | B3 | S6 | confidence는 어디서 틀리나 | T2, **fig3**의 윗줄, **fig10**의 오른쪽(예측 비율) | 과신은 손상 3종에 몰려 있고, 그때 예측이 한두 클래스로 쏠린다(mae_in, AID scale 3단계에서 한 클래스가 58%) |
 | B4 | S12 | clean feature의 모양 | feature 그림 폴더의 `fig3_class_shape.png`(장난감 세 경우와 실제 측정을 같은 네 방법으로 비교), `fig1_clean_geometry.png`에서 한두 행, T8. 질문 대비 예비 장: `fig3b_class_shape_tests.png`(확인 측정 두 가지) | 클래스는 선형으로 갈라지고 이웃도 같은 클래스인데 k-means는 못 찾는다. 클래스마다 덩어리는 하나지만 클래스와 무관한 방향으로 넓게 퍼져 있기 때문이다. 뭉친 정도는 목적함수를 따른다(MAE 낮음, DINO 높음) |
 | B5 | S7 | 손상이 feature를 옮기는 방식 | feature 그림 폴더의 `fig2_shift_align_motion_blur_s3.png`에서 필요한 행, **fig10**의 왼쪽(채널 분포), 숫자 한 줄(이동의 83–94%는 head가 읽지 않는 방향) | 손상은 모든 이미지를 한 방향으로 통째로 민다. head의 경계는 제자리에 있으므로 예측이 쏠린다. test 배치 통계로 다시 표준화하면 평균이 돌아오지만 퍼진 모양은 남는다 |
-| B6 | S6 | 엔트로피 최소화를 오래 돌리면 (Tent protocol, 2026-11-26 05:30 중간 결과) | **fig4b**(`fig4b_em_long_tent.png`), T15, T13 (3) | 백본 norm 층을 학습하는 원래 Tent 설정에서, tent는 MAE·MoCo 계열에서 수십 step 만에 예측이 한두 클래스로 붕괴한다(SatMAE motion blur 29.6 → 4.0%, 클래스 25 → 1개). DSBR은 그 붕괴 10건 중 6건을 막고 82–87%까지 올린다. 다만 DSBR도 4건에서는 붕괴한다(ScaleMAE motion blur, MoCo-ImageNet). DINO 계열은 tent도 무너지지 않는다. feature 단계 fig4는 본문에서 뺀다 |
+| B6 | S6 | 엔트로피 최소화를 오래 돌리면 (Tent protocol) | **fig4b**(`fig4b_em_long_tent.png`), T15의 평균 표와 "tent가 붕괴한 14쌍" 표 | 백본 norm 층을 학습하는 원래 Tent 설정에서, tent는 평균 66.5 → 60.1로 내려가고 예측 클래스가 28.8 → 21.8개로 준다. MAE·MoCo 계열에서는 수십 step 만에 한두 클래스로 붕괴한다(SatMAE motion blur 29.6 → 4.0%). DSBR은 평균 80.0까지 오르고 그 붕괴 14건 중 10건을 막는다. 다만 DSBR도 5건에서는 붕괴한다(moco_in, ScaleMAE motion blur 등). DINO 계열은 tent도 붕괴하지 않는다. feature 단계 fig4는 본문에서 뺀다 |
 
 **C. 분석에서 나온 도구**
 
@@ -689,40 +689,70 @@ tent의 손해가 줄어 보이는 것은 그 영향일 수 있다. 표준화는
   - "복잡한 클래스"는 따로 정의한 것이 아니라 그 클래스 이미지들의 복잡도 평균이 높은 클래스라는 뜻이다.
   - RS 장면 복잡도를 사람의 판단으로 정의한 연구가 있다는 검색 결과(AID에서 만든 AID-22, Remote Sensing 2021)는 페이지가 열리지 않아 확인하지 못했다. 발표에 쓰려면 원문 확인이 필요하다.
 
-### T15. 엔트로피 최소화를 오래 돌리면: Tent protocol (B6, 2026-11-26 05:30 중간 결과, 실행 계속 중)
+### T15. 엔트로피 최소화를 오래 돌리면: Tent protocol (B6, 2026-11-26 08:00 기준, 실행 계속 중)
 
 사용자 지적으로 fig4(feature 단계)를 원래 Tent 설정으로 다시 돌렸다. 이미지를 백본에 통과시키고 백본 norm 층의 γ, β를 학습한다(T1과 같은 파라미터, SGD, lr).
-AID-C 3단계 stream(2,000장)을 반복해 2,000 step, 배치 64. checkpoint에서 stream 전체를 갱신 없이 예측. `scripts/tta/cls_tta_long.py`, `experiments/2026-11-26_em_long_tent/RESULTS.md`.
-**지금까지 끝난 것: 백본 7개 × 손상 3–4종(motion blur, data gaps, scale, Gaussian noise).** 나머지 백본 10개와 손상 8종은 실행 중이라 숫자가 바뀐다.
+AID-C 3단계 stream(2,000장)을 반복해 2,000 step, 배치 64. checkpoint에서 stream 전체를 갱신 없이 예측. `scripts/tta/cls_tta_long.py`, `experiments/2026-11-26_em_long_tent/RESULTS.md`, 그림 `fig4b_em_long_tent.png`.
+**끝난 것: 백본 13개 × 손상 4종(motion blur, data gaps, scale, Gaussian noise).** dinov3_sat, sup_in_vitl16, ViT-S/8 두 개와 나머지 손상 8종은 실행 중이다.
 
-| 백본 (손상 3종 평균: motion blur, data gaps, scale) | 시작 | tent 끝 | dsbr 끝 | 예측 클래스 수: 시작 → tent / dsbr |
+**평균 (13개 백본 × 4종)**
+
+| step | 0 | 10 | 20 | 50 | 100 | 200 | 500 | 1,000 | 2,000 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| tent 정확도 | 66.5 | 64.6 | 63.3 | 61.6 | 60.7 | 60.4 | 60.8 | 60.8 | 60.1 |
+| dsbr 정확도 | 66.5 | 68.7 | 72.3 | 76.4 | 77.1 | 77.7 | 78.7 | 79.6 | 80.0 |
+| tent 예측 클래스 수 | 28.8 | 27.7 | 26.4 | 24.1 | 23.1 | 22.5 | 22.2 | 22.1 | 21.8 |
+| dsbr 예측 클래스 수 | 28.8 | 29.0 | 29.5 | 28.9 | 28.4 | 27.9 | 27.2 | 27.2 | 27.2 |
+
+**백본별 (손상 4종 평균)**
+
+| 백본 | 시작 | tent 끝 | dsbr 끝 | 예측 클래스 수: tent / dsbr 끝 |
 |---|---:|---:|---:|---:|
-| satmae | 62.2 | 59.7 | 86.6 | 28.3 → 20.3 / 30.0 |
-| scalemae | 59.9 | 33.0 | 59.1 | 28.3 → 12.3 / 20.3 |
-| moco_in | 29.2 | 3.3 | 3.1 | 24.0 → 3.0 / 1.0 |
-| moco_fmow | 43.1 | 29.6 | 80.6 | 25.3 → 11.7 / 30.0 |
-| gassl_fmow | 53.6 | 43.2 | 86.7 | 29.0 → 19.7 / 30.0 |
-| dino_in_s16 | 66.8 | 65.8 | 85.1 | 30.0 → 30.0 / 30.0 |
-| satdino_s16 | 76.2 | 89.9 | 91.3 | 29.7 → 30.0 / 30.0 |
-| **평균 (7개)** | 55.9 | 46.4 | 70.4 | 27.8 → 18.1 / 24.5 |
+| mae_in | 54.2 | 46.4 | 66.9 | 16.8 / 22.5 |
+| satmae | 64.5 | 67.2 | 87.4 | 22.8 / 30.0 |
+| scalemae | 64.2 | 46.5 | 66.4 | 16.8 / 22.8 |
+| moco_in | 43.3 | 3.2 | 18.4 | 2.5 / 8.0 |
+| moco_fmow | 54.0 | 44.1 | 82.7 | 16.2 / 30.0 |
+| gassl_fmow | 62.5 | 55.7 | 88.4 | 22.2 / 30.0 |
+| dino_in_s16 | 73.0 | 72.7 | 87.2 | 30.0 / 30.0 |
+| satdino_s16 | 80.3 | 91.3 | 92.3 | 30.0 / 30.0 |
+| dino_in_b16 | 73.3 | 66.6 | 89.3 | 28.2 / 30.0 |
+| satdino_b16 | 82.7 | 92.3 | 92.9 | 30.0 / 30.0 |
+| dinov3_web_l16 | 92.6 | 96.3 | 96.5 | 30.0 / 30.0 |
+| sup_in_r50 | 47.8 | 24.4 | 81.1 | 10.5 / 30.0 |
+| sup_in_vitb16 | 72.0 | 74.8 | 90.6 | 27.0 / 30.0 |
+| **평균** | 66.5 | 60.1 | 80.0 | 21.8 / 27.2 |
 
-**붕괴(끝에서 예측 클래스 5개 이하)가 일어난 (백본, 손상) 쌍: 끝난 27쌍 중 tent 10쌍, dsbr 4쌍.**
+**(백본, 손상) 쌍으로 세면** (끝난 53쌍, 백본 14개. 붕괴 = 끝에서 예측 클래스 5개 이하, 손해 = 끝 정확도가 시작보다 5pt 넘게 낮음)
 
-| 손상 3단계 | tent가 붕괴한 백본 | 그중 dsbr이 막은 것 (끝 정확도) | dsbr도 붕괴한 것 |
-|---|---|---|---|
-| motion blur | satmae, scalemae, moco_fmow, gassl_fmow, moco_in | satmae 82.2, moco_fmow 81.3, gassl_fmow 87.0 | scalemae (3.5), moco_in (3.5) |
-| data gaps | scalemae, moco_fmow, moco_in | scalemae 83.3, moco_fmow 79.2 | moco_in (2.8) |
-| scale | moco_in | – | moco_in (3.1) |
-| Gaussian noise | moco_in | moco_in 64.3 (붕괴는 아니지만 시작 85.6보다 낮음) | – |
+| | tent | dsbr |
+|---|---:|---:|
+| 붕괴한 쌍 | 14 | 5 |
+| 손해인 쌍 | 20 | 6 |
+| 끝 정확도가 시작보다 높은 쌍 | 33 | 47 |
+
+| tent가 붕괴한 14쌍 (정확도 시작 → 끝) | dsbr의 끝 정확도 |
+|---|---|
+| satmae motion blur (29.6 → 4.0) | 82.2 |
+| scalemae motion blur (30.9 → 6.0), data gaps (61.5 → 4.1) | **3.5 (붕괴)**, 83.3 |
+| mae_in motion blur (36.8 → 3.1) | 81.3 |
+| dinov3_sat motion blur (31.2 → 2.8) | 83.2 |
+| moco_fmow motion blur (14.8 → 4.0), data gaps (34.4 → 3.8) | 81.3, 79.2 |
+| gassl_fmow motion blur (28.4 → 4.0) | 87.0 |
+| sup_in_r50 motion blur (35.6 → 2.8), data gaps (28.3 → 4.5) | 77.7, 79.0 |
+| moco_in motion blur, data gaps, scale, Gaussian noise (모두 3% 안팎으로) | **3.5, 2.8, 3.1 (붕괴)**, 64.3 |
+
+dsbr이 붕괴한 5쌍: moco_in의 motion blur·data gaps·scale, scalemae의 motion blur, mae_in의 scale(23.0 → 3.1, tent도 3.3).
 
 - 가장 뚜렷한 예: SatMAE, motion blur. tent는 29.6 → 28.5 → 23.6 → 6.5 → … → 4.0% (0, 10, 20, 50, …, 2,000 step), 예측 클래스 25 → 3개(50 step) → 1개.
   dsbr은 29.6 → 63.4(50 step) → 82.2%, 예측 클래스 30개. stream 한 바퀴가 31 step이므로 tent의 붕괴는 두 바퀴 안에 일어난다.
-- DINO 계열(dino_in_s16, satdino_s16)에서는 tent도 붕괴하지 않고 대체로 오른다. 예외: dino_in_s16의 data gaps는 58.1 → 38.3으로 내려간다(클래스 수는 30 유지, dsbr은 85.5).
-- **말할 수 있는 것**: 원래 Tent 설정에서도 "엔트로피 최소화 → 예측 클래스 합쳐짐 → 붕괴"가 일어나고, 일어나는 곳은 confidence가 가장 틀리는 백본(MAE, MoCo 계열)과 손상(motion blur, data gaps)이다.
-  DSBR은 그 대부분을 막는다. 이것이 EO 백본에서 DSBR을 쓰는 근거다.
-- **말하면 안 되는 것**: "DSBR은 붕괴하지 않는다". ScaleMAE의 motion blur와 moco_in에서는 DSBR도 한 클래스로 붕괴한다. DSBR은 엔트로피에 가중만 줄 뿐 다양성을 강제하는 항이 없다.
-- feature 단계 fig4와 다른 점: fig4는 17개 백본 모두에서 tent가 내려가고 DSBR은 모두 오르는 그림이었다. Tent protocol에서는 백본에 따라 갈린다(DINO 계열은 tent도 오르고, moco_in은 DSBR도 무너진다).
-- 한계: 같은 2,000장을 반복해 보여 주고 그 2,000장에서 잰 정확도다. seed 1개. 3단계만. 끝난 백본이 7개다.
+- tent의 붕괴는 MAE 계열(mae_in, satmae, scalemae), MoCo 계열, 지도학습 ResNet-50, dinov3_sat에서 일어나고 **손상은 거의 motion blur와 data gaps**다.
+  DINO 계열과 dinov3_web은 붕괴하지 않는다(dino_in_s16·b16의 data gaps는 붕괴 없이 내려감: 58.1 → 38.3, 59.5 → 9.8).
+- **말할 수 있는 것**: 원래 Tent 설정에서도 "엔트로피 최소화 → 예측 클래스 합쳐짐 → 붕괴"가 일어난다. 일어나는 곳은 confidence가 가장 틀리는 백본과 손상이다.
+  DSBR은 tent가 붕괴한 14쌍 중 10쌍을 막고 77–87%까지 올린다. 평균으로 tent 66.5 → 60.1, DSBR 66.5 → 80.0. 이것이 EO 백본에서 DSBR을 쓰는 근거다.
+- **말하면 안 되는 것**: "DSBR은 붕괴하지 않는다". moco_in, ScaleMAE motion blur, mae_in scale에서는 DSBR도 한 클래스로 붕괴한다. DSBR은 엔트로피에 가중만 줄 뿐 다양성을 강제하는 항이 없다.
+- feature 단계 fig4와 다른 점: fig4는 17개 백본 모두에서 tent가 내려가고 DSBR은 모두 오르는 그림이었다. Tent protocol에서는 백본에 따라 갈린다.
+- 한계: 같은 2,000장을 반복해 보여 주고 그 2,000장에서 잰 정확도다. seed 1개. 3단계만. 붕괴 기준(5개 이하)은 임의로 정했다.
 
 ## 5. 볼 것 (순서와 시간)
 

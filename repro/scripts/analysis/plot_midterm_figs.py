@@ -176,8 +176,11 @@ def fig4b():
     D = E / "2026-11-26_em_long_tent"
     R = {m: json.load(open(D / f"{m}.json")) for m in ORDER if (D / f"{m}.json").exists()}
     done = lambda r: {s_ for s_, v in r["streams"].items() if "tent" in v and "dsbr" in v}
-    R = {m: r for m, r in R.items() if done(r)}
-    S = sorted(set.intersection(*[done(r) for r in R.values()]))
+    ALL = {m: r for m, r in R.items() if done(r)}                      # every backbone with at least one finished stream
+    P4 = ["motion_blur_s3", "data_gaps_s3", "scale_image_s3", "gaussian_noise_new_s3"]
+    S12 = sorted(set.union(*[done(r) for r in ALL.values()]))
+    S = S12 if len(S12) == 12 and all(set(S12) <= done(r) for r in ALL.values()) else P4   # all 12 once every backbone has them
+    R = {m: r for m, r in ALL.items() if set(S) <= done(r)}
     ck = next(iter(R.values()))["ckpts"]; x = np.arange(len(ck))
     val = lambda m, loss, key: np.mean([R[m]["streams"][s_][loss][key] for s_ in S], 0)       # ckpt
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.3))
@@ -215,8 +218,20 @@ def fig4b():
     for s_ in S:
         g = lambda loss, key, j: np.mean([R[m]["streams"][s_][loss][key][j] for m in R])
         out.append(f"| {short(s_)} | {g('tent', 'acc', 0):.1f} | {g('tent', 'acc', -1):.1f} | {g('dsbr', 'acc', -1):.1f} | {g('tent', 'n_pred', -1):.1f} | {g('dsbr', 'n_pred', -1):.1f} |")
+    pairs = [(m, s_, r["streams"][s_]) for m, r in ALL.items() for s_ in sorted(done(r))]
+    cnt = lambda loss, f: sum(f(v[loss]) for _, _, v in pairs)
+    coll, harm = (lambda v: v["n_pred"][-1] <= 5), (lambda v: v["acc"][-1] < v["acc"][0] - 5)
+    out += ["", f"## 끝난 (백본, 손상) 쌍 전체: {len(pairs)}쌍, 백본 {len(ALL)}개", "",
+            "붕괴 = 끝에서 예측 클래스 5개 이하. 손해 = 끝 정확도가 시작보다 5pt 넘게 낮음.", "",
+            "| | tent | dsbr |", "|---|---:|---:|",
+            f"| 붕괴한 쌍 | {cnt('tent', coll)} | {cnt('dsbr', coll)} |", f"| 손해인 쌍 | {cnt('tent', harm)} | {cnt('dsbr', harm)} |",
+            f"| 끝 정확도가 시작보다 높은 쌍 | {cnt('tent', lambda v: v['acc'][-1] > v['acc'][0])} | {cnt('dsbr', lambda v: v['acc'][-1] > v['acc'][0])} |", "",
+            "### tent나 dsbr이 손해인 쌍 (정확도 시작 → 끝, 괄호 = 끝의 예측 클래스 수)", "", "| model | 손상 | 시작 | tent 끝 | dsbr 끝 |", "|---|---|---:|---:|---:|"]
+    for m, s_, v in pairs:
+        if harm(v["tent"]) or harm(v["dsbr"]):
+            out.append(f"| {m} | {short(s_)} | {v['tent']['acc'][0]:.1f} | {v['tent']['acc'][-1]:.1f} ({v['tent']['n_pred'][-1]}) | {v['dsbr']['acc'][-1]:.1f} ({v['dsbr']['n_pred'][-1]}) |")
     (D / "RESULTS.md").write_text("\n".join(out) + "\n")
-    print("saved", D / "RESULTS.md", "backbones", len(R), "streams", len(S))
+    print("saved", D / "RESULTS.md", "backbones", len(R), "streams", len(S), "pairs", len(pairs))
 
 
 def fig5():
