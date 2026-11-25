@@ -16,8 +16,8 @@
 |---|---|---|---|
 | 입력 픽셀 (encoder 앞) | 입력 정렬 (ISA) | 밝기·대비, haze | 분류 2개 모델(10월), 분할 2개 모델 × 12종(11월) |
 | encoder 중간 블록 | 블록 정렬 (fsa) | noise, blur, JPEG | 분류·분할 2개 모델(10월). 위치를 test를 보고 골라 상한 |
-| 분할 decoder의 BN | BN 정렬 (bnadapt) | noise, JPEG, data gaps | 분할 2개 모델 × 12종 |
-| head 입력 (encoder 뒤, Linear 앞) | head 입력 정렬. 11월 문서에서 그냥 "정렬"이라 하면 이것 | 분류 평균 +5.5 / +5.9pt, 17개 백본 전부 이득 | 분류 17개 백본 × AID-C, RESISC45-C |
+| 분할 decoder의 BN | BN 통계 교체 (bnadapt) | noise, JPEG, data gaps | 분할 2개 모델 × 12종 |
+| head 입력 (encoder 뒤, Linear 앞) | head 입력 표준화. 11월 문서에서 그냥 "정렬"이라 하면 이것 | 분류 평균 +5.5 / +5.9pt, 17개 백본 전부 이득 | 분류 17개 백본 × AID-C, RESISC45-C |
 
 **흐름.**
 
@@ -28,10 +28,10 @@
 10-22  어느 깊이에서 정렬?         depth sweep                           → 밝기류 = 입력, noise류 = 중간 블록, 분류 평균은 head 입력
 10-22  둘 다 하면?                입력 + 블록 조합                        → 손상 그룹별로 거의 그대로 더해짐
 10-28  소스 통계가 꼭 필요한가      32장 / 사전학습 상수로 대체              → 라벨 없는 clean 32장이면 대부분 유지, 사전학습 상수는 손해
-11-17  백본 17개로 넓히면          head 입력 정렬                         → 81.8 → 87.3 / 75.2 → 81.1, 엔트로피 방법보다 큼
+11-17  백본 17개로 넓히면          head 입력 표준화                         → 81.8 → 87.3 / 75.2 → 81.1, 엔트로피 방법보다 큼
 11-23  head 학습 방식에 달렸나      표준화 있는 head / 없는 head            → 식을 맞게 쓰면 이득이 같음 (+5.4 ~ +5.9)
 11-24  head에서 더 얻을 것은?      head를 라벨로 고친 상한                 → 정렬 뒤 남는 여지는 motion blur, data gaps, scale
-11-25  분할 12종                  BN 정렬 / 입력 정렬                     → 손상이 세 묶음으로 갈림
+11-25  분할 12종                  BN 통계 교체 / 입력 정렬                     → 손상이 세 묶음으로 갈림
 ```
 
 **지금 말할 수 있는 것.**
@@ -69,24 +69,40 @@
 x (픽셀)
  │   ← ① 입력 정렬 (ISA)           RGB 3채널
  ▼
-Normalize: (x − m) / s             사전학습 때 쓴 고정 상수. 정렬이 아니라 전처리
+전처리 표준화 (x − m) / s       사전학습 때 쓴 고정 상수. 적응이 아니라 전처리
  ▼
 encoder 블록 0 … L−1
  │   ← ② 블록 정렬 (fsa)            토큰의 D채널
  ▼
 final norm → h                     분류: CLS 벡터 (DINOv3는 [CLS, patch 평균], ResNet은 GAP)
- │   ← ④ head 입력 정렬             h의 D채널
+ │   ← ④ head 입력 표준화             h의 D채널
  ▼
-head (Linear)                      분할 UPerNet은 이 자리에 decoder가 있고, ③ BN 정렬은 decoder 안의 BN들
+head (Linear)                      분할 UPerNet은 이 자리에 decoder가 있고, ③ BN 통계 교체는 decoder 안의 BN들
 ```
 
-### 1.3 헷갈리기 쉬운 셋: Normalize, 입력 정렬, head 입력 정렬
+### 1.3 용어: 표준화와 정렬, 그리고 헷갈리기 쉬운 셋 (2026-11-26 통일)
+
+두 단어를 나눠 쓴다. "정규화(normalization)"는 설명에 쓰지 않는다.
+
+| 용어 | 뜻 | 근거 (원문 표현) |
+|---|---|---|
+| 표준화 (standardization) | (x − 평균) / 표준편차. 평균 0, 표준편차 1로 만든다 | scikit-learn StandardScaler "Standardize features by removing the mean and scaling to unit variance"; Wikipedia Feature scaling "Standardization (Z-score Normalization)" |
+| 정렬 (alignment) | test 쪽 통계를 source 쪽 통계에 맞춘다. test 통계로 표준화한 뒤 source 표준편차를 곱하고 source 평균을 더한다 | AdaIN (Huang & Belongie 2017) "aligns the mean and variance of the content features with those of the style features"; CORAL "aligning the second-order statistics of source and target distributions"; FOA "making them align with the source training domain" |
+| 정규화 (normalization) | 통계학·전처리에서는 보통 [0, 1]로 맞추는 min-max scaling (Wikipedia "Rescaling (min-max normalization)"). 딥러닝은 표준화를 normalization이라 부른다 | BatchNorm (Ioffe & Szegedy 2015) "normalize each scalar feature independently, by making it have the mean of zero and the variance of 1"; torchvision `Normalize` "output[channel] = (input[channel] - mean[channel]) / std[channel]" |
+
+- 그래서 BatchNorm, LayerNorm, torchvision `Normalize`, AdaIN은 고유 이름으로만 쓰고, 하는 일은 "표준화"라고 쓴다. BatchNorm·LayerNorm은 표준화 뒤에 학습된 γ, β를 곱하고 더한다.
+- BN 통계를 test 배치 것으로 바꾸는 것은 선행 연구도 "정렬"이라 하지 않는다(Schneider et al. 2020 "Replacing the activation statistics", AdaBN "modulating the statistics"). 그래서 "BN 통계 교체"라 쓴다.
+- 이 문서의 방법 이름: 전처리 표준화(`Normalize`), 입력 정렬(ISA), 블록 정렬(fsa), BN 통계 교체(bnadapt, AdaBN), head 입력 표준화. 모두 "test 배치로 표준화하고, 그 위치가 학습 때 갖던 통계로 되돌린다"는 같은 일이고,
+  되돌리는 몫이 이미 모델 안에 있는 경우(표준화해서 학습한 head, BN의 γ, β)는 표준화만 하면 된다. 이들을 묶어 부를 때만 "통계 정렬"이라 쓴다.
+- 10월·11월 초의 다른 문서(`NOTES_tta.md`, 실험 RESULTS 등)는 "BN 정렬", "head 입력 정렬", "정규화"를 섞어 썼다. 그 문서들은 기록이라 고치지 않았다.
+
+#### 헷갈리기 쉬운 셋: 전처리 표준화, 입력 정렬, head 입력 표준화
 
 | | 어디에 | 무엇을 무엇으로 | 목표 통계의 출처 | 배치마다 바뀌나 |
 |---|---|---|---|---|
-| Normalize (P → PN의 N) | 픽셀, encoder 바로 앞 | (x − m) / s. 모든 이미지에 같은 상수 | 사전학습 데이터(ImageNet, fMoW)의 상수. 모델에 딸려 옴 | 아니다. 적응이 아니다 |
+| 전처리 표준화 (`Normalize`, P → PN의 N) | 픽셀, encoder 바로 앞 | (x − m) / s. 모든 이미지에 같은 상수 | 사전학습 데이터(ImageNet, fMoW)의 상수. 모델에 딸려 옴 | 아니다. 적응이 아니다 |
 | 입력 정렬 (ISA) | 픽셀, Normalize **앞** | test 배치의 RGB 평균·표준편차 → clean train의 RGB 평균·표준편차 | **다운스트림** clean train 이미지(AID train 2,000장, Potsdam train 500 패치). 숫자 6개 | 그렇다 |
-| head 입력 정렬 | encoder 출력 h, Linear 앞 | test 배치의 채널별 평균·표준편차 → head가 학습 때 본 통계 | head를 학습한 clean train의 h. 숫자 2 × D개 | 그렇다 |
+| head 입력 표준화 | encoder 출력 h, Linear 앞 | test 배치의 채널별 평균·표준편차 → head가 학습 때 본 통계 | head를 학습한 clean train의 h. 숫자 2 × D개 | 그렇다 |
 
 - **ISA는 모델 전체의 입력(encoder에 들어가는 사진)을 고친다.** head 입력을 가리키는 말이 아니다. 둘은 식의 모양만 같고 위치가 양 끝이다.
 - ISA는 Normalize를 대신하지 않는다. 순서는 `ISA → Normalize → encoder`이고, Normalize는 평소와 똑같이 한다.
@@ -126,10 +142,10 @@ h′ = (h − μ_test) / σ_test · σ_src + μ_src
 |---|---|---|---|---|
 | 입력 정렬 (ISA) | 입력 픽셀, Normalize 앞 | RGB 3채널 / 배치의 모든 픽셀 | `src/reobench_tta/tta/isa.py`. 분류 `scripts/tta/cls_tta.py --method isa_batch`, 분할 `seg_tta.py`·`seg_signals.py`·`seg_probe.py`의 `isa` | 논문 방법 아님. 같은 연산: histogram moment matching, Reinhard 색 전이, AdaIN을 0층에 적용, RS 상대 방사 정규화 |
 | 블록 정렬 (fsa) | 임의 모듈의 출력 (`:in`을 붙이면 입력) | 토큰의 D채널 / 배치의 모든 토큰 | `src/reobench_tta/tta/stat_align.py`, `--method fsa --fsa_layer <모듈>` | AdaBN을 임의 층으로 일반화. 관련: TTN(ICLR 2023), FOA(ICML 2024), test-time style shifting(ICML 2023), surgical fine-tuning(ICLR 2023) |
-| BN 정렬 (bnadapt) | 분할 decoder의 BN 약 13개 | 각 BN 채널 / 배치의 모든 픽셀 | `seg_tta.py`의 `configure_norm`, `seg_signals.py`의 `bn` | Schneider et al. NeurIPS 2020; Nado et al. 2020 |
-| head 입력 정렬 | Linear 앞의 h | D채널 / 배치의 벡터 64개 | 10월 `--fsa_layer head:in`, 11월 `feat_metrics.align "ms"`, `cls_tta_fm.py`의 `none_al`, 분할 `seg_probe.py`의 `fa` | AdaBN / BN adaptation을 head 앞 한 곳에 적용 (§2.4) |
+| BN 통계 교체 (bnadapt) | 분할 decoder의 BN 약 13개 | 각 BN 채널 / 배치의 모든 픽셀 | `seg_tta.py`의 `configure_norm`, `seg_signals.py`의 `bn` | Schneider et al. NeurIPS 2020; Nado et al. 2020 |
+| head 입력 표준화 | Linear 앞의 h | D채널 / 배치의 벡터 64개 | 10월 `--fsa_layer head:in`, 11월 `feat_metrics.align "ms"`, `cls_tta_fm.py`의 `none_al`, 분할 `seg_probe.py`의 `fa` | AdaBN / BN adaptation을 head 앞 한 곳에 적용 (§2.4) |
 | 조합 | 입력 정렬 + 위 중 하나 | | `--with_isa`, 분할 `isa_bn`, `isa_fa` | 우리 실험 |
-| (비교) tent + BN batch | BN 정렬 + norm의 γ, β를 엔트로피로 **학습** | | `seg_tta.py --method tent --bn batch` | Wang et al. Tent, ICLR 2021 원문 설정 |
+| (비교) tent + BN batch | BN 통계 교체 + norm의 γ, β를 엔트로피로 **학습** | | `seg_tta.py --method tent --bn batch` | Wang et al. Tent, ICLR 2021 원문 설정 |
 
 ### 2.1 입력 정렬 (ISA)
 
@@ -149,7 +165,7 @@ x′ = (x − μ_test) / σ_test · σ_train + μ_train        (채널 = R, G, B
 - 11월 범위: 분할(SatMAE·ScaleMAE × 12종)에서 돌렸다. 17개 백본 분류의 AID-C / RESISC45-C에서는 돌리지 않았고,
   실제 haze(RRSHID)의 예측 일치율에서만 17개 백본으로 봤다(`scripts/analysis/rrshid_analysis.py`).
 
-### 2.2 블록 정렬(fsa)과 BN 정렬
+### 2.2 블록 정렬(fsa)과 BN 통계 교체
 
 `stat_align.py`의 동작:
 1. `source_stats`: clean train 배치를 통과시키며 forward hook으로 해당 모듈 출력의 채널별 합·제곱합을 누적 → μ_src, σ_src.
@@ -159,20 +175,20 @@ x′ = (x − μ_test) / σ_test · σ_train + μ_train        (채널 = R, G, B
 - 단위 테스트: 정렬 후 출력의 평균·표준편차 = 소스 값(확인함).
 - 조합(`--with_isa`)에서는 소스 통계를 **ISA를 먼저 적용한 clean 배치**에서 낸다. test 때와 같은 입력 경로여야 하기 때문이다.
 
-BN 정렬은 BatchNorm이 저장해 둔 running 통계 대신 test 배치의 통계를 쓰게 하는 것이다. ViT encoder에는 BN이 없어서
+BN 통계 교체는 BatchNorm이 저장해 둔 running 통계 대신 test 배치의 통계를 쓰게 하는 것이다. ViT encoder에는 BN이 없어서
 (LayerNorm만 있음) UPerNet decoder에만 해당한다. BN이 여러 개이므로 여러 위치를 한꺼번에 정렬하는 셈이다.
 
 ### 2.3 "final norm"과 "head 입력"이 다른 이유 (`NOTES_tta.md` §5.5)
 - 분류 모델은 final LayerNorm 뒤 **CLS 토큰만** Linear로 간다.
 - final norm 정렬: 통계를 CLS + 패치 토큰 전부로 낸다 → CLS에는 맞지 않는 통계로 CLS가 변형된다(10월 평균 −0.1 / −4.7).
-- head 입력 정렬: 배치의 CLS 64개만으로 통계를 낸다 → 실제 분류에 쓰이는 분포를 직접 맞춘다(+5.2 / +8.0).
+- head 입력 표준화: 배치의 CLS 64개만으로 통계를 낸다 → 실제 분류에 쓰이는 분포를 직접 맞춘다(+5.2 / +8.0).
 - 같은 깊이인데 결과가 반대다. 정렬의 깊이만큼 "통계를 어떤 토큰에서 내느냐"가 중요하다.
 
 **[직접 확인]**
 - `stat_align.py` 전체(110줄)를 읽고 `_apply`의 식이 공통 식과 같은지.
 - 아무 블록이나 하나 골라 hook 전후의 평균·표준편차를 찍어 보기.
 
-### 2.4 head 입력 정렬을 처음부터 (2026-11-23 문답 정리, 11-25 보강)
+### 2.4 head 입력 표준화를 처음부터 (2026-11-23 문답 정리, 11-25 보강)
 
 11월의 17개 백본 실험(`scripts/analysis/feat_metrics.py`, `feat_tta.py`의 `align_ms`, `_al`; 배치 64) 기준이다.
 
@@ -183,8 +199,8 @@ BN 정렬은 BatchNorm이 저장해 둔 running 통계 대신 test 배치의 통
        → 1단계: z = (h − μ_src) / σ_src            ← head를 학습할 때 우리가 넣은 표준화 (고정)
        → Linear: z W + b
 ```
-- final LayerNorm은 실제로 있다. 블록 안의 LayerNorm은 attention / MLP의 **입력**을 정규화하고(pre-norm), 잔차를 더한 블록 출력은
-  정규화되지 않으므로 마지막 블록 뒤에 norm을 하나 더 둔다(timm `model.norm`, lucidrains `Transformer.norm`).
+- final LayerNorm은 실제로 있다. 블록 안의 LayerNorm은 attention / MLP의 **입력**을 표준화하고(pre-norm), 잔차를 더한 블록 출력은
+  표준화되지 않으므로 마지막 블록 뒤에 norm을 하나 더 둔다(timm `model.norm`, lucidrains `Transformer.norm`).
 - 블록 안의 MLP(FFN)와 분류 head(Linear 하나)는 다른 것이다.
 
 **(2) 통계량의 축.** μ, σ는 모두 h의 통계이고, **채널마다 따로, 여러 장의 h에 걸쳐** 낸다. LayerNorm과 축이 다르다.
@@ -207,7 +223,7 @@ d. (z, 라벨)로 로지스틱 회귀(= Linear + softmax + cross-entropy인 선�
 - 1단계는 상수로 하는 선형 변환이라 학습 뒤 W′ = W / σ_src, b′ = b − (μ_src / σ_src)W로 Linear에 합칠 수 있다.
 - 선행 연구의 linear probe 코드는 어떻게 하나 (2026-11-23, 공식 repo의 해당 파일을 읽어 확인; 백본 안의 final norm은 별개):
 
-  | 코드 | head 앞의 feature 정규화 | optimizer |
+  | 코드 | head 앞의 feature 표준화 | optimizer |
   |---|---|---|
   | MAE `main_linprobe.py` | 있음: `BatchNorm1d(affine=False, eps=1e-6)` + Linear | LARS |
   | Scale-MAE `mae/main_linprobe.py` | 있음: 같은 BatchNorm1d(affine=False) | AdamW |
@@ -222,14 +238,14 @@ d. (z, 라벨)로 로지스틱 회귀(= Linear + softmax + cross-entropy인 선�
   17개 백본 전부에 똑같이 적용한 것이고, DINO류의 공식 head는 (5)의 raw head에 해당한다. 10월의 분류 head(`cls_tta.py`가 읽는 P / PN head)도
   표준화 없는 Linear라 raw head다.
 
-**(4) 정렬 = 2단계.** 1단계를 지난 z를 배치 통계로 다시 표준화한다. 학습 없음.
+**(4) head 입력 표준화 = 2단계.** 1단계를 지난 z를 배치 통계로 다시 표준화한다. 학습 없음.
 
 ```
 z_al = (z − mean_batch(z)) / std_batch(z) = (h − μ_test) / σ_test        (μ_src, σ_src는 약분되어 사라짐)
 ```
-- 직관: W, b는 채널마다 평균 0·표준편차 1인 입력으로 학습됐다. 손상이 오면 z가 그 분포를 벗어나고, 정렬은 head 입력을 다시 평균 0·표준편차 1로 만든다.
+- 직관: W, b는 채널마다 평균 0·표준편차 1인 입력으로 학습됐다. 손상이 오면 z가 그 분포를 벗어나고, 표준화는 head 입력을 다시 평균 0·표준편차 1로 만든다.
 - BatchNorm으로 말하면 1단계 = eval 모드(저장된 통계), 정렬 = train 모드(지금 배치의 통계). 이것이 AdaBN이고, Tent가 하는 두 가지
-  (test 배치 통계로 정규화 + γ, β 학습) 중 앞의 것만 한 것이다. Tent는 백본 안의 BN에, 우리는 백본 뒤의 이 단계에 한다.
+  (test 배치 통계로 표준화 + γ, β 학습) 중 앞의 것만 한 것이다. Tent는 백본 안의 BN에, 우리는 백본 뒤의 이 단계에 한다.
 - 2단계는 Linear에 합칠 수 **없다**. μ_test, σ_test가 배치마다 바뀌므로, 합치면 배치마다 다른 W″, b″가 된다. 즉 정렬은
   "학습 없이 test 배치를 보고 head를 배치마다 다시 계산하는 것"이고, 이것이 TTA인 이유다.
 - 대가: 한 이미지의 예측이 같은 배치의 다른 이미지에 의존한다(작은 배치에서 불안정, 한 클래스로 몰린 배치에서 위험).
@@ -279,14 +295,14 @@ raw head에서도 17/17 백본에서 이득. moco_in, moco_fmow만 raw head의 �
   | 32장 | +1.88 / +0.58 | +4.91 / +0.95 | +3.71 / +7.22 | +7.18 / +2.22 |
   | 사전학습 Normalize 상수 (이미지 없음) | −0.16 / −2.39 (clean −2.60 / −3.05) | – | – | +2.22 / −2.59 |
 
-  32장이면 head 입력 정렬이 0.7~1.5pt만 낮다(1,024차원 통계의 추정 오차). 다운스트림 통계가 전혀 없는 경우는 head 입력에서 시험하지 않았다.
+  32장이면 head 입력 표준화가 0.7~1.5pt만 낮다(1,024차원 통계의 추정 오차). 다운스트림 통계가 전혀 없는 경우는 head 입력에서 시험하지 않았다.
 - 17개 백본에서는 이 줄이기 실험을 하지 않았다(전부 clean train 전체로 낸 통계).
 
 **(8) 근거와 구분.**
-- 2단계의 근거: AdaBN / BN adaptation(정규화 통계를 test 배치 것으로 교체). 평균만 맞추는 `align_m`은 FOA의 activation shifting과 같은 위치·같은 종류
+- 2단계의 근거: AdaBN / BN adaptation(BN이 표준화에 쓰는 통계를 test 배치 것으로 교체). 평균만 맞추는 `align_m`은 FOA의 activation shifting과 같은 위치·같은 종류
   (FOA는 EMA로 test 평균을 추적, 우리는 배치마다 계산). 연산 자체는 새롭지 않다.
 - 정렬과 **feature 단계 TTA**는 다른 실험이다. `feat_tta.py`의 tent / flipf / dsbr는 head 입력에 z′ = γ ⊙ z + β를 붙이고 γ, β를 엔트로피 손실로
-  **학습**한다(ViT에서는 final norm의 γ, β만 학습하는 TENT와 같음). `_al`은 정렬한 z_al 위에서 그 학습을 한 것.
+  **학습**한다(ViT에서는 final norm의 γ, β만 학습하는 TENT와 같음). `_al`은 표준화한 z_al 위에서 그 학습을 한 것.
 - 분할 linear probe(`seg_probe.py`)의 `fa`는 같은 계산을 패치 feature 맵에 한 것이다. 통계는 배치 8장의 모든 위치에서 낸다.
 
 ---
@@ -306,7 +322,7 @@ raw head에서도 17/17 백본에서 이득. moco_in, moco_fmow만 raw head의 �
 | 분류 11월 | 17개 백본, AID-C / RESISC45-C | none 81.8 / 75.2 → tent 81.4 / 71.2, sar 80.6 / 71.8, eata 81.9 / 71.1 | 87.3 / 81.1 |
 | 분할 11월 | Potsdam 12종, SatMAE / ScaleMAE | none 52.8 / 54.0, tent −1.6 / −1.0 | BN 54.3 / 56.3, 입력 54.7 / 55.6, 둘 다 55.9 / 57.5 |
 
-- 분할에서 tent에 BN 정렬을 얹으면 +2.2 / +3.0이고, 그중 BN 정렬만의 몫이 +1.5 / +2.3이다. 학습이 더하는 것은 +0.7 안팎이다.
+- 분할에서 tent에 BN 통계 교체를 얹으면 +2.2 / +3.0이고, 그중 BN 통계 교체만의 몫이 +1.5 / +2.3이다. 학습이 더하는 것은 +0.7 안팎이다.
 - 분류에서도 정렬 위에 학습을 얹은 것(tent + 정렬 88.1 / 83.0)이 정렬만(87.3 / 81.1)보다 조금 높은 정도다.
 - 출처: `experiments/2026-11-17_fm_tta/RESULTS.md`, `2026-11-19_dsbr/RESULTS.md`, `2026-11-23_seg_signals/RESULTS.md`.
 
@@ -326,7 +342,7 @@ none 대비 변화, 평균 / 밝기류(radiometric) / noise류(degradation):
 - 밝기류는 네 설정 모두 입력 정렬이 최선이다. noise류는 중간 블록(3–11)이 좋고, 분류 평균은 head 입력이 가장 높다.
 - 조합은 그룹별로 거의 그대로 더해진다(밝기류 ≈ 입력 단독, noise류 ≈ 블록 단독).
 - 11월 분할 12종에서도 같은 그림이다. 밝기·haze는 입력 정렬이 clean 수준까지 되돌리고(SatMAE 49.1 → 61.5, 44.2 → 61.5),
-  noise·JPEG·data gaps는 BN 정렬이 듣고(+2.4 ~ +9.7), blur·구름·기하 3종은 하락이 작고 어떤 정렬도 듣지 않는다.
+  noise·JPEG·data gaps는 BN 통계 교체가 듣고(+2.4 ~ +9.7), blur·구름·기하 3종은 하락이 작고 어떤 통계 정렬도 듣지 않는다.
 
 **[직접 확인]** `experiments/2026-10-20_seg_tta/summary.txt`에서 isa와 bnadapt의 손상별 열을 비교. 11월은 `docs/figs/midterm_2026-11-26/fig9_seg.png`.
 
@@ -355,7 +371,7 @@ none 대비 변화, 평균 / 밝기류(radiometric) / noise류(degradation):
 - 블록 7을 test 표를 보고 골랐으므로 그 점수는 상한(낙관적)이다.
 - 정당한 방법: (a) 손상 일부로 위치를 고르고 나머지 손상으로 보고(leave-out), (b) 분류에서 고른 위치를 분할에 그대로, (c) "깊이 1/3" 같은 규칙을 미리 고정.
 - 완화 요인: 하이퍼파라미터가 위치 하나뿐이고, 고정 처방 "입력 + 블록 7"이 4개 설정 모두 입력 단독보다 좋다.
-- head 입력 정렬과 BN 정렬은 고를 위치가 없어서 이 문제가 없다. 11월에 이 둘을 주 결과로 쓰는 이유 중 하나다.
+- head 입력 표준화와 BN 통계 교체는 고를 위치가 없어서 이 문제가 없다. 11월에 이 둘을 주 결과로 쓰는 이유 중 하나다.
 
 ### 4.2 알려진 약점
 - seed 0 한 번. 배치는 한 손상만 들어오는 i.i.d. 셔플이다 → 배치에 손상이 섞이거나 배치 크기 1이면 무너질 수 있다.
@@ -371,8 +387,8 @@ none 대비 변화, 평균 / 밝기류(radiometric) / noise류(degradation):
 | 우리 요소 | 이미 있는 것 | 아직 못 찾은 것 |
 |---|---|---|
 | 입력 정렬 | moment / histogram matching, Reinhard, AdaIN@0층 — **새롭지 않음** | RS 기반 모델 TTA에서 엔트로피 TTA보다 낫다는 보고 |
-| BN 정렬 | Schneider 2020 등 — 표준 baseline | |
-| head 입력 정렬 | AdaBN을 head 앞에 적용. FOA의 activation shifting과 같은 위치 — **새롭지 않음** | |
+| BN 통계 교체 | Schneider 2020 등 — 표준 baseline | |
+| head 입력 표준화 | AdaBN을 head 앞에 적용. FOA의 activation shifting과 같은 위치 — **새롭지 않음** | |
 | 어느 깊이에서 정렬? | Surgical fine-tuning(입력 수준 손상 → 앞층), TTN, FOA, style shifting | **손상 메커니즘별로 맞는 깊이가 다르다**(밝기류 = 입력, noise류 = 중간)는 정량 sweep |
 | 손상 판별 후 처방 | PAN, FROST (BN 통계만 선택) | 입력 정렬과 feature 정렬 중에서 고르는 라우터 |
 
@@ -400,12 +416,12 @@ Schneider et al. *Improving robustness against common corruptions by covariate s
 ---
 
 ## 7. 스스로 점검할 질문 (답할 수 있으면 이 줄기를 파악한 것)
-1. Normalize, 입력 정렬, head 입력 정렬은 각각 어디에서, 어느 데이터의 통계로 하는가? (§1.3)
+1. 전처리 표준화, 입력 정렬, head 입력 표준화는 각각 어디에서, 어느 데이터의 통계로 하는가? (§1.3)
 2. 입력 정렬의 목표를 사전학습 상수로 두면 왜 clean이 떨어지는가? (§2.1)
-3. 입력 정렬과 BN 정렬은 각각 어떤 공간의 어떤 채널을 정렬하나? 왜 둘의 효과가 손상별로 다른가?
-4. head 입력 정렬에서 μ_test는 몇 개 값으로 계산되나? final norm 정렬과 무엇이 다른가? (§2.3)
+3. 입력 정렬과 BN 통계 교체는 각각 어떤 공간의 어떤 채널을 표준화하나? 왜 둘의 효과가 손상별로 다른가?
+4. head 입력 표준화에서 μ_test는 몇 개 값으로 계산되나? final norm 출력의 정렬과 무엇이 다른가? (§2.3)
 5. 표준화가 W, b에 합쳐진 head를 받았다. 무엇이 있으면 정렬할 수 있고, 어떤 식을 쓰나? (§2.4 (5), (7))
-6. tent + BN batch와 BN 정렬의 차이가 작다는 것은 무엇을 뜻하나?
+6. tent + BN batch와 BN 통계 교체의 차이가 작다는 것은 무엇을 뜻하나?
 7. 조합의 소스 통계를 입력 정렬 뒤에 낸 이유는?
 8. "입력 + 블록 7" +10.8(분할 ScaleMAE)을 논문에 그대로 쓰면 왜 안 되나? (§4.1)
 9. 이 결과가 Surgical fine-tuning의 주장과 어디서 맞고 어디서 다른가?

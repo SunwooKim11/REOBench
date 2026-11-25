@@ -42,7 +42,7 @@ DSBR은 "그 실패의 씨앗은 적응 전에 이미 있다: shift가 서로 �
 
 | 비중 | 슬라이드 | 다루는 법 |
 |---|---|---|
-| 필수 | S1 피드백 대응, S3 백본, S5 기존 TTA는 손해, S6 왜 실패하나, S7 정렬이 하는 일, S8 flip 신호, S11 RS 손상의 고유성, S13 남은 여지 | 그림을 띄우고 한 줄 메시지를 말한다 |
+| 필수 | S1 피드백 대응, S3 백본, S5 기존 TTA는 손해, S6 왜 실패하나, S7 head 입력 표준화가 하는 일, S8 flip 신호, S11 RS 손상의 고유성, S13 남은 여지 | 그림을 띄우고 한 줄 메시지를 말한다 |
 | 짧게 | S2 연구 질문, S4 데이터, S9 자연 shift, S10 분할, S15 한계 | 표나 그림만 띄우고 한 문장으로 넘어간다 |
 | 건너뜀 | S12 feature의 모양 | 질문이 나오면 보여 줄 예비 장 |
 
@@ -86,16 +86,16 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
 
 1. RS 기초모델은 shift 아래에서 confidence를 믿을 수 없다. 원인은 feature가 집단으로 이동해 예측이 몇 클래스로 쏠리는 것이고,
    그래서 엔트로피 기반 TTA는 17개 백본 평균에서 손해다.
-2. confidence 대신 쓸 수 있는 라벨 없는 신호(source 통계 정렬, 정렬 전후 flip)가 있다. 학습 없는 정렬이 어떤 기존 TTA보다 크고,
+2. confidence 대신 쓸 수 있는 라벨 없는 신호(head 입력 표준화, 표준화 전후 flip)가 있다. 학습 없는 표준화가 어떤 기존 TTA보다 크고,
    flip은 합성 손상, 자연 shift, 분할에서 모두 정확도를 따라간다.
-3. 다만 정렬은 새로운 방법이 아니고 자연 shift에서는 약하다. 남은 여지가 어디 있는지 쟀고(head 쪽 5–6pt, 자연 shift는 거의 전부 head),
+3. 다만 head 입력 표준화는 새로운 방법이 아니고(AdaBN과 같은 계산) 자연 shift에서는 약하다. 남은 여지가 어디 있는지 쟀고(head 쪽 5–6pt, 자연 shift는 거의 전부 head),
    그 위에서 방법 후보를 정했다.
 
 ## 2. 피드백 F1–F5 대응 현황
 
 | 항목 | 상태 | 한 줄 답 | 근거 (슬라이드) |
 |---|---|---|---|
-| F1. LSCD-TTA 한계를 설계 원칙으로 | 원칙은 반영, 방법은 아직 없음 | 표본별 예측이 아니라 분포(배치·stream) 수준 신호를 쓰고, 손실 항을 붙이지 않는다 | 정렬과 flip은 배치 통계만 쓰고 학습이 없다. 표본별 엔트로피 방법은 손해 (S5–S8) |
+| F1. LSCD-TTA 한계를 설계 원칙으로 | 원칙은 반영, 방법은 아직 없음 | 표본별 예측이 아니라 분포(배치·stream) 수준 신호를 쓰고, 손실 항을 붙이지 않는다 | head 입력 표준화와 flip은 배치 통계만 쓰고 학습이 없다. 표본별 엔트로피 방법은 손해 (S5–S8) |
 | F2. RS corruption의 고유성 | 완료 (선행 연구 조사는 일부 미확인) | "RS 이미지라서 다르다"는 증거는 약하다. 고유성은 **손상의 종류**와 **촬영 단위로 공유되는 shift**에 있다. RS 성질이 TTA를 깬다는 주장은 선행 연구에서 손상으로 시험된 적이 없다 | 같은 손상을 ImageNet과 RS에 적용한 비교, 12종의 단계별 배치 표, 선행 연구 조사 (S11) |
 | F3. 벤치마크 2개 이상, 논문 읽기 | 완료 | AID-C, RESISC45-C, Potsdam-C, RESISC45 ↔ UC Merced. 네 논문 모두 노트 있음 | S4 |
 | F4. fMoW 사전학습 ResNet / ViT, head 학습 방식 | 완료 | fMoW 백본 7개와 ImageNet 짝. head는 frozen feature 위의 선형 head이고 학습 방식의 영향도 통제함 | S3, 4절 표 T10 |
@@ -106,7 +106,7 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
 - 우리 쪽 증거 세 가지.
   - LSCD 공식 코드에는 논문에 없는 "배치 평균 예측" diversity 항이 있고, 빼면 손상에서 붕괴한다(10월, `NOTES_tta.md` §1.2).
   - 표본별 엔트로피를 쓰는 Tent, SAR, EATA는 17개 백본 평균에서 손해다. stream 수준 클래스 빈도를 쓰는 DSBR은 이득이다.
-  - 가장 큰 이득은 학습과 손실이 아예 없는 배치 통계 정렬에서 온다.
+  - 가장 큰 이득은 학습과 손실이 아예 없는 통계 정렬(분류는 head 입력 표준화, 분할은 BN 통계 교체와 입력 정렬)에서 온다.
 - 말할 수 있는 원칙: (1) 분포 수준 신호, (2) forward만, (3) confidence에 의존하지 않기.
 
 ### F2 상세
@@ -144,7 +144,7 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
 - 공식 linear probe 관행을 확인했다. MAE와 Scale-MAE는 head 앞에 affine 없는 BatchNorm을 두고(우리 표준화와 같은 계산),
   DINO, DINOv3, MoCo v3, SatDINO는 두지 않는다.
   matched-pair 연구(arXiv 2611.13849)의 선형 probe도 "train 통계로 표준화 → L-BFGS 로지스틱 회귀"로 우리와 같은 방식이다.
-- head 학습 방식에 따른 차이를 통제했다. 표준화 없이 학습한 head에서도 정렬 이득이 같다(AID-C +5.4 대 +5.5, RESISC45-C +5.8 대 +5.9).
+- head 학습 방식에 따른 차이를 통제했다. 표준화 없이 학습한 head에서도(이때는 표준화 뒤 source 통계로 되돌리는 정렬이 필요) 이득이 같다(AID-C +5.4 대 +5.5, RESISC45-C +5.8 대 +5.9).
 
 ### F5 상세
 - 선택 원칙: (구조, 사전학습 방식)이 같고 데이터만 다른 쌍 6개 + 지도학습 ImageNet 기준점 3개.
@@ -159,7 +159,7 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
   - DINOv3-SAT은 CLS token이 약하다(patch 평균으로 바꾸면 UC Merced 선형 72.7 → 84.9). 가장 좋은 feature로도 web에 10.6pt 뒤진다.
   - 그쪽이 다루지 않은 것: 손상, 데이터셋 간 shift, calibration, TTA, 라벨 없는 신호. 우리 기여는 이쪽이다. MoCo ResNet-50 쌍도 그쪽에는 없다.
 - "GeoFM의 강건성을 보완한다"에 대한 지금의 답: 약점은 shift에서 confidence가 틀리고 예측이 쏠리는 것이다.
-  라벨 없는 신호로 감지할 수 있고, 공통 이동은 정렬로 되돌릴 수 있다. 남는 것은 head 불일치와 백본에서 사라진 정보다.
+  라벨 없는 신호로 감지할 수 있고, 공통 이동은 head 입력 표준화로 되돌릴 수 있다. 남는 것은 head 불일치와 백본에서 사라진 정보다.
 - 선행 연구 저자들의 선택 방식 (각 논문의 모델 선택 절을 직접 확인, 전체 표는 `SETTINGS.md` §5):
 
 | 논문 | 고른 방식 | 일반 영상 모델 | 스스로 적은 한계 |
@@ -185,8 +185,8 @@ skill에 줄 지시문의 예(부분 2): "3절 표의 각 행을 슬라이드 �
 | S6 | 필수 | 왜 실패하나: 과신과 예측 쏠림 | **fig4**, T2, T9 | 과신은 3종 손상에 몰려 있고 예측 클래스가 합쳐진다 |
 | S7 | 필수 | head 입력 표준화가 하는 일 | **fig10**, `docs/figs/2026-11-24_feature_dist/fig2_shift_align_motion_blur_s3.png`에서 필요한 행만 잘라 씀, 식 한 줄, head 통제 결과 | head 입력을 test 배치 통계로 다시 표준화 |
 | S8 | 필수 | flip 신호와 정확도 추정 | **fig3**, **fig2**, T3 | flip은 정확도를 따르고, 추정 오차는 COT와 같은 수준 |
-| S9 | 짧게 | 자연 shift | T4 | 신호는 유지, 정렬은 약함 |
-| S10 | 짧게 | 분할 (Potsdam, 12종) | **fig9**, T5의 첫 표 | 엔트로피 방법은 손해, 정렬이 이득, flip이 정확도를 따른다. 기하 손상은 분할에서 거의 떨어지지 않는다 |
+| S9 | 짧게 | 자연 shift | T4 | 신호는 유지, head 입력 표준화는 약함 |
+| S10 | 짧게 | 분할 (Potsdam, 12종) | **fig9**, T5의 첫 표 | 엔트로피 방법은 손해, BN 통계 교체와 입력 정렬이 이득, flip이 정확도를 따른다. 기하 손상은 분할에서 거의 떨어지지 않는다 |
 | S11 | 필수 | RS 손상의 고유성 (F2) | **fig8**, **fig7**, T6, T7, LSCD-TTA 주장 대조표(2절 F2 상세) | 고유성은 손상 종류에 있다. RS 성질과 TTA 실패의 연결은 손상에서 시험된 적이 없다 |
 | S12 | 건너뜀 | feature의 모양 (선택) | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`에서 필요한 행만 잘라 씀, T8 | 갈라지지만 덩어리는 아니다 |
 | S13 | 필수 | 남은 여지 | **fig5**, T12 | head 쪽에 5–6pt, 자연 shift는 거의 전부 head |
@@ -202,32 +202,43 @@ feature 분포 그림은 2026-11-24에 그린 원본(백본 4개)에서 필요�
 
 | 파일 | 내용 | 한 줄로 읽는 법 |
 |---|---|---|
-| `fig1_methods.png` | 방법별 손상 정확도. 점 = 백본 17개, 막대 = 평균. 초록은 head 입력 표준화(①)뿐이고 입력 픽셀·중간 블록·BN 정렬은 들어 있지 않다(그림 아래 주석) | 엔트로피 기반(주황)은 일부 백본에서 크게 무너지고, head 입력 표준화(초록)는 전부 오른쪽으로 모인다 |
+| `fig1_methods.png` | 방법별 손상 정확도. 점 = 백본 17개, 막대 = 평균. 초록은 head 입력 표준화(①)뿐이고 입력 정렬·블록 정렬·BN 통계 교체는 들어 있지 않다(그림 아래 주석) | 엔트로피 기반(주황)은 일부 백본에서 크게 무너지고, head 입력 표준화(초록)는 전부 오른쪽으로 모인다 |
 | `fig2_estimation.png` | 추정 정확도 대 실제 정확도, stream 2,040개. ATC / COT / flip 추정 | ATC는 대각선 위로 크게 벗어난다(과신). COT와 flip 추정은 대각선을 따른다 |
 | `fig3_signals.png` | RESISC45-C에서 confidence 대 정확도, flip 대 정확도. 백본 3개 | 과신 백본(moco_in, sup_in_r50)에서 confidence는 정확도를 못 따르고 flip은 따른다 |
 | `fig4_em_phases.png` | 2,000 step 동안의 정확도와 예측 클래스 수. tent 대 DSBR | tent는 클래스가 합쳐지며 떨어지고 DSBR은 30개를 유지하며 오른다 |
-| `fig5_headroom.png` | 손상별로 그대로(회색) → 정렬(초록, 우리가 실제로 쓰는 것, 라벨 없음) → head 상한(파랑, 손상 stream의 라벨로 head를 다시 맞춘 가상의 값, 방법이 아님) → clean(점선) | 남은 여지는 motion blur, data gaps, scale에 몰려 있다 |
+| `fig5_headroom.png` | 손상별로 그대로(회색) → head 입력 표준화(초록, 우리가 실제로 쓰는 것, 라벨 없음) → head 상한(파랑, 손상 stream의 라벨로 head를 다시 맞춘 가상의 값, 방법이 아님) → clean(점선) | 남은 여지는 motion blur, data gaps, scale에 몰려 있다 |
 | `fig6_pairs.png` | 쌍 7개의 위성 − 일반 차이. clean, 손상, 자연 shift 양방향 | 위성 사전학습의 효과는 방식마다 반대다 |
 | `fig7_blur_aug.png` | Gaussian blur 손상에서의 하락. blur augmentation 유무로 묶음 | 두 묶음의 범위가 겹치지 않는다 |
 | `fig8_corruptions.png` | AID 이미지 한 장에 12종 손상(3단계), 단계별 표기 | 굵은 이름이 RS 고유 유형 |
-| `fig9_seg.png` | Potsdam 손상 12종의 mIoU. none / BN 정렬(③) / 입력 정렬(②) / 둘 다. 세 묶음으로 나눠 그림(* = 우리가 생성한 4종) | 밝기·haze는 입력 정렬, 노이즈·JPEG·data gaps는 BN 정렬이 듣고, blur·구름·기하 3종은 하락이 작고 아무것도 안 듣는다 |
-| `fig10_alignment.png` | 정렬이 하는 일: 흐름도(학습 때의 표준화 대 test 배치 통계로 표준화), feature 채널 하나의 분포, 클래스별 예측 비율. mae_in, AID, scale 3단계 | 손상이 feature를 한쪽으로 통째로 밀고(주황) 정렬이 제자리로 되돌린다(파랑). 예측이 한 클래스에 58% 쏠리던 것이 다시 퍼진다. 정확도 23.0 → 64.5 (clean 94.3) |
+| `fig9_seg.png` | Potsdam 손상 12종의 mIoU. none / BN 통계 교체(③) / 입력 정렬(②) / 둘 다. 세 묶음으로 나눠 그림(* = 우리가 생성한 4종) | 밝기·haze는 입력 정렬, 노이즈·JPEG·data gaps는 BN 통계 교체가 듣고, blur·구름·기하 3종은 하락이 작고 아무것도 안 듣는다 |
+| `fig10_alignment.png` | head 입력 표준화가 하는 일: 흐름도(학습 때의 표준화 대 test 배치 통계로 표준화), feature 채널 하나의 분포, 클래스별 예측 비율. mae_in, AID, scale 3단계 | 손상이 feature를 한쪽으로 통째로 밀고(주황) 표준화가 제자리로 되돌린다(파랑). 예측이 한 클래스에 58% 쏠리던 것이 다시 퍼진다. 정확도 23.0 → 64.5 (clean 94.3) |
 | `fig11_feature_geometry.png` | clean feature의 모양, 백본 2개(satmae, satdino_s8). 왼쪽 막대는 선형 head / 5-NN / k-means 정확도, 오른쪽은 같은 feature의 2차원 보기 세 가지 | 선형 head는 둘 다 90%대인데 k-means는 44% 대 81%. satmae는 한 클래스가 여러 섬으로 쪼개지고, satdino_s8은 섬이 뚜렷하지만 비슷한 세 클래스가 붙어 있다 |
-| `fig12_shift_alignment.png` | clean / 손상(motion blur 3단계) / 정렬 후를 같은 축에. 백본 2개(mae_in, dinov3_web_l16). 삼각형 = stream 평균 | 손상이 전체를 한 방향으로 민다. 정렬은 평균을 되돌리지만 퍼진 모양은 남는다(mae_in 36.8 → 70.8, clean 94.3). dinov3_web은 밀려도 클래스 배치가 유지된다(83.0) |
+| `fig12_shift_alignment.png` | clean / 손상(motion blur 3단계) / 표준화 후를 같은 축에. 백본 2개(mae_in, dinov3_web_l16). 삼각형 = stream 평균 | 손상이 전체를 한 방향으로 민다. 표준화는 평균을 되돌리지만 퍼진 모양은 남는다(mae_in 36.8 → 70.8, clean 94.3). dinov3_web은 밀려도 클래스 배치가 유지된다(83.0) |
 
 fig6에는 MAE → Scale-MAE 쌍을 넣어 7개다. DINOv3의 AID-C 값은 반올림 전 계산이라 −14.4로 찍힌다(표 T10은 −14.3).
 
 ## 4. 슬라이드에 넣을 표
 
-> **용어 (2026-11-25 정리).** 이 문서의 "정렬"은 세 가지를 가리키며 위치가 다르다. 분류 결과(T1–T4, T12, fig1·3·5·10·12)의 정렬은 전부 ①이다.
+> **용어 (2026-11-25 정리, 2026-11-26 통일).** 통계학과 선행 연구의 쓰임에 맞춰 두 단어를 나눠 쓴다.
+>
+> | 용어 | 뜻 | 근거 |
+> |---|---|---|
+> | 표준화 (standardization) | (x − 평균) / 표준편차. 평균 0, 표준편차 1로 만든다 | scikit-learn StandardScaler "Standardize features by removing the mean and scaling to unit variance", Wikipedia "Standardization (Z-score Normalization)" |
+> | 정렬 (alignment) | test 쪽 통계를 source 쪽 통계에 맞춘다. 식은 test 통계로 표준화한 뒤 source 표준편차를 곱하고 source 평균을 더하는 것 | AdaIN "aligns the mean and variance of the content features with those of the style features", CORAL "aligning the second-order statistics", FOA "making them align with the source training domain" |
+> | (쓰지 않음) 정규화 (normalization) | 통계학에서는 보통 [0, 1]로 맞추는 min-max scaling(Wikipedia "min-max normalization"). 딥러닝은 표준화를 normalization이라 부른다(BatchNorm 논문 "normalize each scalar feature ... mean of zero and the variance of 1", torchvision `Normalize`) | 두 뜻이 섞이므로 설명에는 쓰지 않고, BatchNorm, LayerNorm, `Normalize` 같은 고유 이름에만 남긴다 |
+>
+> 이 문서에 나오는 다섯 가지. 모두 학습 파라미터가 없다.
 >
 > | 이름 | 위치 | 하는 일 | 쓰인 곳 |
 > |---|---|---|---|
-> | ① head 입력 표준화 | encoder 출력 h, Linear 바로 앞 | h를 test 배치(64장)의 채널별 평균·표준편차로 표준화. head가 표준화된 입력으로 학습됐으므로 평균 0·표준편차 1로 맞추는 것 | 분류 17개 백본 (fig1의 초록 막대) |
-> | ② 입력 정렬 (ISA) | 입력 픽셀, Normalize 앞 | test 배치의 RGB 평균·표준편차를 clean train의 값으로 되돌림 | 분할 T5, fig9 |
-> | ③ BN 정렬 | 분할 UPerNet decoder의 BN | BN이 저장된 running 통계 대신 test 배치 통계를 씀 | 분할 T5, fig9 |
+> | 전처리 표준화 (`Normalize`) | 입력 픽셀, encoder 바로 앞 | 사전학습 데이터(ImageNet, fMoW)의 고정 상수로 표준화. 모든 이미지에 같은 상수라 적응이 아니다 | 모든 실험의 전처리 |
+> | ① head 입력 표준화 | encoder 출력 h, Linear 바로 앞 | h를 test 배치(64장)의 채널별 평균·표준편차로 표준화. head가 표준화된 입력으로 학습됐으므로 source 통계가 (0, 1)이라 표준화만으로 정렬이 된다 | 분류 17개 백본. T1–T4, T12, fig1·3·5·10·12 |
+> | ② 입력 정렬 (ISA) | 입력 픽셀, 전처리 표준화 앞 | test 배치의 RGB를 표준화한 뒤 clean train의 RGB 평균·표준편차로 되돌림 | 분할 T5, fig9 |
+> | ③ BN 통계 교체 (AdaBN) | 분할 UPerNet decoder의 BN | BN이 표준화에 쓰는 running 통계를 test 배치 통계로 바꿈. 되돌리기는 BN의 γ, β가 맡는다 | 분할 T5, fig9 |
+> | 블록 정렬 | encoder 중간 블록 | 블록 출력을 test 배치로 표준화한 뒤 clean train 통계로 되돌림 | 10월 실험(SatMAE, ScaleMAE)만. 이번 그림·표에는 없음 |
 >
-> encoder 중간 블록 정렬은 10월 실험(SatMAE, ScaleMAE)에만 있고 이번 발표의 그림·표에는 없다. 상세는 `docs/STUDY_alignment.md` §1.
+> ①–③과 블록 정렬은 모두 "test 배치로 표준화하고, 그 위치가 학습 때 갖던 통계로 되돌린다"는 같은 일을 한다. 되돌리는 몫을 ①은 head 학습 방식이, ③은 BN의 γ, β가
+> 이미 갖고 있어서 표준화만 하면 되고, ②와 블록 정렬은 따로 곱하고 더해야 한다. 이 셋을 묶어 말할 때만 "통계 정렬"이라 쓴다. 상세는 `docs/STUDY_alignment.md` §1.3.
 
 ### T1. 방법 비교 (17개 백본 평균 손상 정확도 %, 백본 전체 통과)
 
@@ -254,7 +265,7 @@ fig6에는 MAE → Scale-MAE 쌍을 넣어 7개다. DINOv3의 AID-C 값은 반�
 | motion blur | +29.9 | 31% |
 | 나머지 9종 평균 | +5.2 | clean 약 5% |
 
-- confidence로 정확도를 추정하면(ATC) 10pt 넘게 틀리는 stream이 12.8%, 정렬하면 1.4%.
+- confidence로 정확도를 추정하면(ATC) 10pt 넘게 틀리는 stream이 12.8%, head 입력을 표준화한 뒤의 ATC는 1.4%.
 - 과신 백본에서 SAR의 엔트로피 필터가 남긴 표본의 오류율 23–27%, flip 필터는 7–13%.
 - 출처: `docs/feedback/2026-11-16_direction.md` 11-17 항목.
 
@@ -284,7 +295,7 @@ RESISC45에서 confidence는 세 백본에서 0.54–0.64로 떨어지고, flip�
 | head 입력 표준화 이득 (pt) | +2.2 | +2.1 |
 | 표준화 뒤 남는 하락 (pt) | 13.1 | 28.8 |
 
-합성 손상의 정렬 이득은 +5.5 / +5.9. 출처: `experiments/2026-11-17_natural_shift/RESULTS.md`.
+합성 손상에서의 이득은 +5.5 / +5.9. 출처: `experiments/2026-11-17_natural_shift/RESULTS.md`.
 
 ### T5. 분할 (Potsdam, 5단계 평균 mIoU)
 
@@ -294,16 +305,16 @@ clean은 61.9 / 65.0. 위 네 행은 mIoU, 아래 행들은 none 대비 변화(p
 | | SatMAE 8종 | SatMAE 4종 | SatMAE 12종 | ScaleMAE 8종 | ScaleMAE 4종 | ScaleMAE 12종 |
 |---|---:|---:|---:|---:|---:|---:|
 | none | 50.6 | 57.3 | 52.8 | 51.3 | 59.2 | 54.0 |
-| BN 정렬 | 52.5 | 57.9 | 54.3 | 54.4 | 60.1 | 56.3 |
+| BN 통계 교체 | 52.5 | 57.9 | 54.3 | 54.4 | 60.1 | 56.3 |
 | 입력 정렬 | 53.8 | 56.6 | 54.7 | 53.9 | 59.0 | 55.6 |
-| 입력 + BN 정렬 | 55.1 | 57.5 | 55.9 | 56.3 | 60.0 | 57.5 |
+| 입력 정렬 + BN 통계 교체 | 55.1 | 57.5 | 55.9 | 56.3 | 60.0 | 57.5 |
 | tent | −1.96 | −0.89 | −1.60 | −1.19 | −0.69 | −1.02 |
 | sar | −1.14 | 실행 안 함 | – | −0.71 | 실행 안 함 | – |
 | flip 필터 | −0.97 | −0.48 | −0.81 | −0.63 | −0.26 | −0.51 |
 | dsbr | +0.85 | +0.82 | +0.84 | +0.56 | +0.57 | +0.56 |
-| tent + BN 정렬 | +2.73 | +1.06 | +2.17 | +3.79 | +1.33 | +2.97 |
-| flip 필터 + BN 정렬 | +2.60 | +1.03 | +2.08 | +3.67 | +1.28 | +2.87 |
-| dsbr + BN 정렬 | +2.84 | 실행 안 함 | – | +3.88 | 실행 안 함 | – |
+| tent + BN 통계 교체 | +2.73 | +1.06 | +2.17 | +3.79 | +1.33 | +2.97 |
+| flip 필터 + BN 통계 교체 | +2.60 | +1.03 | +2.08 | +3.67 | +1.28 | +2.87 |
+| dsbr + BN 통계 교체 | +2.84 | 실행 안 함 | – | +3.88 | 실행 안 함 | – |
 
 12종 열의 변화량은 8종과 4종 값을 손상 수로 가중 평균한 것이다.
 
@@ -312,31 +323,31 @@ clean은 61.9 / 65.0. 위 네 행은 mIoU, 아래 행들은 none 대비 변화(p
 | | SatMAE rotate | scale | translate | data gaps | ScaleMAE rotate | scale | translate | data gaps |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | none | 61.7 | 58.7 | 61.7 | 47.0 | 64.5 | 61.3 | 64.5 | 46.6 |
-| BN 정렬 | −0.9 | −1.3 | −0.6 | +5.3 | −0.7 | −1.1 | −0.7 | +5.9 |
+| BN 통계 교체 | −0.9 | −1.3 | −0.6 | +5.3 | −0.7 | −1.1 | −0.7 | +5.9 |
 | tent | −0.9 | −1.4 | −0.9 | −0.3 | −0.6 | −0.6 | −0.5 | −1.0 |
 | dsbr | −0.1 | −0.2 | −0.1 | +3.6 | −0.2 | −0.2 | −0.2 | +2.8 |
-| tent + BN 정렬 | −0.7 | −1.1 | −0.5 | +6.7 | −0.7 | −1.0 | −0.6 | +7.6 |
+| tent + BN 통계 교체 | −0.7 | −1.1 | −0.5 | +6.7 | −0.7 | −1.0 | −0.6 | +7.6 |
 
 라벨 없는 신호 (none의 픽셀 정확도와의 순위상관, 손상 stream 40개 / 60개):
 
 | 신호 | SatMAE 8종 | SatMAE 12종 | ScaleMAE 8종 | ScaleMAE 12종 |
 |---|---:|---:|---:|---:|
-| flip (BN 정렬 전후) | −0.94 | −0.94 | −0.97 | −0.96 |
+| flip (BN 통계 교체 전후) | −0.94 | −0.94 | −0.97 | −0.96 |
 | 평균 confidence | +0.86 | +0.90 | +0.94 | +0.96 |
 | 예측 쏠림 (예측 클래스 비율과 실제 비율의 차이, 라벨 필요) | −0.89 | −0.87 | −0.89 | −0.81 |
 
 읽는 법.
 - **손상이 세 묶음으로 갈린다** (fig9). 밝기·haze는 입력 정렬이 clean 수준까지 되돌린다(SatMAE 49.1 → 61.5, 44.2 → 61.5).
-  노이즈·JPEG·data gaps는 BN 정렬이 듣는다(+2.4에서 +9.7). blur, 구름, 기하 3종은 하락이 작고(none이 clean보다 0.2–4.0pt 낮음) 어떤 방법도 듣지 않는다.
-- **엔트로피 방법은 12종에서도 손해다** (tent −1.6 / −1.0). 쏠림을 누르는 dsbr은 작은 이득(+0.8 / +0.6)이고, 가장 큰 이득은 학습 없는 BN 정렬에서 온다.
-  BN 정렬 위에 학습을 얹은 것의 추가 이득은 12종 평균 +0.7pt 안팎이다(SatMAE +1.5 → +2.2, ScaleMAE +2.3 → +3.0).
+  노이즈·JPEG·data gaps는 BN 통계 교체이 듣는다(+2.4에서 +9.7). blur, 구름, 기하 3종은 하락이 작고(none이 clean보다 0.2–4.0pt 낮음) 어떤 방법도 듣지 않는다.
+- **엔트로피 방법은 12종에서도 손해다** (tent −1.6 / −1.0). 쏠림을 누르는 dsbr은 작은 이득(+0.8 / +0.6)이고, 가장 큰 이득은 학습 없는 BN 통계 교체에서 온다.
+  BN 통계 교체 위에 학습을 얹은 것의 추가 이득은 12종 평균 +0.7pt 안팎이다(SatMAE +1.5 → +2.2, ScaleMAE +2.3 → +3.0).
 - **분류와 다른 점 두 가지.**
   - 분류에서 confidence가 무너지던 세 손상(motion blur, data gaps, scale) 중 분할에서 크게 떨어지는 것은 data gaps뿐이다(−14.9 / −18.4pt).
     motion blur와 scale은 3–4pt, rotate와 translate는 0.5pt 이하다. scale은 512px 패치를 줄인 뒤 reflect 패딩으로 채우므로
     패치 안의 내용이 남는다는 것이 우리 해석이고, 따로 검증하지는 않았다.
   - 분할에서는 confidence도 정확도를 따른다(+0.90 / +0.96). flip이 confidence보다 낫다고 말할 근거는 SatMAE의 작은 차이뿐이다.
     과신(confidence − 정확도)이 큰 곳은 JPEG(+10.9 / +11.2), data gaps(+6.9 / +8.9), haze(+7.1 / +4.4)이고 평균은 +2.8 / +3.9pt다.
-- 예측 쏠림은 BN 정렬로 절반이 된다(12종 평균 9.8 → 5.5, 10.4 → 5.1).
+- 예측 쏠림은 BN 통계 교체로 절반이 된다(12종 평균 9.8 → 5.5, 10.4 → 5.1).
 
 출처: `experiments/2026-11-23_seg_signals/RESULTS.md`.
 
@@ -402,7 +413,7 @@ source 클래스 평균에서 멀어지는 정도는 둘이 비슷하다(+5.8 �
 | DINOv3 | ViT-L/16 | dinov3_web (16.9억 장) | dinov3_sat (4.9억 장) |
 | 지도학습 | ResNet-50, ViT-B/16, ViT-L/16 | sup_in ×3 | 없음 (기준점) |
 
-| 쌍 (위성 − 일반, pt) | AID clean | AID-C | 정렬 후 | R45 → UCM | UCM → R45 |
+| 쌍 (위성 − 일반, pt) | AID clean | AID-C | 표준화 후 | R45 → UCM | UCM → R45 |
 |---|---:|---:|---:|---:|---:|
 | MAE → SatMAE | −1.6 | +1.9 | −6.4 | −14.1 | −0.9 |
 | MoCo → MoCo-fMoW | −1.3 | +3.1 | −1.8 | +2.9 | −1.7 |
@@ -429,7 +440,7 @@ source 클래스 평균에서 멀어지는 정도는 둘이 비슷하다(+5.8 �
 | AID-C | 77.1 | 84.2 | 89.2 | 94.3 |
 | RESISC45-C | 70.5 | 78.1 | 84.2 | 90.8 |
 
-여지(상한 − 정렬)가 몰린 곳: motion blur +20.8 / +22.1, data gaps +9.6 / +11.9, scale +8.4 / +8.7.
+여지(상한 − 표준화)가 몰린 곳: motion blur +20.8 / +22.1, data gaps +9.6 / +11.9, scale +8.4 / +8.7.
 자연 shift에서는 target 라벨로 학습한 head가 91–99%이고 source head는 평균 15 / 31pt 낮다.
 이 표는 3·5단계만이라 T1의 숫자(전체 5단계)와 다르다. 출처: `experiments/2026-11-24_cluster_cot/RESULTS_head_oracle.md`.
 
@@ -438,7 +449,7 @@ source 클래스 평균에서 멀어지는 정도는 둘이 비슷하다(+5.8 �
 | 순서 | 무엇 | 어디 | 시간 |
 |---|---|---|---|
 | 1 | 이 문서 전체 | – | 20분 |
-| 2 | 정렬이 하는 일 (Normalize·입력 정렬·head 입력 정렬의 구분, 식과 두 단계, 필요한 소스 통계) | `docs/STUDY_alignment.md` §1, §2.4 | 20분 |
+| 2 | 표준화와 정렬 (전처리 표준화·입력 정렬·head 입력 표준화의 구분, 식과 두 단계, 필요한 source 통계) | `docs/STUDY_alignment.md` §1, §2.4 | 20분 |
 | 3 | 백본 표, augmentation 표, 손상 배치 표 | `docs/SETTINGS.md` §1, §2.5 | 15분 |
 | 4 | feature 그림 두 장 | `docs/figs/2026-11-24_feature_dist/fig1_clean_geometry.png`, `fig2_shift_align_motion_blur_s3.png` | 10분 |
 | 5 | Geometry 세 가지 (T8, Silhouette 상관, T9) | 이 문서 4절 | 15분 |
@@ -475,12 +486,12 @@ Geometry에서 이해해야 할 것은 세 문장이다.
 
 **한계**
 - seed는 대부분 1개다. 자연 shift는 데이터 쌍 하나, 분할은 모델 2개다.
-- 정렬과 flip 결과는 배치 64, 한 종류의 손상만 있는 stream 기준이다. 배치 16에서는 정렬 이득이 줄고 clean 비용이 생긴다.
+- head 입력 표준화와 flip 결과는 배치 64, 한 종류의 손상만 있는 stream 기준이다. 배치 16에서는 표준화 이득이 줄고 clean 비용이 생긴다.
 - 방법은 아직 없다. 지금까지는 분석과 기존 방법의 적용이다.
 
 **말하면 안 되는 것**
 - "flip이 가장 좋은 정확도 추정기다": COT와 평균이 같고 큰 오차는 COT가 적다.
-- "통계 정렬이 우리 방법이다": head 입력에 AdaBN을 적용한 것이고 FOA와도 겹친다. baseline이다.
+- "head 입력 표준화가 우리 방법이다": head 입력에 AdaBN을 적용한 것이고 FOA와도 겹친다. baseline이다.
 - "DSBR Table 3을 재현했다": 이득의 크기가 비슷한 것까지만 확인했다.
 - "SenseBench가 REOBench 손상의 고유성을 비판했다": 그 문장은 열화를 평가 대상으로 삼지 않았다는 뜻이다.
 - "위성 사전학습이 낫다 / 못하다": 방식마다 반대이고 원인은 모른다.
@@ -491,11 +502,11 @@ Geometry에서 이해해야 할 것은 세 문장이다.
 
 | 질문 | 답 |
 |---|---|
-| 정렬은 source 통계를 쓰는데 반칙 아닌가 | 표준화해서 학습한 head에서는 test 식에 source 통계가 들어가지 않는다. 그대로 학습한 head에서 쓰는 통계도 BatchNorm의 running 통계와 같은 종류다. 다만 새롭지는 않다 |
+| 표준화·정렬은 source 통계를 쓰는데 반칙 아닌가 | 표준화해서 학습한 head에서는 test 식에 source 통계가 들어가지 않는다. 그대로 학습한 head에서 쓰는 통계도 BatchNorm의 running 통계와 같은 종류다. 다만 새롭지는 않다 |
 | RS만의 문제가 무엇인가 | 이미지 도메인이 아니라 손상의 종류(data gaps, scale, clouds)와, shift가 촬영 단위로 stream 전체에 공유된다는 점이다 |
 | 왜 DINOv3 web이 가장 강한가 | 같은 방법의 위성 모델은 14pt 낮으므로 방법이 아니라 데이터나 규모다. 어느 쪽인지는 가르지 못했다. matched-pair 연구와 DINOv3 저자들의 GEO-Bench 평가도 web이 위성을 이긴다고 보고했다 |
 | DINOv3-SAT이 낮은 것은 feature를 잘못 뽑아서가 아닌가 | 우리는 CLS와 patch 평균을 이어 붙여 쓴다. matched-pair 연구가 세 가지 feature를 모두 시험했고 가장 좋은 것으로도 web에 뒤졌다 |
-| 분할에서도 되나 | 현상(엔트로피 방법은 손해, 쏠림을 누르면 이득, 정렬이 가장 큼, flip이 정확도를 따름)은 12종 전체에서 같다. 다른 점은 기하 손상이 분할에서는 거의 문제가 안 되고, confidence도 정확도를 따른다는 것이다(T5). feature geometry 설명은 분류에서만 확인했다 |
+| 분할에서도 되나 | 현상(엔트로피 방법은 손해, 쏠림을 누르면 이득, 통계 정렬(BN 통계 교체)이 가장 큼, flip이 정확도를 따름)은 12종 전체에서 같다. 다른 점은 기하 손상이 분할에서는 거의 문제가 안 되고, confidence도 정확도를 따른다는 것이다(T5). feature geometry 설명은 분류에서만 확인했다 |
 | 다음은 무엇인가 | 6절의 1번과 2번. 여지가 어디 있는지는 T12로 쟀다 |
 
 ## 8. 로컬로 가져갈 것
