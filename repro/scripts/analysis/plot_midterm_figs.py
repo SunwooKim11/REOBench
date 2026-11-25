@@ -4,6 +4,7 @@
   fig2_estimation.png     : label-free accuracy estimates vs true accuracy on the 2,040 corrupted streams (T3)
   fig3_signals.png        : confidence vs accuracy and flip vs accuracy, three backbones on RESISC45-C
   fig4_em_phases.png      : entropy minimisation over 2,000 steps, tent vs DSBR: accuracy and predicted classes (T9)
+  fig4b_em_long_tent.png  : fig4 in the TENT protocol (backbone norm layers, scripts/tta/cls_tta_long.py), AID-C severity 3
   fig5_headroom.png       : per corruption: as is -> head-input standardization -> head re-fitted with labels -> clean (T12)
   fig6_pairs.png          : satellite minus generic pretraining for the seven pairs of T10
   fig7_blur_aug.png       : drop under Gaussian blur, backbones with / without blur augmentation (T7)
@@ -167,6 +168,55 @@ def fig4():
     axes[0].set_title("AID-C, head-input affine only; thin lines = 17 backbones", loc="left", fontsize=11, color=INK2, fontweight="normal")
     fig.tight_layout()
     save(fig, "fig4_em_phases.png")
+
+
+def fig4b():
+    """fig4 in the TENT protocol (scripts/tta/cls_tta_long.py): backbone norm layers updated, AID-C severity 3.
+    Uses the streams finished for every backbone that has results; also writes RESULTS.md next to the json files."""
+    D = E / "2026-11-26_em_long_tent"
+    R = {m: json.load(open(D / f"{m}.json")) for m in ORDER if (D / f"{m}.json").exists()}
+    done = lambda r: {s_ for s_, v in r["streams"].items() if "tent" in v and "dsbr" in v}
+    R = {m: r for m, r in R.items() if done(r)}
+    S = sorted(set.intersection(*[done(r) for r in R.values()]))
+    ck = next(iter(R.values()))["ckpts"]; x = np.arange(len(ck))
+    val = lambda m, loss, key: np.mean([R[m]["streams"][s_][loss][key] for s_ in S], 0)       # ckpt
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.3))
+    for ax, key, ylab in ((axes[0], "acc", "accuracy on corrupted streams (%)"), (axes[1], "n_pred", "classes still predicted (of 30)")):
+        for loss, col, name in (("tent", ORANGE, "Tent (entropy)"), ("dsbr", BLUE, "DSBR (class-balanced entropy)")):
+            V = np.array([val(m, loss, key) for m in R])
+            for v in V:
+                ax.plot(x, v, color=col, lw=0.7, alpha=0.3)
+            ax.plot(x, V.mean(0), color=col, lw=2.4, marker="o", ms=4)
+            ax.text(x[-1] + 0.12, V.mean(0)[-1], f"{name}\n{V.mean(0)[-1]:.1f}", color=INK, va="center", fontsize=10)
+        ax.set_xticks(x); ax.set_xticklabels([f"{c // 1000}k" if c >= 1000 else str(c) for c in ck]); ax.set_xlabel("adaptation steps"); ax.set_ylabel(ylab); ax.set_xlim(-0.2, len(ck) + 2.2)
+        ax.grid(axis="y", color=GRID, lw=0.8); ax.set_axisbelow(True)
+    axes[0].set_title(f"AID-C severity 3 ({len(S)} corruptions), TENT protocol: norm layers inside the backbone; thin lines = {len(R)} backbones",
+                      loc="left", fontsize=10.5, color=INK2, fontweight="normal")
+    fig.tight_layout()
+    save(fig, "fig4b_em_long_tent.png")
+    short = lambda s_: SHORT.get(s_[:-3], s_[:-3])
+    out = ["# 엔트로피 최소화를 오래 돌리면: Tent protocol (2026-11-26, 수치만)", "",
+           "`scripts/tta/cls_tta_long.py`. 이미지를 백본에 통과시키고 norm 층 affine을 학습(`cls_tta_fm.py`와 같은 파라미터, SGD momentum 0.9, lr 0.001 LN / 0.00025 BN).",
+           "AID-C 3단계 stream(2,000장)을 반복해 2,000 step, 배치 64. checkpoint에서 stream 전체를 갱신 없이 예측. n_pred = 한 번이라도 예측된 클래스 수(30개 중).",
+           f"아래 평균은 결과가 있는 백본 {len(R)}개가 모두 끝낸 손상 {len(S)}종({', '.join(short(s_) for s_ in S)})의 평균이다.", "",
+           "## 백본별 (손상 평균)", "", "| model | 시작 acc | tent 최고 | tent 끝 | dsbr 최고 | dsbr 끝 | tent 끝 n_pred | dsbr 끝 n_pred | 시작 n_pred |", "|---|---:|" + "---:|" * 8]
+    rows = []
+    for m in R:
+        a, b = val(m, "tent", "acc"), val(m, "dsbr", "acc")
+        rows.append([a[0], a.max(), a[-1], b.max(), b[-1], val(m, "tent", "n_pred")[-1], val(m, "dsbr", "n_pred")[-1], val(m, "tent", "n_pred")[0]])
+        out.append(f"| {m} | " + " | ".join(f"{v:.1f}" for v in rows[-1]) + " |")
+    out += ["| **평균** | " + " | ".join(f"{v:.1f}" for v in np.mean(rows, 0)) + " |", "",
+            "최고 = 그 백본의 손상 평균 곡선에서 가장 높은 checkpoint 값(stream별 최고점의 평균이 아님).", "",
+            "## checkpoint별 (백본 평균)", "", "| step | " + " | ".join(str(c) for c in ck) + " |", "|---|" + "---:|" * len(ck)]
+    for loss in ("tent", "dsbr"):
+        for key in ("acc", "n_pred", "top"):
+            out.append(f"| {loss} {key} | " + " | ".join(f"{v:.1f}" for v in np.mean([val(m, loss, key) for m in R], 0)) + " |")
+    out += ["", "## 손상별 (백본 평균): 시작 → 끝 정확도, 끝의 n_pred", "", "| 손상 | 시작 | tent 끝 | dsbr 끝 | tent n_pred | dsbr n_pred |", "|---|---:|---:|---:|---:|---:|"]
+    for s_ in S:
+        g = lambda loss, key, j: np.mean([R[m]["streams"][s_][loss][key][j] for m in R])
+        out.append(f"| {short(s_)} | {g('tent', 'acc', 0):.1f} | {g('tent', 'acc', -1):.1f} | {g('dsbr', 'acc', -1):.1f} | {g('tent', 'n_pred', -1):.1f} | {g('dsbr', 'n_pred', -1):.1f} |")
+    (D / "RESULTS.md").write_text("\n".join(out) + "\n")
+    print("saved", D / "RESULTS.md", "backbones", len(R), "streams", len(S))
 
 
 def fig5():
@@ -521,7 +571,7 @@ if __name__ == "__main__":
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     for name, f in (("fig1", fig1), ("fig2", fig2), ("fig3", fig3), ("fig4", fig4), ("fig5", fig5), ("fig6", fig6), ("fig7", fig7),
-                    ("fig8", fig8), ("fig9", fig9), ("fig10", fig10), ("fig11", fig11), ("fig12", fig12)):
+                    ("fig4b", fig4b), ("fig8", fig8), ("fig9", fig9), ("fig10", fig10), ("fig11", fig11), ("fig12", fig12)):
         if args.only is None or name in args.only:
             try:
                 f()

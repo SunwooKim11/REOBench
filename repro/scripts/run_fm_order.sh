@@ -12,4 +12,3 @@ for M in "none tent dsbr" "sar flipf"; do
   echo "PASS DONE ($M) $(date '+%F %T')" >> "$L"
 done
 echo "FMORDER ALL DONE $(date '+%F %T')" >> "$L"
-(cd /home/irteam/dit_dummy && ./ditload run-once) > /dev/null 2>&1
