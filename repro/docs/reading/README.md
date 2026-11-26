@@ -13,3 +13,4 @@
 | [gold.md](gold.md) | GOLD: The Golden Subspace (CVPR 2026), Claude가 PDF 텍스트를 읽음 | "head가 읽는 방향"의 선행 연구 |
 | [dsbr.md](dsbr.md) | DSBR: Entropy Minimization without Model Collapse (arXiv 2606.02339), Claude가 PDF 텍스트를 읽음 | 예측 쏠림 → EM 붕괴, 클래스별 재가중 baseline |
 | [gram_slum_tta.md](gram_slum_tta.md) | GRAM: Generalizable Slum Detection from Satellite Imagery with Mixture-of-Experts (arXiv 2511.10300), 사용자가 찾음, 요약 agent가 HTML 전체를 읽음 | F2 (RS에서 TTA를 돌린 선행 연구), flip 필터의 선례(예측 일치로 pseudo label 고르기) |
+| [scene_complexity_aid22.md](scene_complexity_aid22.md) | Scene Complexity / AID-22 (Peng 외, Remote Sensing 2021), 사용자가 찾음, Claude가 PDF 본문과 Fig. 4를 읽음 | F2 (LSCD-TTA의 "복잡한 장면" 주장을 재는 기준), T14 |

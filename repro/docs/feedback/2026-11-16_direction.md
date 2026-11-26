@@ -616,3 +616,9 @@ frozen backbone + 선형 head(1×1 conv). 프로토콜은 Claude가 정한 것�
   dsbr도 붕괴: scalemae motion blur, moco_in의 motion blur·data gaps·scale. DINO 계열은 tent도 붕괴하지 않음.
 - feature 단계 fig4(17개 모두 tent 하락, dsbr 상승)와 다름. 정리 문서 B6를 fig4b + T15로 바꿈. ViT-S/8 두 개는 GPU를 주려고 멈춤(나중에 이어서).
 - 불균형 실험(Tent protocol)은 멈춘 상태(lt100의 12개 백본쯤까지).
+
+### 2026-11-26 사람 평가 장면 복잡도(AID-22)를 적용 (`docs/reading/scene_complexity_aid22.md`, `RESULTS_scene_complexity.md`)
+사용자가 Peng 외(Remote Sensing 2021)의 PDF를 `papers/`에 넣고 적용 가능성을 물음. Claude가 본문과 Fig. 4를 읽음. 공개 자료는 CAM 코드뿐이라 쓸 수 있는 것은 Fig. 4의 클래스 점수 22개.
+- 22개 클래스 점수와 AID-C 결과(17개 백본)의 순위상관: clean 정확도 −0.68, 손상 정확도 −0.47, 하락 +0.20, 과신 +0.46, flip +0.54, JPEG 비트/픽셀 +0.81.
+- 수준별(낮음 6 / 중간 9 / 높음 7): 과신 3.6 / 5.1 / 7.4pt, flip 9.2 / 12.0 / 14.2%, clean 98.5 / 95.8 / 92.5.
+- 어제 임의로 고른 픽셀 지표의 결론과 같고, 픽셀 지표가 사람 평가와 0.81로 맞는다는 근거가 생김. T14와 F2 대조표에 반영.
